@@ -92,7 +92,7 @@ module INI : sig
 
   val read : ?unicode:bool -> string -> section
     (** [read fname] reads INI data from the file [fname].
-        @param unicode Whether file shoul be treated as unicode encoded.
+        @param unicode Whether file should be treated as unicode encoded.
 
         FIXME: unicode must be stored in section *)
 end

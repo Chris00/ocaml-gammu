@@ -1,4 +1,4 @@
-(* File: gammel.ml
+(* File: gammu.ml
 
    Copyright (C) 2010
 
