@@ -1,3 +1,4 @@
+(** TODO:?? Split the modules in mutiple files as C Gammu does ? *)
 (** Interface to the gammu library (libGammu) to manage data in your
     cell phone such as contacts, calendar or messages.  *)
 
@@ -85,10 +86,16 @@ exception Error of error
    accessable manner. *)
 module INI : sig
   type entry
+  (* TODO:?? section is in fact a node of a doubly-linked list. Should this be
+     reflected on the interface ? Along with FIXME in [read], store the unicode
+     flag in the abstract [section] type or expose it to public interface ? *)
   type section
 
+  val find_last_entry : section -> section:string -> entry
+  (** Returns the last INI entry of the given section. *)
+
   val get_value : section -> section:string -> key:string -> string
-    (** Returns a value of the INI file entry. *)
+    (** Returns value of the INI file entry. *)
 
   val read : ?unicode:bool -> string -> section
     (** [read fname] reads INI data from the file [fname].
@@ -105,6 +112,11 @@ type t
       "state machine"). *)
 
 (** Configuration of state machine.  *)
+(* TODO:?? Do we modify the ordering of fields to have something more
+   coherent ?  e.g put debug_file and debug_level next to each other.
+
+   implies cost of non clear stub code when accessing fields in sake of
+   interface "beauty". *)
 type config = {
   model : string;              (* Model from config file  *)
   debug_level : string;        (* Debug level  *)
@@ -125,7 +137,36 @@ type config = {
                                   in local language  *)
   text_memo : string;          (* Text for memo calendar entry
                                   category in local language *)
+  (* phone_features : feature list (* NYI Phone features override. *) *)
 }
+
+type connection_type =
+  | BUS2
+  | FBUS2
+  | FBUS2DLR3
+  | DKU2AT
+  | DKU2PHONET
+  | DKU5FBUS2
+  | ARK3116FBUS2
+  | FBUS2PL2303
+  | FBUS2BLUE
+  | FBUS2IRDA
+  | PHONETBLUE
+  | AT
+  | BLUEGNAPBUS
+  | IRDAOBEX
+  | IRDAGNAPBUS
+  | IRDAAT
+  | IRDAPHONET
+  | BLUEFBUS2
+  | BLUEAT
+  | BLUEPHONET
+  | BLUEOBEX
+  | FBUS2USB
+  | NONE
+
+val make : unit -> t
+  (** Make a new clean state machine. *)
 
 val find_gammurc : ?path:string -> unit -> INI.section
   (** Finds and reads gammu configuration file.  The search order
@@ -138,12 +179,18 @@ val find_gammurc : ?path:string -> unit -> INI.section
       autodetected one (default: autodetection is performed). *)
 
 val read_config : INI.section -> int -> config
+(** [read_config section num] processes and returns gammu configuration
+    represented by the [num]th section of the INI file representation
+    [section]. *)
 
 val get_config : t -> int -> config
-  (** [get_config s num] gets gammu configuration from state machine
-      [s], where [num] is the number of the section to read, [-1] for
-      the currently used one. *)
+(** [get_config s num] gets gammu configuration from state machine
+    [s], where [num] is the number of the section to read, [-1] for
+    the currently used one. *)
 
+val config_num : t -> int
+(** [config_num s] returns the number of active gammu configurations for the
+    state machine [s]. *)
 
 (* maybe a type t should be created by reading a config file, then one
    connects.  config files seem to play the same role as files for
@@ -153,6 +200,8 @@ val connect : ?log:(string -> unit) -> reply_num:int -> t
 val disconnect : t -> unit
 
 val is_connected : t -> bool
+
+val get_used_connection : t -> connection_type
 
 (************************************************************************)
 (** {2 Informations on the phone} *)
@@ -170,17 +219,17 @@ type battery_charge = {
   battery_type : battery_type; (* Battery type  *)
 }
 and charge_state =
-  | BatteryPowered 	(* Powered from battery *)
-  | BatteryConnected 	(* Powered from AC, battery connected *)
-  | BatteryCharging 	(* Powered from AC, battery is charging *)
+  | BatteryPowered      (* Powered from battery *)
+  | BatteryConnected    (* Powered from AC, battery connected *)
+  | BatteryCharging     (* Powered from AC, battery is charging *)
   | BatteryNotConnected (* Powered from AC, no battery *)
-  | BatteryFull 	(* Powered from AC, battery is fully charged *)
-  | PowerFault 		(* Power failure  *)
+  | BatteryFull         (* Powered from AC, battery is fully charged *)
+  | PowerFault          (* Power failure  *)
 and battery_type =
-  | Unknown 	(* Unknown battery *)
-  | NiMH 	(* NiMH battery *)
-  | LiIon 	(* Lithium Ion battery *)
-  | LiPol 	(* Lithium Polymer battery  *)
+  | Unknown     (* Unknown battery *)
+  | NiMH        (* NiMH battery *)
+  | LiIon       (* Lithium Ion battery *)
+  | LiPol       (* Lithium Polymer battery  *)
 
 val battery_charge : t -> battery_charge
   (** @return information about batery charge and phone charging state. *)
@@ -241,7 +290,7 @@ module SMS : sig
 
   type udh =
     | No_udh
-    | ConcatenatedMessages 	(** Linked SMS. *)
+    | ConcatenatedMessages      (** Linked SMS. *)
     | ConcatenatedMessages16bit (** Linked SMS with 16 bit reference. *)
     | DisableVoice
     | DisableFax
@@ -281,7 +330,7 @@ module SMS : sig
     | Unicode_Compression
     | Default_No_Compression     (** Default GSM alphabet. *)
     | Default_Compression
-    | height_bit                 (** 8-bit.  *)
+    | Eight_bit                  (** 8-bit.  *)
 
   (** Defines ID for various phone and SIM memories.  Phone modules
       can translate them to values specific for concrete models.  Two
