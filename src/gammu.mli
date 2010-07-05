@@ -1,4 +1,4 @@
-(** TODO:?? Split the modules in mutiple files as C Gammu does ? *)
+(* TODO:?? Split the modules in mutiple files as C Gammu does ? *)
 (** Interface to the gammu library (libGammu) to manage data in your
     cell phone such as contacts, calendar or messages.  *)
 
@@ -89,15 +89,15 @@ module INI : sig
   (* TODO:?? section is in fact a node of a doubly-linked list. Should this be
      reflected on the interface ? Along with FIXME in [read], store the unicode
      flag in the abstract [section] type or expose it to public interface ? *)
-  type section
+  type sections
 
-  val find_last_entry : section -> section:string -> entry
-  (** Returns the last INI entry of the given section. *)
+  val find_last_entry : sections -> section:string -> entry
+    (** @return the last INI entry of the given section. *)
 
-  val get_value : section -> section:string -> key:string -> string
-    (** Returns value of the INI file entry. *)
+  val get_value : sections -> section:string -> key:string -> string
+    (** @return value of the INI file entry. *)
 
-  val read : ?unicode:bool -> string -> section
+  val read : ?unicode:bool -> string -> sections
     (** [read fname] reads INI data from the file [fname].
         @param unicode Whether file should be treated as unicode encoded.
 
@@ -188,14 +188,26 @@ val get_config : t -> int -> config
     [s], where [num] is the number of the section to read, [-1] for
     the currently used one. *)
 
-val config_num : t -> int
-(** [config_num s] returns the number of active gammu configurations for the
-    state machine [s]. *)
+val push_config : t -> config -> unit
+(** [push_config s cfg] push the configuration
+    [cfg] on top of the configuration stack of [s]. *)
+
+val pop_config : t -> config
+(** [pop_config s] pop on the configuration stack of [s]. *)
+
+val length_config : t -> int
+(** @return length of the configuration stack of
+    the state machine. i.e the number of active
+    configurations. *)
 
 (* maybe a type t should be created by reading a config file, then one
    connects.  config files seem to play the same role as files for
    [open_*] *)
-val connect : ?log:(string -> unit) -> reply_num:int -> t
+val connect : ?log:(string -> unit) -> ?reply_num:int -> t -> unit
+(** Initiates connection.
+
+    @param log logging function.
+    @param reply_num number of replies to await (default 3). *)
 
 val disconnect : t -> unit
 
@@ -203,51 +215,122 @@ val is_connected : t -> bool
 
 val get_used_connection : t -> connection_type
 
+val read_device : t -> wait_for_reply:bool -> int
+(** Attempts to read date form phone. Thus can be
+    used for getting status of incoming events, which
+    would not be found out without polling device.
+
+    @return the number of read bytes.
+
+    @param wait_for_reply whether to wait for some
+    event. *)
+
 (************************************************************************)
 (** {2 Informations on the phone} *)
+module Info : sig
 
-type battery_charge = {
-  percent : int;             (* Signal strength in percent, -1 = unknown  *)
-  state : charge_state;      (* Charge state. *)
-  battery_voltage : int;     (* Current battery voltage (in mV).  *)
-  charge_voltage : int;      (* Voltage from charger (in mV). *)
-  charge_current : int;      (* Current from charger (in mA). *)
-  phone_current : int;       (* Phone current consumption (in mA). *)
-  battery_temperature : int; (* Battery temperature (in degrees Celsius) *)
-  phone_temperature : int;   (* Phone temperature (in degrees Celsius)  *)
-  battery_capacity : int;    (* Remaining battery capacity (in mAh)  *)
-  battery_type : battery_type; (* Battery type  *)
-}
-and charge_state =
-  | BatteryPowered      (* Powered from battery *)
-  | BatteryConnected    (* Powered from AC, battery connected *)
-  | BatteryCharging     (* Powered from AC, battery is charging *)
-  | BatteryNotConnected (* Powered from AC, no battery *)
-  | BatteryFull         (* Powered from AC, battery is fully charged *)
-  | PowerFault          (* Power failure  *)
-and battery_type =
-  | Unknown     (* Unknown battery *)
-  | NiMH        (* NiMH battery *)
-  | LiIon       (* Lithium Ion battery *)
-  | LiPol       (* Lithium Polymer battery  *)
+  type battery_charge = {
+    battery_type : battery_type; (** Battery type. *)
+    battery_capacity : int;      (** Remaining battery capacity (in mAh). *)
 
-val battery_charge : t -> battery_charge
+    battery_percent : int;       (** Remaining battery capacity in percent,
+                                    -1 = unknown. *)
+    charge_state : charge_state; (** Charge state. *)
+    battery_voltage : int;       (** Current battery voltage (in mV). *)
+    charge_voltage : int;        (** Voltage from charger (in mV). *)
+    charge_current : int;        (** Current from charger (in mA). *)
+    phone_current : int;         (** Phone current consumption (in mA). *)
+    battery_temperature : int;   (** Battery temperature
+                                    (in degrees Celsius). *)
+    phone_temperature : int;     (** Phone temperature (in degrees Celsius). *)
+  }
+  and charge_state =
+    | BatteryPowered      (** Powered from battery *)
+    | BatteryConnected    (** Powered from AC, battery connected *)
+    | BatteryCharging     (** Powered from AC, battery is charging *)
+    | BatteryNotConnected (** Powered from AC, no battery *)
+    | BatteryFull         (** Powered from AC, battery is fully charged *)
+    | PowerFault          (** Power failure  *)
+  and battery_type =
+    | Unknown     (** Unknown battery *)
+    | NiMH        (** NiMH battery *)
+    | LiIon       (** Lithium Ion battery *)
+    | LiPol       (** Lithium Polymer battery *)
+
+  type firmware = {
+    version : string;
+    ver_date : string;
+    ver_num : int
+  }
+
+  (** Model identification, used for finding phone features. *)
+  type phone_model = {
+    features : feature list (** List of supported features *)
+    irda : string           (** Model as used over IrDA *)
+    model : string          (** Model as returned by phone *)
+    number : string         (** Identification by Gammu *)
+  }
+
+  (** Current network informations *)
+  type network = {
+    cid : string                 (** Cell ID (CID) *)
+    gprs : grps_state            (** GRPS state *)
+    lac : string                 (** LAC (Local Area Code) *)
+    code : string                (** GSM network code *)
+    name : string                (** Name of current netwrok as returned
+                                     from phone (or empty) *)
+    packet_cid : string          (** Cell ID (CID) for packet network *)
+    packet_lac : string          (** LAC (Local Area Code)
+                                     for packet network *)
+    packet_state : network_state (** Status of network logging
+                                     for packet data. *)
+    state : network_state        (** Status of network logging. *)
+  }
+  and gprs_state =
+    | Detached
+    | Attached
+  and network_state =
+    | HomeNetwork          (** Home network for used SIM card. *)
+    | NoNetwork            (** No network available for used SIM card. *)
+    | RoamingNetwork       (** SIM card uses roaming. *)
+    | RegistrationDenied   (** Network registration denied
+                               - card blocked or expired or disabled. *)
+    | Unknown              (** Unknown network status. *)
+    | RequestingNetwork    (** Network explicitely requested by user. *)
+
+  (** Information about signal quality, all these
+      should be -1 when unknown. *)
+  type signal_quality = {
+    signal_strength : int;
+    signal_percent : int;  (* Signal strength in percent. *)
+    bit_error_rate : int;  (* Bit error rate in percent.  *)
+  }
+
+  val battery_charge : t -> battery_charge
   (** @return information about batery charge and phone charging state. *)
 
-val manufacturer : t -> string
+  val firmware : t -> firmware
 
-val model : t -> string
+  val hardware : t -> string
 
-val product_code : t -> string
+  val imei : t -> string
+  (** @return IMEI (International Mobile Equipment Identity) / Serial Number *)
 
-(** Information about signal quality, all these should be -1 when unknown. *)
-type signal_quality = {
-  signal_strength : int;
-  signal_percent : int;  (* Signal strength in percent. *)
-  bit_error_rate : int;  (* Bit error rate in percent.  *)
-}
+  val manufectured_month : t -> string
 
-val signal_quality : t -> signal_quality
+  val manufacturer : t -> string
+
+  val model : t -> string
+
+  val model_info : t -> phone_model
+
+  val network_info : t -> network
+
+  val product_code : t -> string
+
+  val signal_quality : t -> signal_quality
+
+end
 
 (************************************************************************)
 (** {2 Date and time} *)
@@ -335,7 +418,7 @@ module SMS : sig
   (** Defines ID for various phone and SIM memories.  Phone modules
       can translate them to values specific for concrete models.  Two
       letter codes (excluding VM and SL) are from GSM 07.07. *)
-  type memory =
+  type memory_type =
     | ME (** Internal memory of the mobile equipment *)
     | SM (** SIM card memory *)
     | ON (** Own numbers *)
@@ -348,6 +431,25 @@ module SMS : sig
     | SL (** Sent SMS logs *)
     | QD (** Quick dialing choices.  *)
 
+  type memory_entry = {
+    memory_type : memory_type;
+    location : int;
+    entries : sub_memory_entry array;
+  }
+  and sub_memory_entry = {
+    entry_type : entry_type:
+    date : date_time;
+    number : int;
+    voice_tag : int;
+    sms_list : int list;
+    call_length : int;
+    add_error : error;
+    text : string;
+ (* picture : binary_picture (* NYI *) *)
+  }
+  and entry_type =
+
+
   type message = {
     replace_message : char;
     RejectDuplicates : bool;
@@ -355,7 +457,7 @@ module SMS : sig
     number : string;
     other_numbers : string array;
     smsc : smsc;     (** SMS Center *)
-    memory : memory; (** For saved SMS: where exactly it's saved (SIM/phone). *)
+    memory : memory_type; (** For saved SMS: where exactly it's saved (SIM/phone). *)
     location : int;  (** For saved SMS: location of SMS in memory. *)
     folder : int;    (** For saved SMS: number of folder, where SMS is saved. *)
     inbox_folder : bool; (** For saved SMS: whether SMS is really in Inbox. *)
@@ -398,7 +500,7 @@ module SMS : sig
   }
 
   val folders : t -> folder array
-    (** Returns SMS folders information. *)
+    (** @return SMS folders information. *)
 
   val set_incoming_sms : t -> bool -> unit
     (** Enable/disable notification on incoming SMS. *)
@@ -406,8 +508,7 @@ module SMS : sig
   val delete : t -> message -> unit
     (** Deletes SMS (SMS location and folder must be set). *)
 
-
-
+  (** Multipart SMS Information *)
   type multipart_info = {
     unicode_coding : bool;
     info_class : int;
@@ -416,10 +517,94 @@ module SMS : sig
     entries : entry array;
   }
   and entry = {
+    id : encode_multipart_sms_id;
+    number : int;
+ (* ringtone : ringtone; (* NYI *)
+    bitmap : multi_bitmap; (* NYI *)
+    bookmark : wap_bookmark; (* NYI *)
+    settings : wap_settings; (* NYI *)
+    mms_indicator : mms_indicator; (* NYI *) *)
+    phonebook : memory_entry;
+ (* calendar : calendar_entry; (* NYI *)
+    todo : todo_entry; (* NYI *)
+    file : file; (* NYI *) *)
+    protected : bool;
+    buffer : Buffer.t;
+    (* TODO:?? use a variant type for alignment ? *)
+    left : bool;
+    right : bool;
+    center : bool;
+    large : bool;
+    small : bool;
+    bold : bool;
+    italic : bool;
+    underlined : bool;
+    strikethrough : bool;
+    ringtone_notes : int;
+  } (** ID during packing SMS for Smart Messaging 3.0, EMS and other *)
+  and encode_multipart_sms_id =
+    | Text (** 1 text SMS. *)
+    | ConcatenatedTextLong (** Contacenated SMS, when longer than 1 SMS. *)
+    | ConcatenatedAutoTextLong (** Contacenated SMS,
+                                       auto Default/Unicode coding. *)
+    | ConcatenatedTextLong16bit
+    | ConcatenatedAutoTextLong16bit
+    | NokiaProfileLong (** Nokia profile = Name, Ringtone, ScreenSaver *)
+    | NokiaPictureImageLong (** Nokia Picture Image + (text) *)
+    | NokiaScreenSaverLong (** Nokia screen saver + (text) *)
+    | NokiaRingtone (** Nokia ringtone - old SM2.0 format, 1 SMS *)
+    | NokiaRingtoneLong (** Nokia ringtone contacenated, when very long *)
+    | NokiaOperatorLogo (** Nokia 72x14 operator logo, 1 SMS *)
+    | NokiaOperatorLogoLong (** Nokia 72x14 op logo or 78x21 in 2 SMS *)
+    | NokiaCallerLogo (** Nokia 72x14 caller logo, 1 SMS *)
+    | NokiaWAPBookmarkLong (** Nokia WAP bookmark in 1 or 2 SMS *)
+    | NokiaWAPSettingsLong (** Nokia WAP settings in 2 SMS *)
+    | NokiaMMSSettingsLong (** Nokia MMS settings in 2 SMS *)
+    | NokiaVCARD10Long (** Nokia VCARD 1.0
+                               - only name and default number *)
+    | NokiaVCARD21Long (** Nokia VCARD 2.1 - all numbers + text *)
+    | NokiaVCALENDAR10Long (** Nokia VCALENDAR 1.0 - can be in few sms *)
+    | NokiaVTODOLong
+    | VCARD10Long
+    | VCARD21Long
+    | DisableVoice
+    | DisableFax
+    | DisableEmail
+    | EnableVoice
+    | EnableFax
+    | EnableEmail
+    | VoidSMS
+    | EMSSound10 (** IMelody 1.0 *)
+    | EMSSound12 (** IMelody 1.2 *)
+    | EMSSonyEricssonSound (** IMelody without header
+                                   - SonyEricsson extension *)
+    | EMSSound10Long (** IMelody 1.0 with UPI. *)
+    | EMSSound12Long (** IMelody 1.2 with UPI. *)
+    | EMSSonyEricssonSoundLong (** IMelody without header with UPI. *)
+    | EMSPredefinedSound
+    | EMSPredefinedAnimation
+    | EMSAnimation
+    | EMSFixedBitmap (** Fixed bitmap of size 16x16 or 32x32. *)
+    | EMSVariableBitmap
+    | EMSVariableBitmapLong
+    | MMSIndicatorLong (** MMS message indicator. *)
+    | WAPIndicatorLong
+    | AlcatelMonoBitmapLong (** Variable bitmap with
+                                    black and white colors *)
+    | AlcatelMonoAnimationLong (** Variable animation with
+                                       black and white colors *)
+    | AlcatelSMSTemplateName
+    | SiemensFile (** Siemens OTA  *)
 
-  }
 
-  val decode_multipart : ?ems:bool -> multipart_message -> multipart_info
-    (** Decodes multi part SMS to "readable" format. *)
+  val decode_multipart : ?ems:bool -> multipart_info -> multipart_message -> bool
+(** [decode_multipart sms_info sms] Decodes multi
+    part SMS to "readable" format. [sms_info] and
+    [sms] are modified.
+
+    @param ems consider the message as an EMS
+    (Enhanced Messaging Service) (default false).
+
+    @return true if succeed, false otherwise. *)
 
 end
