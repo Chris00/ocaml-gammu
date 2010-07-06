@@ -42,7 +42,7 @@ type error =
   | CANCELED            (** Action was canceled by user *)
   | NEEDANOTHERANSWER   (** Inside Gammu: phone module need to send
                             another answer frame *)
-  | OTHERCONNECTIONREQUIRED (** 40 You need other connectin for
+  | OTHERCONNECTIONREQUIRED (** 40 You need other connection for
                                 this operation. *)
   | WRONGCRC            (** Wrong CRC *)
   | INVALIDDATETIME     (** Invalid date/time *)

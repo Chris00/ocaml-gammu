@@ -24,12 +24,13 @@
 #include <caml/custom.h>
 #include <caml/intext.h>
 
+#define ERROR_VAL(v) (Int_val(v) + 1)
 
 CAMLexport
 value gammu_caml_ErrorString(value verr)
 {
   CAMLparam1(verr);
   const char* msg = GSM_ErrorString(ERROR_VAL(verr));
-  CAMLreturn(copy_string(msg));
+  CAMLreturn(caml_copy_string(msg));
 }
 
