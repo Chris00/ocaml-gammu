@@ -202,6 +202,8 @@ let read_config cfg_info num =
 external _read_config : INI.section_node -> int -> config =
   "gammu_caml_ReadConfig"
 
+external get_config : t -> int -> config = "gammu_caml_GetConfig"
+
 external push_config : t -> config -> unit = "gammu_caml_PushConfig"
 
 external remove_config : t -> config = "gammu_caml_RemoveConfig"
@@ -217,7 +219,97 @@ external _connect_log : t -> int -> (string -> unit) -> unit
 
 external disconnect : t -> unit = "gammu_caml_TerminateConnection"
 
+external is_connected : t -> bool = "gammu_caml_IsConnected"
+
+external get_used_connection : t -> connection_type =
+  "gammu_caml_GetUsedConnection"
+
 val read_device : t -> wait_for_reply:bool -> int
 
 (************************************************************************)
-(* Security related operations with phone. *)
+(* Security related operations with phone *)
+
+val security_code = {
+  code_type : security_code_type;
+  code : string;
+}
+
+val security_code_type =
+  | SEC_SecurityCode
+  | SEC_Pin
+  | SEC_Pin2
+  | SEC_Puk
+  | SEC_Puk2
+  | SEC_None
+  | SEC_Phone
+  | SEC_Network
+
+external enter_security_code : t -> security_code -> unit =
+  "gammu_caml_EnterSecurityCode"
+
+external get_security_status : t -> security_code_type =
+  "gammu_caml_GetSecurityStatus"
+
+
+(************************************************************************)
+(* Informations on the phone *)
+
+type battery_charge = {
+  battery_type : battery_type;
+  battery_capacity : int;
+  battery_percent : int;
+  charge_state : charge_state;
+  battery_voltage : int;
+  charge_voltage : int;
+  charge_current : int;
+  phone_current : int;
+  battery_temperature : int;
+  phone_temperature : int;
+}
+and charge_state =
+  | BatteryPowered
+  | BatteryConnected
+  | BatteryCharging
+  | BatteryNotConnected
+  | BatteryFull
+  | PowerFault
+and battery_type =
+  | Unknown
+  | NiMH
+  | LiIon
+  | LiPol
+
+type firmware = {
+  version : string;
+  ver_date : string;
+  ver_num : int;
+}
+
+type phone_model = {
+  (* features : feature list;*)
+  irda : string;
+  model : string;
+  number : string;
+}
+
+type network = {
+  cid : string;
+  gprs : grps_state;
+  lac : string;
+  code : string;
+  name : string;
+  packet_cid : string;
+  packet_lac : string;
+  packet_state : network_state;
+  state : network_state;
+}
+and gprs_state =
+  | Detached
+  | Attached
+and network_state =
+  | HomeNetwork
+  | NoNetwork
+  | RoamingNetwork
+  | RegistrationDenied
+  | Unknown
+  | RequestingNetwork

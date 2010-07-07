@@ -281,16 +281,16 @@ val security_code_type =
   | SEC_SecurityCode (** Security code. *)
   | SEC_Pin     (** PIN. *)
   | SEC_Pin2    (** PIN 2. *)
-  | SEC_Puk     (** PUK. *)q
+  | SEC_Puk     (** PUK. *)
   | SEC_Puk2    (** PUK 2. *)
   | SEC_None    (** Code not needed. *)
   | SEC_Phone   (** Phone code needed. *)
   | SEC_Network (** Network code needed. *)
 
-val enter_security_code : s -> security_code
+val enter_security_code : t -> security_code -> unit
 (** Enters security code (PIN, PUK,...). *)
 
-val get_security_status : s -> security_code_type
+val get_security_status : t -> security_code_type
 (** Queries whether some security code needs to be entered. *)
 
 
@@ -327,31 +327,31 @@ and battery_type =
 type firmware = {
   version : string;
   ver_date : string;
-  ver_num : int
+  ver_num : int;
 }
 
 (** Model identification, used for finding phone features. *)
 type phone_model = {
-  features : feature list (** List of supported features *)
-  irda : string           (** Model as used over IrDA *)
-  model : string          (** Model as returned by phone *)
-  number : string         (** Identification by Gammu *)
+  (* features : feature list; (** NYI List of supported features *)*)
+  irda : string;           (** Model as used over IrDA *)
+  model : string;          (** Model as returned by phone *)
+  number : string;         (** Identification by Gammu *)
 }
 
 (** Current network informations *)
 type network = {
-  cid : string                 (** Cell ID (CID) *)
-  gprs : grps_state            (** GRPS state *)
-  lac : string                 (** LAC (Local Area Code) *)
-  code : string                (** GSM network code *)
-  name : string                (** Name of current netwrok as returned
+  cid : string;                 (** Cell ID (CID) *)
+  gprs : grps_state;            (** GRPS state *)
+  lac : string;                 (** LAC (Local Area Code) *)
+  code : string;                (** GSM network code *)
+  name : string;                (** Name of current netwrok as returned
                                    from phone (or empty) *)
-  packet_cid : string          (** Cell ID (CID) for packet network *)
-  packet_lac : string          (** LAC (Local Area Code)
+  packet_cid : string;          (** Cell ID (CID) for packet network *)
+  packet_lac : string;          (** LAC (Local Area Code)
                                    for packet network *)
-  packet_state : network_state (** Status of network logging
+  packet_state : network_state; (** Status of network logging
                                    for packet data. *)
-  state : network_state        (** Status of network logging. *)
+  state : network_state;        (** Status of network logging. *)
 }
 and gprs_state =
   | Detached
