@@ -200,10 +200,10 @@ type connection_type =
   | FBUS2USB
   | NONE
 
-val get_debug : t -> Debug.info
+val get_debug : t -> debug_info
 (** Gets debug information for state machine. *)
 
-val set_locales : ?path:string -> unit
+val init_locales : ?path:string -> unit
 (** Initializes locales. This sets up things needed for proper string
     conversion from local charset as well as initializes gettext based
     translation.
@@ -214,7 +214,7 @@ val set_locales : ?path:string -> unit
 val make : unit -> t
 (** Make a new clean state machine. *)
 
-val find_gammurc : ?path:string -> unit -> INI.section
+val find_gammurc : ?path:string -> unit -> INI.sections
 (** Finds and reads gammu configuration file.  The search order depends on
     platform.  On POSIX systems it looks for ~/.gammurc and then for
     /etc/gammurc, on Windows for gammurc in Application data folder, then
@@ -223,7 +223,7 @@ val find_gammurc : ?path:string -> unit -> INI.section
     @param path force the use of a custom path instead of the autodetected
     one (default: autodetection is performed). *)
 
-val read_config : INI.section -> int -> config
+val read_config : INI.sections -> int -> config
 (** [read_config section num] processes and returns gammu configuration
     represented by the [num]th section of the INI file representation
     [section]. *)

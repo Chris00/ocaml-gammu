@@ -71,3 +71,108 @@ void gammu_caml_SetDebugLevel(value level, value di)
   GSM_SetDebugLevel(String_val(level), (GSM_Debug_Info*) di);
   CAMLreturn0;
 }
+
+#define StateMachine_val(v) (*(GSM_StateMachine **) Data_Custom_val(v))
+
+static void gammu_caml_sm_finalize(value state_machine)
+{
+  GSM_FreeStateMachine(STATE_MACHINE_VAL(state_machine));
+}
+
+static struct custom_operations gammu_caml_sm_ops = {
+  "be.umons.ml-gammu.state_machine",
+  gammu_caml_sm_finalize,
+  custom_compare_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
+static value alloc_StateMachine()
+{
+  return alloc_custom(&gammu_caml_sm_ops, sizeof(StateMachine *), 1, 1000);
+}
+
+static value Val_StateMachine(StateMachine *state_machine)
+{
+  CAMLlocal1(res);
+  res = alloc_StateMachine();
+  StateMachine_val(res) = state_machine;
+  return res;
+}
+
+CAMLprim
+GSM_Config GSM_Config_val(value vconfig)
+{
+  GSM_Config config;
+  config.model = String_val(FIELD(vconfig, 0));
+  config.debug_level = String_val(FIELD(vconfig, 1));
+  config.device = String_val(FIELD(vconfig, 2));
+  config.connection = String_val(FIELD(vconfig, 3));
+  config.sync_time = Bool_val(FIELD(vconfig, 4));
+  config.lock_device = Bool_val(FIELD(vconfig, 5));
+  config.debug_file = String_val(FIELD(vconfig, 6));
+  config.start_info = Bool_val(FIELD(vconfig, 7));
+  config.use_global_debug_file = Bool_val(FIELD(vconfig, 8));
+  config.text_reminder = String_val(FIELD(vconfig, 9));
+  config.text_meeting = String_val(FIELD(vconfig, 10));
+  config.text_call = String_val(FIELD(vconfig, 11));
+  config.text_birthday = String_val(FIELD(vconfig, 12));
+  config.text_memo = String_val(FIELD(vconfig, 13));
+}
+
+#define CONNECTION_TYPE_VAL(v) (Int_val(v) + 1)
+
+CAMLprim
+value gammu_caml_GetDebug(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn((value) GSM_GetDebug());
+}
+
+CAMLprim
+void gammu_caml_InitLocales(value path)
+{
+  CAMLparam1(path);
+  GSM_InitLocales(String_val(path));
+  CAMLreturn0;
+}
+
+CAMLprim
+void gammu_caml_InitDefaultLocales()
+{
+  CAMLreturn0; 
+}
+
+CAMLprim
+value gammu_caml_CreateStateMachine()
+{
+  CAMLreturn(Val_StateMachine(GSM_AllocStateMachine()));
+}
+
+CAMLprim
+void gammu_caml_FindGammuRC(value path)
+{
+  CAMLparam1(path);
+  GSM_FindGammuRC(String_val(path));
+  CAMLreturn0; 
+}
+
+CAMLprim
+void gammu_caml_FindDefaultGammuRC()
+{
+  CAMLreturn0;
+}
+
+CAMLprim
+value gammu_caml_ReadConfig(value cfg_info, value num)
+{
+  CAMLreturn((value) GSM_ReadConfig(INI_Section_val(cfg_info), Int_val(num)));
+}
+
+CAMLprim
+value gammu_caml_GetConfig(value s, value num)
+{
+  CAMLparam2(s, num);
+  CAMLreturn((value) GSM_GetConfig(StateMachine_val(s), Int_val(num)));
+}

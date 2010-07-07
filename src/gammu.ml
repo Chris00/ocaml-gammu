@@ -98,3 +98,69 @@ external set_debug_global : bool -> debug_info -> unit = "gammu_caml_SetDebugGlo
 external set_debug_file_descr : Unix.file_descr -> bool -> debug_info -> unit = "gammu_caml_SetDebugFileDescriptor"
 
 external set_debug_level : string -> debug_info -> unit = "gammu_caml_SetDebugLevel"
+
+type t
+
+type config = {
+  model : string;
+  debug_level : string;
+  device : string;
+  connection : string;
+  sync_time : bool;
+  lock_device : bool;
+  debug_file : string;
+  start_info : bool;
+  use_global_debug_file : bool;
+  text_reminder : string;
+  text_meeting : string;
+  text_call : string;
+  text_birthday : string;
+  text_memo : string;
+}
+
+type connection_type =
+  | BUS2
+  | FBUS2
+  | FBUS2DLR3
+  | DKU2AT
+  | DKU2PHONET
+  | DKU5FBUS2
+  | ARK3116FBUS2
+  | FBUS2PL2303
+  | FBUS2BLUE
+  | FBUS2IRDA
+  | PHONETBLUE
+  | AT
+  | BLUEGNAPBUS
+  | IRDAOBEX
+  | IRDAGNAPBUS
+  | IRDAAT
+  | IRDAPHONET
+  | BLUEFBUS2
+  | BLUEAT
+  | BLUEPHONET
+  | BLUEOBEX
+  | FBUS2USB
+  | NONE
+
+external get_debug : t -> debug_info = "gammu_caml_GetDebug"
+
+let init_locales ?path () = match path with
+  | None -> _init_default_locales ()
+  | Some path -> _init_locales path
+external _init_locales : path -> unit = "gammu_caml_InitLocales"
+external _init_default_locales : unit = "gammu_caml_InitDefaultLocales"
+
+external make : unit -> t = "gammu_caml_CreateStateMachine"
+
+let find_gammurc ?path () = match path with
+  | None -> _find_default_gammurc ()
+  | Some path -> _find_gammurc path
+external _find_gammurc : path -> unit = "gammu_caml_FindGammuRC"
+external _find_default_gammurc : unit = "gammu_caml_FindDefaultGammuRC"
+
+let read_config cfg_info num =
+  _read_config cfg_info.INI.head num
+
+external _read_config : INI.section_node -> int -> config =
+  "gammu_caml_ReadConfig"
