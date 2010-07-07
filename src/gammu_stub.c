@@ -26,7 +26,7 @@
 #include <caml/custom.h>
 #include <caml/intext.h>
 
-#define ERROR_VAL(v) (Int_val(v) + 1)
+#define Error_val(v) (Int_val(v) + 1)
 
 /************************************************************************/
 /* Debuging handling */
@@ -35,7 +35,7 @@ CAMLprim
 value gammu_caml_ErrorString(value verr)
 {
   CAMLparam1(verr);
-  const char *msg = GSM_ErrorString(ERROR_VAL(verr));
+  const char *msg = GSM_ErrorString(Error_val(verr));
   CAMLreturn caml_copy_string(msg);
 }
 
@@ -114,9 +114,9 @@ CAMLprim
 value gammu_caml_ReadFile(value file_name, value unicode)
 {
   CAMLparam2(filename, unicode);
-  
+
   INI_Section *cfg;
- 
+
   INI_ReadFile(String_val(filename), Bool_val unicode, &cfg);
 }
 
@@ -152,27 +152,48 @@ static value Val_StateMachine(StateMachine *state_machine)
   return res;
 }
 
-CAMLprim
-GSM_Config GSM_Config_val(value vconfig)
+value Val_Config(GSM_Config cfg)
 {
-  GSM_Config config;
-  config.model = String_val(FIELD(vconfig, 0));
-  config.debug_level = String_val(FIELD(vconfig, 1));
-  config.device = String_val(FIELD(vconfig, 2));
-  config.connection = String_val(FIELD(vconfig, 3));
-  config.sync_time = Bool_val(FIELD(vconfig, 4));
-  config.lock_device = Bool_val(FIELD(vconfig, 5));
-  config.debug_file = String_val(FIELD(vconfig, 6));
-  config.start_info = Bool_val(FIELD(vconfig, 7));
-  config.use_global_debug_file = Bool_val(FIELD(vconfig, 8));
-  config.text_reminder = String_val(FIELD(vconfig, 9));
-  config.text_meeting = String_val(FIELD(vconfig, 10));
-  config.text_call = String_val(FIELD(vconfig, 11));
-  config.text_birthday = String_val(FIELD(vconfig, 12));
-  config.text_memo = String_val(FIELD(vconfig, 13));
+  CAMLlocal1(res);
+  res = caml_alloc(14, 0);
+  Store_field(res, 0, caml_copy_string(config.model));
+  Store_field(res, 1, caml_copy_string(config.debug_level));
+  Store_field(res, 2, caml_copy_string(config.device));
+  Store_field(res, 3, caml_copy_string(config.connection));
+  Store_field(res, 4, Val_bool(config.sync_time));
+  Store_field(res, 5, Val_bool(config.lock_device));
+  Store_field(res, 6, caml_copy_string(config.debug_file));
+  Store_field(res, 7, Val_bool(config.start_info));
+  Store_field(res, 8, Val_bool(config.use_global_debug_file));
+  Store_field(res, 9, caml_copy_string(config.text_reminder));
+  Store_field(res, 10, caml_copy_string(config.text_reminder));
+  Store_field(res, 11, caml_copy_string(config.text_meeting));
+  Store_field(res, 12, caml_copy_string(config.text_birthday));
+  Store_field(res, 13, caml_copy_string(config.text_memo));
+  return res;
 }
 
-#define CONNECTION_TYPE_VAL(v) (Int_val(v) + 1)
+GSM_Config Config_val(value vconfig)
+{
+  GSM_Config config;
+  config.model = String_val(Field(vconfig, 0));
+  config.debug_level = String_val(Field(vconfig, 1));
+  config.device = String_val(Field(vconfig, 2));
+  config.connection = String_val(Field(vconfig, 3));
+  config.sync_time = Bool_val(Field(vconfig, 4));
+  config.lock_device = Bool_val(Field(vconfig, 5));
+  config.debug_file = String_val(Field(vconfig, 6));
+  config.start_info = Bool_val(Field(vconfig, 7));
+  config.use_global_debug_file = Bool_val(Field(vconfig, 8));
+  config.text_reminder = String_val(Field(vconfig, 9));
+  config.text_meeting = String_val(Field(vconfig, 10));
+  config.text_call = String_val(Field(vconfig, 11));
+  config.text_birthday = String_val(Field(vconfig, 12));
+  config.text_memo = String_val(Field(vconfig, 13));
+  return config;
+}
+
+#define ConnectionType_val(v) (Int_val(v) + 1)
 
 CAMLprim
 value gammu_caml_GetDebug(value s)
@@ -192,7 +213,7 @@ void gammu_caml_InitLocales(value path)
 CAMLprim
 void gammu_caml_InitDefaultLocales()
 {
-  CAMLreturn0; 
+  CAMLreturn0;
 }
 
 CAMLprim
@@ -206,7 +227,7 @@ void gammu_caml_FindGammuRC(value path)
 {
   CAMLparam1(path);
   GSM_FindGammuRC(String_val(path));
-  CAMLreturn0; 
+  CAMLreturn0;
 }
 
 CAMLprim
@@ -218,12 +239,68 @@ void gammu_caml_FindDefaultGammuRC()
 CAMLprim
 value gammu_caml_ReadConfig(value cfg_info, value num)
 {
-  CAMLreturn((value) GSM_ReadConfig(INI_Section_val(cfg_info), Int_val(num)));
+  CAMLreturn(Val_Config(GSM_ReadConfig(INI_Section_val(cfg_info), Int_val(num))));
 }
 
 CAMLprim
 value gammu_caml_GetConfig(value s, value num)
 {
   CAMLparam2(s, num);
-  CAMLreturn((value) GSM_GetConfig(StateMachine_val(s), Int_val(num)));
+  CAMLreturn(Val_Config(GSM_GetConfig(StateMachine_val(s), Int_val(num))));
 }
+
+CAMLexport
+void gammu_caml_PushConfig(value s, value cfg)
+{
+  CAMLparam2(s, cfg);
+  int cfg_num = GSM_GetConfigNum(StateMachine_val(s));
+  GSM_Config *dest_cfg = GSM_GetConfig(StateMachine_val(s), cfg_num);
+  if (cfg != NULL)
+    dest_cfg = Config_val(cfg);
+  /* else
+       To many configs (more than MAX_CONFIG_NUM (=5))
+  */
+  CAMLreturn0;
+}
+
+CAMLexport
+void gammu_caml_RemoveConfig(value s)
+{
+  CAMLparam1(s);
+  GSM_StateMachine* sm = StateMachine_val(s);
+  int cfg_num = GSM_GetConfigNum(sm);
+  if (cfg_num > 0)
+    GSM_SetConfigNum(sm, cfg_num - 1);
+  /* else
+     Empty stack, can't remove
+  */
+  CAMLreturn0;
+}
+  
+CAMLprim
+value gammu_caml_GetConfigNum(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn(Val_int( GSM_SetConfigNum(StateMachine_val(s)) ));
+}
+
+CAMLexport
+void gammu_caml_InitConnection(value s, value reply_num)
+{
+  CAMLparam2(s, reply_num);
+  GSM_InitConnection(StateMachine_val(s), Int_val(reply_num));
+}
+
+CAMLexport
+void gammu_caml_InitConnectionLog(value s, value reply_num, value log_func)
+{
+  CAMLparam3(s, reply_num, log_func);
+  GSM_InitConnectionLog(StateMachine_val(s),
+                        Int(val(reply_num)),
+                        Code_val(log_func));
+  CAMLreturn0;
+}
+
+/************************************************************************/
+/* Security related operations with phone. */
+

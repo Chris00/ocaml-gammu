@@ -201,3 +201,23 @@ let read_config cfg_info num =
 
 external _read_config : INI.section_node -> int -> config =
   "gammu_caml_ReadConfig"
+
+external push_config : t -> config -> unit = "gammu_caml_PushConfig"
+
+external remove_config : t -> config = "gammu_caml_RemoveConfig"
+
+external length_config : t -> int = "gammu_caml_GetConfigNum"
+
+let connect ?log ?(reply_num=3) s = match log with
+  | None -> _connect s reply_num
+  | Some log_func -> _connect_log s reply_num log_func
+external _connect : t -> int -> unit= "gammu_caml_InitConnection"
+external _connect_log : t -> int -> (string -> unit) -> unit
+  = "gammu_caml_InitConnectionLog"
+
+external disconnect : t -> unit = "gammu_caml_TerminateConnection"
+
+val read_device : t -> wait_for_reply:bool -> int
+
+(************************************************************************)
+(* Security related operations with phone. *)

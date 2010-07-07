@@ -238,8 +238,8 @@ val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the
     configuration stack of [s]. *)
 
-val pop_config : t -> config
-(** [pop_config s] pop on the configuration stack of [s]. *)
+val remove_config : t -> config
+(** [remove_config s] remove on the configuration stack of [s]. *)
 
 val length_config : t -> int
 (** @return length of the configuration stack of the state machine. i.e
