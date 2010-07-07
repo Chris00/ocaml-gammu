@@ -1,4 +1,4 @@
-/* File: gammu_stub.c
+/* File: gammu_stubs.c
 
    Copyright (C) 2010
 
