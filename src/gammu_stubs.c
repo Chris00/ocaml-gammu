@@ -39,50 +39,45 @@ value gammu_caml_ErrorString(value verr)
   CAMLreturn(caml_copy_string(msg));
 }
 
-// TODO:?? CAMLPrim vs CAMLexport ?
 CAMLprim
 value gammu_caml_GetGlobalDebug()
 {
-  /*value res = caml_alloc(1, Abstract_tag);
-  GSM_Debug_Info* di = GSM_GetGlobalDebug();
-  Field(res, 0) = (value) di
-  CAMLreturn(res);*/
-
+  CAMLparam0;
   CAMLreturn((value) GSM_GetGlobalDebug());
 }
 
 CAMLexport
-void gammu_caml_SetDebugGlobal(value info, value di)
+void gammu_caml_SetDebugGlobal(value vinfo, value vdi)
 {
-  CAMLparam2(info, di);
-  GSM_SetDebugGlobal(Bool_val(info), (GSM_Debug_Info *) di);
+  CAMLparam2(vinfo, vdi);
+  GSM_SetDebugGlobal(Bool_val(vinfo), (GSM_Debug_Info *) vdi);
   CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_SetDebugFileDescriptor(value fd, value closable, value di)
+void gammu_caml_SetDebugFileDescriptor(value vfd, value vclosable, value vdi)
 {
-  CAMLparam3(fd, closable, di);
-  GSM_SetDebugFileDescriptor(Int_val(fd),
-                             Bool_val(closable),
-                             (GSM_Debug_Info *) di);
+  CAMLparam3(vfd, vclosable, vdi);
+  GSM_SetDebugFileDescriptor(Int_val(vfd),
+                             Bool_val(vclosable),
+                             (GSM_Debug_Info *) vdi);
   CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_SetDebugLevel(value level, value di)
+void gammu_caml_SetDebugLevel(value vlevel, value vdi)
 {
-  CAMLparam2(level, di);
-  GSM_SetDebugLevel(String_val(level), (GSM_Debug_Info *) di);
+  CAMLparam2(vlevel, vdi);
+  GSM_SetDebugLevel(String_val(vlevel), (GSM_Debug_Info *) vdi);
   CAMLreturn0;
 }
 
 /************************************************************************/
 /* INI files */
 
-static void gammu_caml_ini_section_finalize(value ini_section)
+static void gammu_caml_ini_section_finalize(value vini_section)
 {
-  INI_Free(INI_Section_val(ini_section));
+  INI_Free(INI_Section_val(vini_section));
 }
 
 static struct custom_operations gammu_caml_ini_section_ops = {
@@ -100,11 +95,11 @@ static value alloc_INI_Section()
                       1, 1000);
 }
 
-#define INI_Section_val(v) (*(INI_Section **) (Data_Custom_Val(v))
+#define INI_Section_val(v) (*(INI_Section **) (Data_Custom_val(v))
 
 static value Val_INI_Section(INI_Section *ini_section)
 {
-  CAMLlocal1(res); // needed ?
+  CAMLlocal1(res);
   res = alloc_INI_Section();
   INI_Section_val(res) = ini_section;
   return res;
@@ -114,10 +109,9 @@ CAMLprim
 value gammu_caml_ReadFile(value file_name, value unicode)
 {
   CAMLparam2(filename, unicode);
-
   INI_Section *cfg;
-
   INI_ReadFile(String_val(filename), Bool_val unicode, &cfg);
+  CAMLreturn(Val_INI_Section(cfg));
 }
 
 /************************************************************************/
@@ -152,7 +146,7 @@ static value Val_StateMachine(StateMachine *state_machine)
   return res;
 }
 
-value Val_Config(GSM_Config cfg)
+static value Val_Config(GSM_Config cfg)
 {
   CAMLlocal1(res);
   res = caml_alloc(14, 0);
@@ -173,7 +167,7 @@ value Val_Config(GSM_Config cfg)
   return res;
 }
 
-GSM_Config Config_val(value vconfig)
+static GSM_Config Config_val(value vconfig)
 {
   GSM_Config config;
   config.model = String_val(Field(vconfig, 0));
@@ -200,64 +194,80 @@ CAMLprim
 value gammu_caml_GetDebug(value s)
 {
   CAMLparam1(s);
-  CAMLreturn((value) GSM_GetDebug());
+  /* How to declare dependence of DebugInfo on StateMachine ? 
+     StateMachine* s -> DebugInfo* di
+     say
+       let s = Gammu.make () in
+       let di = get_debug s in
+       some_func di;;
+     and say s got garbage collected, it will free di... */
+  CAMLreturn((value) GSM_GetDebug(s));
 }
 
 CAMLprim
-void gammu_caml_InitLocales(value path)
+void gammu_caml_InitLocales(value vpath)
 {
   CAMLparam1(path);
-  GSM_InitLocales(String_val(path));
+  GSM_InitLocales(String_val(vpath));
   CAMLreturn0;
 }
 
 CAMLprim
 void gammu_caml_InitDefaultLocales()
 {
+  CAMLparam0;
+  GSM_InitLocales(NULL);
   CAMLreturn0;
 }
 
 CAMLprim
 value gammu_caml_CreateStateMachine()
 {
+  CAMLparam0;
   CAMLreturn(Val_StateMachine(GSM_AllocStateMachine()));
 }
 
 CAMLprim
-void gammu_caml_FindGammuRC(value path)
+INI_Section* gammu_caml_FindGammuRC_force(value vpath)
 {
   CAMLparam1(path);
-  GSM_FindGammuRC(String_val(path));
-  CAMLreturn0;
+  const INI_Section *file_info = GSM_FindGammuRC(String_val(vpath));
+  CAMLreturn(Val_INI_Section(file_info));
 }
 
 CAMLprim
-void gammu_caml_FindDefaultGammuRC()
+INI_Section* gammu_caml_FindGammuRC()
 {
-  CAMLreturn0;
+  CAMLparam0;
+  CAMLreturn(Val_INI_Section(GSM_FindGammuRC(NULL)));
 }
 
 CAMLprim
-value gammu_caml_ReadConfig(value cfg_info, value num)
+value gammu_caml_ReadConfig(value vcfg_info, value vnum)
 {
-  CAMLreturn(Val_Config(GSM_ReadConfig(INI_Section_val(cfg_info), Int_val(num))));
+  CAMLparam2(vcfg_info, vnum);
+  const INI_Section *cfg_info = INI_Section_val(vcfg_info);
+  const GSM_Config *cfg = GSM_ReadConfig(cfg_info, Int_val(vnum));
+  CAMLreturn(Val_Config(*cfg));
 }
 
 CAMLprim
-value gammu_caml_GetConfig(value s, value num)
+value gammu_caml_GetConfig(value s, value vnum)
 {
   CAMLparam2(s, num);
-  CAMLreturn(Val_Config(GSM_GetConfig(StateMachine_val(s), Int_val(num))));
+  GSM_Config *cfg = GSM_GetConfig(StateMachine_val(s), Int_val(vnum));
+  CAMLreturn(Val_Config(*cfg));
 }
 
 CAMLexport
-void gammu_caml_PushConfig(value s, value cfg)
+void gammu_caml_PushConfig(value s, value vcfg)
 {
-  CAMLparam2(s, cfg);
-  int cfg_num = GSM_GetConfigNum(StateMachine_val(s));
-  GSM_Config *dest_cfg = GSM_GetConfig(StateMachine_val(s), cfg_num);
+  CAMLparam2(s, vcfg);
+  GSM_StateMachin *sm = StateMachine_val(s);
+  int cfg_num = GSM_GetConfigNum(sm);
+  GSM_Config *dest_cfg = GSM_GetConfig(sm, cfg_num);
   if (cfg != NULL)
-    dest_cfg = Config_val(cfg);
+    dest_cfg = Config_val(*cfg);
   /* else
        To many configs (more than MAX_CONFIG_NUM (=5),
        unfortunately this const is not exported)
@@ -271,6 +281,7 @@ void gammu_caml_RemoveConfig(value s)
   CAMLparam1(s);
   GSM_StateMachine* sm = StateMachine_val(s);
   int cfg_num = GSM_GetConfigNum(sm);
+  /* TODO: explicitly free old config or use GC (-> pop)*/
   if (cfg_num > 0)
     GSM_SetConfigNum(sm, cfg_num - 1);
   /* else
@@ -287,19 +298,30 @@ value gammu_caml_GetConfigNum(value s)
 }
 
 CAMLexport
-void gammu_caml_InitConnection(value s, value reply_num)
+void gammu_caml_InitConnection(value s, value vreply_num)
 {
-  CAMLparam2(s, reply_num);
-  GSM_InitConnection(StateMachine_val(s), Int_val(reply_num));
+  CAMLparam2(s, vreply_num);
+  GSM_InitConnection(StateMachine_val(s), Int_val(vreply_num));
+}
+
+#define Log_Function_val(v) 
+
+void log_function_callback(char *text, void *data)
+{
+  CAMLlocal1(f);
+  value f = *(value) data;
+  caml_callback(f, caml_copy_string(text));
 }
 
 CAMLexport
-void gammu_caml_InitConnectionLog(value s, value reply_num, value log_func)
+void gammu_caml_InitConnectionLog(value s, value vreply_num, value vlog_func)
 {
-  CAMLparam3(s, reply_num, log_func);
+  CAMLparam3(s, vreply_num, vlog_func);
+  /* TODO:?? vlog_func should not be freed until TerminateConnection. But
+     the GC could forget about her through the side effect and free it. */
   GSM_InitConnectionLog(StateMachine_val(s),
-                        Int(val(reply_num)),
-                        Code_val(log_func));
+                        Int_val(reply_num),
+                        log_function_callback, (void *) &vlog_func);
   CAMLreturn0;
 }
 

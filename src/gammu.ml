@@ -186,15 +186,19 @@ let init_locales ?path () = match path with
   | None -> _init_default_locales ()
   | Some path -> _init_locales path
 external _init_locales : path -> unit = "gammu_caml_InitLocales"
-external _init_default_locales : unit = "gammu_caml_InitDefaultLocales"
+external _init_default_locales : unit -> unit = "gammu_caml_InitDefaultLocales"
 
 external make : unit -> t = "gammu_caml_CreateStateMachine"
 
-let find_gammurc ?path () = match path with
-  | None -> _find_default_gammurc ()
-  | Some path -> _find_gammurc path
-external _find_gammurc : path -> unit = "gammu_caml_FindGammuRC"
-external _find_default_gammurc : unit = "gammu_caml_FindDefaultGammuRC"
+let find_gammurc ?path () =
+  let s_node = match path with
+    | None -> _find_gammurc ()
+    | Some path -> _find_gammurc_force path
+  in
+  { INI.section_node=s_node; unicode=false; }
+external _find_gammurc_force : path -> INI.section_node
+  = "gammu_caml_FindGammuRC_force"
+external _find_gammurc : unit -> INI.section_node = "gammu_caml_FindGammuRC"
 
 let read_config cfg_info num =
   _read_config cfg_info.INI.head num
