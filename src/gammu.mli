@@ -96,20 +96,22 @@ val set_debug_file_descr : Unix.file_descr -> bool -> debug_info -> unit
     file when it is no longer needed for debug output. Please note that
     stderr and stdout are never closed. *)
 
+(* TODO:?? if [level] is invalid, return a bool, raise an exception or
+   ignore ? *)
 val set_debug_level : string -> debug_info -> unit
- (** [set_debug_level level di] sets debug level on [di] according to
-     [level].
+(** [set_debug_level level di] sets debug level on [di] according to
+    [level].
 
-     [level] can be one of :
-     {ul
-     nothing
-     text
-     textall
-     binary
-     errors
-     textdate
-     textalldate
-     errorsdate }*)
+    [level] can be one of :
+    {ul
+    nothing
+    text
+    textall
+    binary
+    errors
+    textdate
+    textalldate
+    errorsdate} *)
 
 (************************************************************************)
 (** {2 INI files} *)
