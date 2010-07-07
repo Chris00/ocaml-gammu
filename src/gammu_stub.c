@@ -36,7 +36,7 @@ value gammu_caml_ErrorString(value verr)
 {
   CAMLparam1(verr);
   const char *msg = GSM_ErrorString(ERROR_VAL(verr));
-  CAMLreturn caml_copy_string(msg);
+  CAMLreturn(caml_copy_string(msg));
 }
 
 // TODO:?? CAMLPrim vs CAMLexport ?
@@ -48,7 +48,7 @@ value gammu_caml_GetGlobalDebug()
   Field(res, 0) = (value) di
   CAMLreturn(res);*/
 
-  CAMLreturn ((value) GSM_GetGlobalDebug());
+  CAMLreturn((value) GSM_GetGlobalDebug());
 }
 
 CAMLexport
@@ -172,7 +172,8 @@ GSM_Config GSM_Config_val(value vconfig)
   config.text_memo = String_val(FIELD(vconfig, 13));
 }
 
-#define CONNECTION_TYPE_VAL(v) (Int_val(v) + 1)
+#define ConnectionType_val(v) (Int_val(v) + 1)
+#define Val_ConnectionType(v) (Val_int(v) - 1)
 
 CAMLprim
 value gammu_caml_GetDebug(value s)
@@ -226,4 +227,114 @@ value gammu_caml_GetConfig(value s, value num)
 {
   CAMLparam2(s, num);
   CAMLreturn((value) GSM_GetConfig(StateMachine_val(s), Int_val(num)));
+}
+
+
+
+CAMLprim
+void gammu_caml_TerminateConnection(value s)
+{
+  CAMLparam1(s);
+  GSM_TerminateConnection(StateMachine_val(s));
+  CAMLreturn0;
+}
+
+CAMLprim
+value gammu_caml_IsConnected(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn(Val_bool(GSM_IsConnected(StateMachine_val(s))));
+}
+
+CAMLprim
+value gammu_caml_GetUsedConnection(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn(Val_ConnectionType(GSM_GetUsedConnection(StateMachine_val(s)))));
+}
+
+
+
+/************************************************************************/
+/* Security related operations with phone */
+
+GSM_SecurityCode SecurityCode_val(value vsecurity_code)
+{
+  GSM_SecurityCode security_code;
+  security_code.code_type = SecurityCodeType_val(Field(vsecurity_code, 0));
+  config.debug_level = String_val(Field(vsecurity_code, 1));
+  return security_code;
+}
+
+#define SecurityCodeType_val(v) (Int_val(v) + 1)
+#define Val_SecurityCodeType(v) (Val_int(v) - 1)
+
+CAMLprim
+void SecurityCode(value s, value code)
+{
+  CAMLparam1(s, code);
+  GSM_EnterSecurityCode(StateMachine_val(s), SecurityCode_val(code));
+  CAMLreturn0;
+}
+
+CAMLprim
+value GetSecurityCode(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn(Val_SecurityCodeType(GSM_GetSecurityStatus(StateMachine_val(s))));
+}
+
+/************************************************************************/
+/* Informations on the phone */
+
+GSM_BatteryCharge BatteryCharge_val(value vbattery_charge)
+{
+  GSM_BatteryCharge battery_charge;
+  battery_charge.battery_type = BatteryType_val(Field(vbattery_charge, 0));
+  battery_charge.battery_capacity = Int_val(Field(vbattery_charge, 1));
+  battery_charge.battery_percent = Int_val(Field(vbattery_charge, 2));
+  battery_charge.charge_state = ChargeState_val(Field(vbattery_charge, 3));
+  battery_charge.battery_voltage = Int_val(Field(vbattery_charge, 4));
+  battery_charge.charge_voltage = Int_val(Field(vbattery_charge, 5));
+  battery_charge.charge_current = Int_val(Field(vbattery_charge, 6));
+  battery_charge.phone_current = Int_val(Field(vbattery_charge, 7));
+  battery_charge.battery_temperature = Int_val(Field(vbattery_charge, 8));
+  battery_charge.phone_temperature = Int_val(Field(vbattery_charge, 9));
+  return battery_charge;
+}
+
+#define ChargeState_val(v) (Int_val(v) + 1)
+#define BatteryType_val(v) (Int_val(v) + 1)
+
+GSM_PhoneModel PhoneModel_val(value vphone_model)
+{
+  GSM_PhoneModel phone_model;
+  /* phone_model.features = ?  0!!!! ;*/
+  phone_model.irda = String_val(Field(vphone_model, 1));
+  phone_model.model = String_val(Field(vphone_model, 2));
+  phone_model.number = String_val(Field(vphone_model, 3));
+  return phone_model;
+}
+
+GSM_NetworkInfo NetworkInfo_val(value vnetwork_info)
+{
+  GSM_NetworkInfo network_info;
+  network_info.cid = String_val(Field(vnetwork_info, 0));
+  network_info.cid = String_val(Field(vnetwork_info, 0));
+  network_info.cid = String_val(Field(vnetwork_info, 0));
+  network_info.cid = String_val(Field(vnetwork_info, 0));
+  network_info.cid = String_val(Field(vnetwork_info, 0));
+}
+
+
+ype network = {
+  cid : string;
+  gprs : grps_state;
+  lac : string;
+  code : string;
+  name : string;
+  packet_cid : string;
+  packet_lac : string;
+  packet_state : network_state;
+  state : network_state;
 }
