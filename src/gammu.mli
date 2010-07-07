@@ -119,24 +119,25 @@ val set_debug_level : string -> debug_info -> unit
 (** These functions parse ini file and make them available in easily
     accessable manner. *)
 module INI : sig
-  type entry
+  (*type entry (* Useless, never used and abstract *) *)
   (* TODO:?? section is in fact a node of a doubly-linked list. Should
      this be reflected on the interface ? Along with FIXME in [read],
      store the unicode flag in the abstract [section] type or expose it to
      public interface ? *)
   type sections
 
-  val find_last_entry : sections -> section:string -> entry
-  (** @return the last INI entry of the given section. *)
+  val read : ?unicode:bool -> string -> sections
+  (** [read fname] reads INI data from the file [fname].  @param unicode
+      Whether file should be treated as unicode encoded.
+
+      FIXME: unicode must be stored in section *)
 
   val get_value : sections -> section:string -> key:string -> string
   (** @return value of the INI file entry. *)
 
-  val read : ?unicode:bool -> string -> sections
-(** [read fname] reads INI data from the file [fname].  @param unicode
-    Whether file should be treated as unicode encoded.
+  (*val find_last_entry : sections -> section:string -> entry
+  (** @return the last INI entry of the given section. *) *)
 
-    FIXME: unicode must be stored in section *)
 end
 
 (************************************************************************)
@@ -153,26 +154,26 @@ type t
    implies cost of non clear stub code when accessing fields in sake of
    interface "beauty". *)
 type config = {
-  model : string;              (* Model from config file  *)
-  debug_level : string;        (* Debug level  *)
-  device : string;             (* Device name from config file  *)
-  connection : string;         (* Connection type as string  *)
-  sync_time : bool;            (* Synchronize time on startup?  *)
-  lock_device : bool;          (* Lock device ? (Unix)  *)
-  debug_file : string;         (* Name of debug file  *)
-  start_info : bool;           (* Display something during start ?  *)
-  use_global_debug_file : bool; (* Should we use global debug file?  *)
-  text_reminder : string;      (* Text for reminder calendar entry category
+  model : string;              (** Model from config file  *)
+  debug_level : string;        (** Debug level  *)
+  device : string;             (** Device name from config file  *)
+  connection : string;         (** Connection type as string  *)
+  sync_time : bool;            (** Synchronize time on startup?  *)
+  lock_device : bool;          (** Lock device ? (Unix)  *)
+  debug_file : string;         (** Name of debug file  *)
+  start_info : bool;           (** Display something during start ?  *)
+  use_global_debug_file : bool; (** Should we use global debug file?  *)
+  text_reminder : string;      (** Text for reminder calendar entry category
                                   in local language  *)
-  text_meeting : string;       (* Text for meeting calendar entry category
+  text_meeting : string;       (** Text for meeting calendar entry category
                                   in local language  *)
-  text_call : string;          (* Text for call calendar entry category
+  text_call : string;          (** Text for call calendar entry category
                                   in local language  *)
-  text_birthday : string;      (* Text for birthday calendar entry category
+  text_birthday : string;      (** Text for birthday calendar entry category
                                   in local language  *)
-  text_memo : string;          (* Text for memo calendar entry
+  text_memo : string;          (** Text for memo calendar entry
                                   category in local language *)
-  (* phone_features : feature list (* NYI Phone features override. *) *)
+  (* phone_features : feature list (** NYI Phone features override. *) *)
 }
 
 type connection_type =

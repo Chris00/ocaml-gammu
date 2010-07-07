@@ -28,11 +28,14 @@
 
 #define ERROR_VAL(v) (Int_val(v) + 1)
 
+/************************************************************************/
+/* Debuging handling */
+
 CAMLprim
 value gammu_caml_ErrorString(value verr)
 {
   CAMLparam1(verr);
-  const char* msg = GSM_ErrorString(ERROR_VAL(verr));
+  const char *msg = GSM_ErrorString(ERROR_VAL(verr));
   CAMLreturn caml_copy_string(msg);
 }
 
@@ -49,10 +52,10 @@ value gammu_caml_GetGlobalDebug()
 }
 
 CAMLexport
-void gammu_caml_SetDebugGlobal(value info, value privdi)
+void gammu_caml_SetDebugGlobal(value info, value di)
 {
-  CAMLparam2(info, privdi);
-  GSM_SetDebugGlobal(Bool_val(info), (GSM_Debug_Info*) privdi);
+  CAMLparam2(info, di);
+  GSM_SetDebugGlobal(Bool_val(info), (GSM_Debug_Info *) di);
   CAMLreturn0;
 }
 
@@ -60,7 +63,9 @@ CAMLexport
 void gammu_caml_SetDebugFileDescriptor(value fd, value closable, value di)
 {
   CAMLparam3(fd, closable, di);
-  GSM_SetDebugFileDescriptor(Int_val(fd), Bool_val(closable), (GSM_Debug_Info*) di);
+  GSM_SetDebugFileDescriptor(Int_val(fd),
+                             Bool_val(closable),
+                             (GSM_Debug_Info *) di);
   CAMLreturn0;
 }
 
@@ -68,6 +73,49 @@ CAMLexport
 void gammu_caml_SetDebugLevel(value level, value di)
 {
   CAMLparam2(level, di);
-  GSM_SetDebugLevel(String_val(level), (GSM_Debug_Info*) di);
+  GSM_SetDebugLevel(String_val(level), (GSM_Debug_Info *) di);
   CAMLreturn0;
+}
+
+/************************************************************************/
+/* INI files */
+
+#define INI_Section_val(v) (*(INI_Section **) (Data_Custom_Val(v))
+
+static void gammu_caml_ini_section_finalize(value ini_section)
+{
+  INI_Free(INI_Section_val(ini_section));
+}
+
+static struct custom_operations gammu_caml_ini_section_ops = {
+  "be.umons.ml-gammu.ini_section",
+  gammu_caml_ini_section_finalize,
+  custom_compare_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
+static value alloc_INI_Section()
+{
+  return alloc_custom(&gammu_caml_ini_section_ops, sizeof(INI_Section *),
+                      1, 1000);
+}
+
+static value Val_INI_Section(INI_Section *ini_section)
+{
+  CAMLlocal1(res); // needed ?
+  res = alloc_INI_Section();
+  INI_Section_val(res) = ini_section;
+  return res;
+}
+
+CAMLprim
+value gammu_caml_ReadFile(value file_name, value unicode)
+{
+  CAMLparam2(filename, unicode);
+  
+  INI_Section *cfg;
+ 
+  INI_ReadFile(String_val(filename), Bool_val unicode, &cfg);
 }

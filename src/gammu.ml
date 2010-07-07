@@ -89,12 +89,46 @@ type error =
 
 exception Error of error
 
+(************************************************************************)
+(* Debuging handling *)
+
+type debug_info
+
 external string_of_error : error -> string = "gammu_caml_ErrorString"
 
 external get_global_debug : unit -> debug_info = "gammu_caml_GetGlobalDebug"
 
-external set_debug_global : bool -> debug_info -> unit = "gammu_caml_SetDebugGlobal"
+external set_debug_global : bool -> debug_info -> unit
+  = "gammu_caml_SetDebugGlobal"
 
-external set_debug_file_descr : Unix.file_descr -> bool -> debug_info -> unit = "gammu_caml_SetDebugFileDescriptor"
+external set_debug_file_descr : Unix.file_descr -> bool -> debug_info -> unit
+  = "gammu_caml_SetDebugFileDescriptor"
 
-external set_debug_level : string -> debug_info -> unit = "gammu_caml_SetDebugLevel"
+external set_debug_level : string -> debug_info -> unit
+  = "gammu_caml_SetDebugLevel"
+
+(************************************************************************)
+(* INI files *)
+
+module INI =
+struct
+  type entry
+  type section_node
+  type sections = {
+    head : section_node;
+    unicode : bool;
+  }
+
+  let read ?(unicode=true) file_name =
+    { head = _read file_name unicode;
+      unicode = unicode; }
+  external _read : string -> bool -> section_node = "gammu_caml_ReadFile"
+
+  val get_value : sections -> section:string -> key:string -> string
+
+  (*let find_last_entry file_info ~section =
+    _find_last_entry file_info.head file_info.unicode ~section
+  external _find_last_entry : sections -> string -> bool -> entry
+    = "gammu_caml_FindLastEntry" *)
+
+end
