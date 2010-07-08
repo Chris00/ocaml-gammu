@@ -3,8 +3,8 @@
    Copyright (C) 2010
 
      Christophe Troestler <Christophe.Troestler@umons.ac.be>
+     Noémie Meunier <Noemie.Meunier@student.umons.ac.be>     
      Pierre Hauweele <Pierre.Hauweele@student.umons.ac.be>
-     Noémie Meunier <Noemie.Meunier@student.umons.ac.be>
      WWW: http://math.umons.ac.be/an/software/
 
    This library is free software; you can redistribute it and/or modify
@@ -27,9 +27,7 @@
 #include <caml/intext.h>
 
 #define Error_val(v) (Int_val(v) + 1)
-
-/************************************************************************/
-/* Debuging handling */
+#define Val_Error(v) (Val_int(v - 1)
 
 CAMLprim
 value gammu_caml_ErrorString(value verr)
@@ -38,6 +36,9 @@ value gammu_caml_ErrorString(value verr)
   const char *msg = GSM_ErrorString(Error_val(verr));
   CAMLreturn(caml_copy_string(msg));
 }
+
+/************************************************************************/
+/* Debuging handling */
 
 CAMLprim
 value gammu_caml_GetGlobalDebug()
@@ -263,8 +264,8 @@ CAMLexport
 void gammu_caml_PushConfig(value s, value vcfg)
 {
   CAMLparam2(s, vcfg);
-  GSM_StateMachin *sm = StateMachine_val(s);
-  int cfg_num = GSM_GetConfigNum(sm);
+  const GSM_StateMachine *sm = StateMachine_val(s);
+  const int cfg_num = GSM_GetConfigNum(sm);
   GSM_Config *dest_cfg = GSM_GetConfig(sm, cfg_num);
   if (cfg != NULL)
     dest_cfg = Config_val(*cfg);
@@ -279,8 +280,8 @@ CAMLexport
 void gammu_caml_RemoveConfig(value s)
 {
   CAMLparam1(s);
-  GSM_StateMachine* sm = StateMachine_val(s);
-  int cfg_num = GSM_GetConfigNum(sm);
+  const GSM_StateMachine* sm = StateMachine_val(s);
+  const int cfg_num = GSM_GetConfigNum(sm);
   /* TODO: explicitly free old config or use GC (-> pop)*/
   if (cfg_num > 0)
     GSM_SetConfigNum(sm, cfg_num - 1);
@@ -294,7 +295,7 @@ CAMLprim
 value gammu_caml_GetConfigNum(value s)
 {
   CAMLparam1(s);
-  CAMLreturn(Val_int( GSM_SetConfigNum(StateMachine_val(s)) ));
+  CAMLreturn(Val_int( GSM_GetConfigNum(StateMachine_val(s)) ));
 }
 
 CAMLexport
@@ -302,6 +303,7 @@ void gammu_caml_InitConnection(value s, value vreply_num)
 {
   CAMLparam2(s, vreply_num);
   GSM_InitConnection(StateMachine_val(s), Int_val(vreply_num));
+  CAMLreturn0;
 }
 
 #define Log_Function_val(v) 
@@ -309,7 +311,7 @@ void gammu_caml_InitConnection(value s, value vreply_num)
 void log_function_callback(char *text, void *data)
 {
   CAMLlocal1(f);
-  value f = *(value) data;
+  f = *((value) data);
   caml_callback(f, caml_copy_string(text));
 }
 
@@ -344,7 +346,18 @@ CAMLprim
 value gammu_caml_GetUsedConnection(value s)
 {
   CAMLparam1(s);
-  CAMLreturn(Val_ConnectionType(GSM_GetUsedConnection(StateMachine_val(s))));
+  const GSM_StateMachine *sm = StateMachine_val(s);
+  const GSM_ConnectionType conn_type = GSM_GetUsedConnection(sm);
+  CAMLreturn(Val_ConnectionType(conn_type));
+}
+
+CAMLprim
+value gammu_caml_ReadDevice(value s, value vwait_for_reply)
+{
+  CAMLparam2(s, vwait_for_reply);
+  const GSM_StateMachine *sm = StateMachine_val(s);
+  GSM_ReadDevice(sm, Bool_val(wait_for_reply))
+  CAMLreturn();
 }
 
 /************************************************************************/
@@ -410,24 +423,95 @@ GSM_PhoneModel PhoneModel_val(value vphone_model)
   return phone_model;
 }
 
-GSM_NetworkInfo NetworkInfo_val(value vnetwork_info)
+/************************************************************************/
+/* Memory */
+
+#define MemoryType_val(v) (Int_val(v) + 1)
+#define Val_MemoryType(v) Int_val(v - 1)
+
+static GSM_MemoryEntry MemoryEntry_val(value vmem_entry)
 {
-  GSM_NetworkInfo network_info;
-  network_info.cid = String_val(Field(vnetwork_info, 0));
-  network_info.cid = String_val(Field(vnetwork_info, 0));
-  network_info.cid = String_val(Field(vnetwork_info, 0));
-  network_info.cid = String_val(Field(vnetwork_info, 0));
-  network_info.cid = String_val(Field(vnetwork_info, 0));
+  CAMLparam1(vmem_entry);
+  CAMLlocal1(ventries)
+  GSM_MemoryEntry mem_entry;
+  const int length;
+  int i;
+  ventries = Field(vmem_entry, 2);
+  length = wosize_val(ventries);
+  mem_entry.MemoryType = MemoryType_val(Field(vmem_entry, 0));
+  mem_entry.Location = Int_val(Field(vmem_entry, 1));
+  /* TODO: raise exception if too many entries. */
+  if (length > GSM_PHONEBOOK_ENTRIES)
+    length = GSM_PHONEBOOK_ENTRIES;
+  /* TODO:?? Alloc only length GSM_SubMemoryEntry. */
+  mem_entry.Entries = malloc(GSM_PHONEBOOK_ENTRIES * sizeof(GSM_SubMemoryEntry));
+  for (i=0; i < length; i++)
+    entries[i] = SubMemoryEntry_val(Field(ventries, i)); 
+  mem_entry.EntriesNum = length;
+  mem_entry.Entries = entries;
+  return mem_entry;
 }
 
-type network = {
-  cid : string;
-  gprs : grps_state;
-  lac : string;
-  code : string;
-  name : string;
-  packet_cid : string;
-  packet_lac : string;
-  packet_state : network_state;
-  state : network_state;
+static value Val_MemoryEntry(GSM_MemoryEntry mem_entry)
+{
+  CAMLlocal1(res);
+  const int length = mem_entry.EntriesNum;
+  const entries = mem_entry.entries;
+  int i;
+  res = caml_alloc(length, 0);
+  for (i=0; i < length; i++)
+    Store_field(res, i, Val_SubMemoryEntry(entries[i]));
+  CAMLreturn(res);
 }
+
+static GSM_SubMemoryEntry SubMemoryEntry_val(value vsub_mem_entry)
+{
+  CAMLparam1(sub_mem_entry);
+  CAMLlocal1(vsms_list);
+  GSM_SubMemoryEntry res;
+  int sms_list[20];
+  int i;
+  res.EntryType = EntryType_val(Field(vsub_mem_entry, 0));
+  res.Date = DateTime_val(Field(vsub_mem_entry, 1));
+  res.Number = Int_val(Field(vsub_mem_entry, 2));
+  res.VoiceTag = Int_val(Field(vsub_mem_entry, 3));
+  vsms_list = Field(vsub_mem_entry, 4);
+  if (wosize_val(sms_list) != 20)
+    return NULL; /* TODO: Raise error ! */
+  for (i=0; i < 20; i++)
+    sms_list[i] = Field(vsms_list, i);
+  res.SMSList = sms_list;
+  res.CallLength = Int_val(Field(vsub_mem_entry, 5));
+  res.AddError = Error_val(Field(vsub_mem_entry, 6));
+  res.Text = String_val(Field(vsub_mem_entry, 7));
+  return res;
+}
+
+static value Val_SubMemoryEntry(GSM_SubMemoryEntry sub_mem_entry)
+{
+  CAMLlocal2(res, vsms_list);
+  const int *sms_list;
+  int i;
+  StoreField(res, 0, Val_EntryType(sub_mem_entry.EntryType));
+  StoreField(res, 1, Val_DateTime(sub_mem_entry.Date));
+  StoreField(res, 2, Val_int(sub_mem_entry.Number));
+  StoreField(res, 3, Val_int(sub_mem_entry.VoiceTag));
+  sms_list = sub_mem_entry.SMSList;
+  vsms_list = caml_alloc(20, 0);
+  for (i=0; i < 20; i++)
+    StoreField(vsms_list, i, sms_list[i]);
+  StoreField(res, 4, vsms_list);
+  StoreField(res, 5, Val_int(sub_mem_entry.CallLength));
+  StoreField(res, 6, Val_Error(sub_mem_entry.AddError));
+  StoreField(res, 7, caml_copy_string(sub_mem_entry.Text));
+  CAMLreturn(res);
+}
+
+#define EntryType_val(v) (Int_val(v) + 1)
+#define Val_EntryType(v) Val_int(v - 1)
+
+/************************************************************************/
+/* Messages */
+
+/************************************************************************/
+/* Events */

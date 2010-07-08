@@ -260,14 +260,16 @@ val is_connected : t -> bool
 
 val get_used_connection : t -> connection_type
 
-val read_device : t -> wait_for_reply:bool -> int
+val read_device : t -> ?wait_for_reply:bool -> int
 (** Attempts to read data from phone. Thus can be used for getting status
     of incoming events, which would not be found out without polling
     device.
 
-    @return the number of read bytes.
+    @return the number of read bytes. Beware if the value is 32, it could
+    be that the device is not connected, error {!Gammu.NOTCONNECTED}
+    (libGammu's fault).
 
-    @param wait_for_reply whether to wait for some event. *)
+    @param wait_for_reply whether to wait for some event (default true). *)
 
 (************************************************************************)
 (** {2 Security related operations with phone. } *)
@@ -442,7 +444,7 @@ type memory_type =
   | FD (** Fixed dial *)
   | VM (** Voice mailbox *)
   | SL (** Sent SMS logs *)
-  | QD (** Quick dialing choices.  *)
+  | QD (** Quick dialing choices *)
 
 (** Value for saving phonebook entries. *)
 type memory_entry = {
@@ -451,16 +453,16 @@ type memory_entry = {
   entries : sub_memory_entry array; (** Values of SubEntries. *)
 } (** One value of phonebook memory entry. *)
 and sub_memory_entry = {
+  entry_type : entry_type; (** Type of entry. *)
+  date : date_time; (** Text of entry (if applicable, see {!entry_type}). *)
+  number : int; (** Number of entry (if applicable, see {!entry_type}). *)
+  voice_tag : int; (** Voice dialling tag. *)
+  sms_list : int array;
+  call_length : int;
   add_error : error; (** During adding SubEntry Gammu can return here info,
                          if it was done OK. *)
-  call_length : int;
-  date : date_time; (** Text of entry (if applicable, see {!entry_type}). *)
-  entry_type : entry_type; (** Type of entry. *)
-  number : int; (** Number of entry (if applicable, see {!entry_type}). *)
-  (* picture : binary_picture (* NYI Picture data. *) *)
-  sms_list : int list;
   text : string; (** Text of entry (if applicable, see GSM_EntryType). *)
-  voice_tag : int; (** Voice dialling tag. *)
+  (* picture : binary_picture (* NYI Picture data. *) *)
 } (** Type of specific phonebook entry. In parenthesis is specified in
       which member of {!sub_memory_entry} value is stored. *)
 and entry_type =
@@ -750,10 +752,10 @@ module SMS : sig
 
 end
 
-module Events : sig
+(************************************************************************)
+(* Events *)
 
-  val incoming_sms : t -> (SMS.message -> unit) -> unit
-(* [incoming_sms s f] register [f] as callback
-   function in the event of an incoming SMS. *)
+val incoming_sms : t -> (SMS.message -> unit) -> unit
+(* [incoming_sms s f] register [f] as callback function in the event of an
+   incoming SMS. *)
 
-end

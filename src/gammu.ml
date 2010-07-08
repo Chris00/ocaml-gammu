@@ -3,8 +3,9 @@
    Copyright (C) 2010
 
      Christophe Troestler <Christophe.Troestler@umons.ac.be>
-     Pierre Hauweele <Pierre.Hauweele@student.umons.ac.be>
      Noémie Meunier <Noemie.Meunier@student.umons.ac.be>
+     Pierre Hauweele <Pierre.Hauweele@student.umons.ac.be>
+
      WWW: http://math.umons.ac.be/an/software/
 
    This library is free software; you can redistribute it and/or modify
@@ -228,7 +229,9 @@ external is_connected : t -> bool = "gammu_caml_IsConnected"
 external get_used_connection : t -> connection_type =
   "gammu_caml_GetUsedConnection"
 
-val read_device : t -> wait_for_reply:bool -> int
+let read_device : ?(wait_for_reply=true) s =
+  _read_device s wait_for_reply
+external _read_device : t -> bool -> int = "gammu_caml_ReadDevice"
 
 (************************************************************************)
 (* Security related operations with phone *)
@@ -317,3 +320,94 @@ and network_state =
   | RegistrationDenied
   | Unknown
   | RequestingNetwork
+
+(************************************************************************)
+(* Memory *)
+
+type memory_type =
+  | ME (** Internal memory of the mobile equipment *)
+  | SM (** SIM card memory *)
+  | ON (** Own numbers *)
+  | DC (** Dialled calls *)
+  | RC (** Received calls *)
+  | MC (** Missed calls *)
+  | MT (** Combined ME and SIM phonebook *)
+  | FD (** Fixed dial *)
+  | VM (** Voice mailbox *)
+  | SL (** Sent SMS logs *)
+  | QD (** Quick dialing choices *)
+
+type memory_entry = {
+  memory_type : memory_type; (** Used memory for phonebook entry. *)
+  location : int; (** Used location for phonebook entry. *)
+  entries : sub_memory_entry array; (** Values of SubEntries. *)
+}
+and sub_memory_entry = {
+  entry_type : entry_type; (** Type of entry. *)
+  date : date_time; (** Text of entry (if applicable, see {!entry_type}). *)
+  number : int; (** Number of entry (if applicable, see {!entry_type}). *)
+  voice_tag : int; (** Voice dialling tag. *)
+  sms_list : int array;
+  call_length : int;
+  add_error : error; (** During adding SubEntry Gammu can return here info,
+                         if it was done OK. *)
+  text : string; (** Text of entry (if applicable, see GSM_EntryType). *)
+  (* picture : binary_picture (* NYI Picture data. *) *)
+}
+and entry_type =
+  | Number_General (** General number. (Text) *)
+  | Number_Mobile (** Mobile number. (Text) *)
+  | Number_Work (** Work number. (Text) *)
+  | Number_Fax (** Fax number. (Text) *)
+  | Number_Home (** Home number. (Text) *)
+  | Number_Pager (** Pager number. (Text) *)
+  | Number_Other (** Other number. (Text) *)
+  | Text_Note (** Note. (Text) *)
+  | Text_Postal (** Complete postal address. (Text) *)
+  | Text_Email (** Email. (Text) *)
+  | Text_Email2
+  | Text_URL (** URL (Text) *)
+  | Date (** Date and time of last call. (Date) *)
+  | Caller_Group (** Caller group. (Number) *)
+  | Text_Name (** Name (Text) *)
+  | Text_LastName (** Last name. (Text) *)
+  | Text_FirstName (** First name. (Text) *)
+  | Text_Company (** Company. (Text) *)
+  | Text_JobTitle (** Job title. (Text) *)
+  | Category (** Category. (Number, if -1 then text) *)
+  | Private (** Whether entry is private. (Number) *)
+  | Text_StreetAddress (** Street address. (Text) *)
+  | Text_City (** City. (Text) *)
+  | Text_State (** State. (Text) *)
+  | Text_Zip (** Zip code. (Text) *)
+  | Text_Country (** Country. (Text) *)
+  | Text_Custom1 (** Custom information 1. (Text) *)
+  | Text_Custom2 (** Custom information 2. (Text) *)
+  | Text_Custom3 (** Custom information 3. (Text) *)
+  | Text_Custom4 (** Custom information 4. (Text) *)
+  | RingtoneID (** Ringtone ID. (Number) *)
+  | PictureID (** Picture ID. (Number) *)
+  | Text_UserID (** User ID. (Text) *)
+  | CallLength (** Length of call (Number) *)
+  | Text_LUID (** LUID - Unique Identifier used for synchronisation (Text) *)
+  | LastModified (** Date of last modification (Date) *)
+  | Text_NickName (** Nick name (Text) *)
+  | Text_FormalName (** Formal name (Text) *)
+  | Text_WorkStreetAddress (** Work street address. (Text) *)
+  | Text_WorkCity (** Work city. (Text) *)
+  | Text_WorkState (** Work state. (Text) *)
+  | Text_WorkZip (** Work zip code. (Text) *)
+  | Text_WorkCountry (** Work country. (Text) *)
+  | Text_WorkPostal (** Complete work postal address. (Text) *)
+  | Text_PictureName (** Picture name (on phone filesystem). (Text) *)
+  | PushToTalkID (** Push-to-talk ID (Text) *)
+  | Number_Messaging (** Favorite messaging number. (Text) *)
+  | Photo (** Photo (Picture). *)
+  | Number_Mobile_Home (** Home mobile number. (Text) *)
+  | Number_Mobile_Work (** Work mobile number. (Text) *)
+
+(************************************************************************)
+(* Messages *)
+
+(************************************************************************)
+(* Events *)
