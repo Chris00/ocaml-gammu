@@ -374,7 +374,7 @@ type signal_quality = {
 }
 
 val battery_charge : t -> battery_charge
-  (** @return information about batery charge and phone charging state. *)
+  (** @return information about battery charge and phone charging state. *)
 
 val firmware : t -> firmware
 
@@ -383,7 +383,7 @@ val hardware : t -> string
 val imei : t -> string
   (** @return IMEI (International Mobile Equipment Identity) / Serial Number *)
 
-val manufectured_month : t -> string
+val manufecture_month : t -> string
 
 val manufacturer : t -> string
 
@@ -422,8 +422,9 @@ val os_date : date_time -> string
 (** Converts date from timestamp to string according to OS settings. *)
 
 val os_date_time : ?timezone:bool -> date_time -> string
-(** Converts timestamp to string according to OS settings.  @param
-    timezone Whether to include time zone. *)
+(** Converts timestamp to string according to OS settings.
+
+    @param timezone Whether to include time zone (default false). *)
 
 (************************************************************************)
 (** {2 Memory} *)
