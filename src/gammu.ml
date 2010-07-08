@@ -321,6 +321,59 @@ and network_state =
   | Unknown
   | RequestingNetwork
 
+type signal_quality = {
+  signal_strength : int;
+  signal_percent : int;
+  bit_error_rate : int;
+}
+
+external baterry_charge : t -> battery_charge = "gammu_caml_GetBatteryCharge"
+
+external firmware : t -> firmware = "gammu_caml_GetFirmWare"
+
+external hardware : t -> string = "gammu_caml_GetHardware"
+
+external imei : t -> string = "gammu_caml_GetIMEI"
+
+external manufacture_month : t -> string = "gammu_caml_GetManufactureMonth"
+
+external manufacturer : t -> string = "gammu_caml_GetManufacturer"
+
+external model : t -> string = "gammu_caml_GetModel"
+
+external model_info : t -> phone_model = "gammu_caml_GetModelInfo"
+
+external network_info : t -> network = "gammu_caml_GetNetworkInfo"
+
+external product_code : t -> string = "gammu_caml_GetProductCode"
+
+external signal_quality : t -> signal_quality = "gammu_caml_GetSignalQuality"
+
+
+(************************************************************************)
+(* Date and time *)
+
+type date_time = {
+  timezone : int;
+  second : int;
+  minute : int;
+  hour : int;
+  day : int;
+  month : int;
+  year : int;
+}
+
+external check_date : date_time -> bool = "gammu_caml_CheckDate"
+
+external check_time : date_time -> bool = "gammu_caml_CheckTime"
+
+external os_date : date_time -> string = "gammu_caml_OSDate"
+
+let os_date_time ?(timezone=false) dt =
+  _os_date_time timezone dt
+
+external _os_date_time : date_time -> bool -> string = "gammu_caml_OSDateTime"
+
 (************************************************************************)
 (* Memory *)
 

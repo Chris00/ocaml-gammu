@@ -147,7 +147,7 @@ static value Val_StateMachine(StateMachine *state_machine)
   return res;
 }
 
-static value Val_Config(GSM_Config cfg)
+static value Val_Config(GSM_Config config)
 {
   CAMLlocal1(res);
   res = caml_alloc(14, 0);
@@ -363,7 +363,7 @@ value gammu_caml_ReadDevice(value s, value vwait_for_reply)
 /************************************************************************/
 /* Security related operations with phone */
 
-GSM_SecurityCode SecurityCode_val(value vsecurity_code)
+static GSM_SecurityCode SecurityCode_val(value vsecurity_code)
 {
   GSM_SecurityCode security_code;
   security_code.code_type = SecurityCodeType_val(Field(vsecurity_code, 0));
@@ -386,13 +386,15 @@ CAMLprim
 value GetSecurityCode(value s)
 {
   CAMLparam1(s);
-  CAMLreturn(Val_SecurityCodeType(GSM_GetSecurityStatus(StateMachine_val(s))));
+  GSM_SecurityCodeType *status;
+  GSM_GetSecurityStatus(StateMachine_val(s), status);
+  CAMLreturn(Val_SecurityCodeType status);
 }
 
 /************************************************************************/
 /* Informations on the phone */
 
-GSM_BatteryCharge BatteryCharge_val(value vbattery_charge)
+static GSM_BatteryCharge BatteryCharge_val(value vbattery_charge)
 {
   GSM_BatteryCharge battery_charge;
   battery_charge.battery_type = BatteryType_val(Field(vbattery_charge, 0));
@@ -408,12 +410,29 @@ GSM_BatteryCharge BatteryCharge_val(value vbattery_charge)
   return battery_charge;
 }
 
+static value Val_BatteryCharge(GSM_BatteryCharge battery_charge)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(10, 0);
+  Store_field(res, 0, Val_BatteryType(battery_charge.battery_type));
+  Store_field(res, 1, Val_int(battery_charge.battery_capacity));
+  Store_field(res, 2, Val_int(battery_charge.battery_percent));
+  Store_field(res, 3, Val_ChargeState(battery_charge.charge_state));
+  Store_field(res, 4, Val_int(battery_charge.battery_voltage));
+  Store_field(res, 5, Val_int(battery_charge.charge_voltage));
+  Store_field(res, 6, Val_int(battery_charge.charge_current));
+  Store_field(res, 7, Val_int(battery_charge.phone_current));
+  Store_field(res, 8, Val_int(battery_charge.battery_temperature));
+  Store_field(res, 9, Val_int(battery_charge.phone_temperature));
+  return res;
+}
+
 #define ChargeState_val(v) (Int_val(v) + 1)
 #define Val_ChargeState(v) (Val_int(v - 1))
 #define BatteryType_val(v) (Int_val(v) + 1)
 #define Val_BatteryType(v) (Val_int(v - 1))
 
-GSM_PhoneModel PhoneModel_val(value vphone_model)
+static GSM_PhoneModel PhoneModel_val(value vphone_model)
 {
   GSM_PhoneModel phone_model;
   /* phone_model.features = ?  0!!!! ;*/
@@ -421,6 +440,223 @@ GSM_PhoneModel PhoneModel_val(value vphone_model)
   phone_model.model = String_val(Field(vphone_model, 2));
   phone_model.number = String_val(Field(vphone_model, 3));
   return phone_model;
+}
+
+static value Val_PhoneModel(GSM_PhoneModel phone_model)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(3, 0);
+  Store_field(res, 0, caml_copy_string(phone_model.irda));
+  Store_field(res, 1, caml_copy_string(phone_model.model));
+  Store_field(res, 2, caml_copy_string(phone_model.number));
+  return res;
+}
+
+static GSM_NetworkInfo NetworkInfo_val(value vnetwork_info)
+{
+  GSM_NetworkInfo network_info;
+  network_info.cid = String_val(Field(vnetwork_info, 0));
+  network_info.gprs = GPRS_State_val(Field(vnetwork_info, 1)); /*nom?*/
+  network_info.lac = String_val(Field(vnetwork_info, 2));
+  network_info.code = String_val(Field(vnetwork_info, 3));
+  network_info.name = String_val(Field(vnetwork_info, 4));
+  network_info.packet_cid = String_val(Field(vnetwork_info, 5));
+  network_info.packet_lac = String_val(Field(vnetwork_info, 6));
+  network_info.packet_state = NetworkState_val(Field(vnetwork_info, 7));
+  network_info.state = NetworkState_val(Field(vnetwork_info, 8));
+  return network_info;
+}
+
+static value Val_NetworkInfo(GSM_NetworkInfo network_info)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(9, 0);
+  Store_field(res, 0, caml_copy_string(network_info.cid));
+  Store_field(res, 1, Val_GPRS_State(network_info.gprs));
+  Store_field(res, 2, caml_copy_string(network_info.lac));
+  Store_field(res, 3, caml_copy_string(network_info.code));
+  Store_field(res, 4, caml_copy_string(network_info.name));
+  Store_field(res, 5, caml_copy_string(network_info.packet_cid));
+  Store_field(res, 6, caml_copy_string(network_info.packet_lac));
+  Store_field(res, 7, Val_NetworkState(network_info.packet_state));
+  Store_field(res, 8, Val_NetworkState(network_info.state));
+  return res;
+}
+
+#define GPRS_Sate_val(v) (Int_val(v) + 1)
+#define Val_GPRS_State(v) (Val_int(v) - 1)
+#define NetworkState_val(v) (Int_val(v) + 1)
+#define Val_NetworkState(v) (Val_int(v) - 1)
+
+static GSM_SignalQuality SignalQuality_val(value vsignal_quality)
+{
+  GSM_SignalQuality signal_quality;
+  signal_quality.signal_strength = Int_val(Field(vsignal_quality, 0));
+  signal_quality.signal_percent = Int_val(Field(vsignal_quality, 1));
+  signal_quality.bit_error_rate = Int_val(Field(vsignal_quality, 2));
+  return signal_quality;
+}
+
+static value Val_SignalQuality(GSM_SignalQuality signal_quality)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(3, 0);
+  Store_field(res, 0, Val_int(signal_quality.signal_strength));
+  Store_field(res, 1, Val_int(signal_quality.signal_percent));
+  Store_field(res, 2, Val_int(signal_quality.bit_error_rate));
+  return res;
+}
+
+CAMLprim
+value gammu_caml_GetBatteryCharge(value s)
+{
+  CAMLparam1(s);
+  GSM_BatteryCharge *bat;
+  GSM_GetBatteryCharge(StateMachine_val(s), bat);
+  CAMLreturn(Val_BatteryCharge(bat));
+}
+
+CAMLprim
+value gammu_caml_GetFirmWare(value s)
+{
+  CAMLparam1(s);
+  CAMLlocal1(res);
+  char *value, *date;
+  double *num;
+  GSM_GetFirmware(StateMachine_val(s), value, date, num);
+  res = caml_alloc(3, 0);
+  Store_field(res, 0, caml_copy_string(value));
+  Store_field(res, 1, caml_copy_string(date));
+  Store_field(res, 2, caml_copy_double(*num));
+  CAMLreturn(res);
+}
+
+CAMLprim
+value gammu_caml_GetHardware(value s)
+{
+  CAMLparam1(s);
+  char *val;
+  GSM_GetHardware(StateMachine_val(s), val);
+  CAMLreturn(caml_copy_string(val));
+}
+
+CAMLprim
+value gammu_caml_GetIMEI(value s)
+{
+  CAMLparam1(s);
+  char *val;
+  GSM_GetIMEI(StateMachine_val(s), val);
+  CAMLreturn(caml_copy_string(val));
+}
+
+CAMLprim
+value gammu_caml_GetManufactureMonth(value s)
+{
+  CAMLparam1(s);
+  char *val;
+  GSM_GetManufactureMonth(StateMachine_val(s), val);
+  CAMLreturn(caml_copy_string(val));
+}
+
+CAMLprim
+value gammu_caml_GetManufacturer(value s)
+{
+  CAMLparam1(s);
+  char *val;
+  GSM_GetManufacturer(StateMachine_val(s), val);
+  CAMLreturn(caml_copy_string(val));
+}
+
+CAMLprim
+value gammu_caml_GetModel(value s)
+{
+  CAMLparam1(s);
+  char *val;
+  GSM_GetModel(StateMachine_val(s), val);
+  CAMLreturn(caml_copy_string(val));
+}
+
+CAMLprim
+value gammu_caml_GetModelInfo(value s)
+{
+  CAMLparam1(s);
+  GSM_PhoneModel *phone_model = GSM_GetModelInfo(StateMachine_val(s));
+  CAMLreturn(Val_PhoneModel(*phone_model));
+}
+
+CAMLprim
+value gammu_caml_GetNetworkInfo(value s)
+{
+  CAMLparam1(s);
+  GSM_NetworkInfo *netinfo;
+  GSM_GetNetworkInfo(StateMachine_val(s), netinfo);
+  CAMLreturn(Val_NetworkInfo(*netinfo));
+}
+
+CAMLprim
+value gammu_caml_GetProductCode(value s)
+{
+  CAMLparam1(s);
+  char *val;
+  GSM_GetProductCode(StateMachine_val(s), val);
+  CAMLreturn(caml_copy_string(val));
+}
+
+CAMLprim
+value gammu_caml_GetSignalQuality(value s)
+{
+  CAMLparam1(s);
+  GSM_SignalQuality *sig;
+  GSM_GetSignalQuality(StateMachine_val(s), sig);
+  CAMLreturn(Val_SignalQuality(*sig));
+}
+
+/************************************************************************/
+/* Date and time */
+
+static GSM_DateTime DateTime_val(value vdate_time)
+{
+  GSM_DateTime date_time;
+  date_time.timezone = Int_val(Field(vdate_time, 0));
+  date_time.second = Int_val(Field(vdate_time, 1));
+  date_time.minute = Int_val(Field(vdate_time, 2));
+  date_time.hour = Int_val(Field(vdate_time, 3));
+  date_time.day = Int_val(Field(vdate_time, 4));
+  date_time.month = Int_val(Field(vdate_time, 5));
+  date_time.year = Int_val(Field(vdate_time, 6));
+  return date_time;
+}
+
+CAMLprim
+value gammu_caml_CheckDate(value date)
+{
+  CAMLparam1(date);
+  bool date_ok = CheckDate(&DateTime_val(date));
+  CAMLreturn(Val_bool(date_ok));
+}
+
+CAMLprim
+value gammu_caml_CheckTime(value date)
+{
+  CAMLparam1(date);
+  const bool time_ok = CheckTime(&DateTime_val(date));
+  CAMLreturn(Val_bool(time_ok));
+}
+
+CAMLprim
+value gammu_caml_OSDate(value dt)
+{
+  CAMLparam1(dt);
+  const char *os_date = OSDate(DateTime_val(dt));
+  CAMLreturn(caml_copy_string(os_date));
+}
+
+CAMLprim
+value gammu_caml_OSDateTime(value dt, value timezone)
+{
+  CAMLparam2(dt, timezone);
+  const char *os_date_time = OSDateTime(DateTime_val(dt), Bool_val(timezone));
+  CAMLreturn(caml_copy_string(os_date_time));
 }
 
 /************************************************************************/
@@ -515,3 +751,4 @@ static value Val_SubMemoryEntry(GSM_SubMemoryEntry sub_mem_entry)
 
 /************************************************************************/
 /* Events */
+
