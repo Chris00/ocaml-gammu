@@ -1,6 +1,9 @@
 (* TODO:?? Split the modules in mutiple files as C Gammu does ? *)
 (** Interface to the gammu library (libGammu) to manage data in your
-    cell phone such as contacts, calendar or messages.  *)
+    cell phone such as contacts, calendar or messages. *)
+
+(************************************************************************)
+(** {2 Error handling} **)
 
 type error =
   | DEVICEOPENERROR     (** Error during opening device *)
@@ -11,7 +14,7 @@ type error =
   | DEVICENODRIVER      (** No driver installed for a device *)
   | DEVICENOTWORK       (** Device doesn't seem to be working *)
   | DEVICEDTRRTSERROR   (** Error during setting DTR/RTS in device *)
-  | DEVICECHANGESPEEDERROR (** 10 Error during changing speed in device *)
+  | DEVICECHANGESPEEDERROR (** Error during changing speed in device *)
   | DEVICEWRITEERROR    (** Error during writing device *)
   | DEVICEREADERROR     (** Error during reading device *)
   | DEVICEPARITYERROR   (** Can't set parity on device *)
@@ -21,7 +24,7 @@ type error =
   | UNKNOWNFRAME        (** Frame not handled by gammu *)
   | UNKNOWNCONNECTIONTYPESTRING (** Unknown connection type given by user *)
   | UNKNOWNMODELSTRING  (** Unknown model given by user *)
-  | SOURCENOTAVAILABLE  (** 20 Some functions not compiled in your OS *)
+  | SOURCENOTAVAILABLE  (** Some functions not compiled in your OS *)
   | NOTSUPPORTED        (** Not supported by phone *)
   | EMPTY               (** Empty entry or transfer end. *)
   | SECURITYERROR       (** Not allowed *)
@@ -31,7 +34,7 @@ type error =
   | UNKNOWN             (** Unknown response from phone *)
   | CANTOPENFILE        (** Error during opening file *)
   | MOREMEMORY          (** More memory required *)
-  | PERMISSION          (** 30 No permission *)
+  | PERMISSION          (** No permission *)
   | EMPTYSMSC           (** SMSC number is empty *)
   | INSIDEPHONEMENU     (** Inside phone menu - can't make something *)
   | NOTCONNECTED        (** Phone NOT connected - can't make something *)
@@ -42,7 +45,7 @@ type error =
   | CANCELED            (** Action was canceled by user *)
   | NEEDANOTHERANSWER   (** Inside Gammu: phone module need to send
                             another answer frame *)
-  | OTHERCONNECTIONREQUIRED (** 40 You need other connection for
+  | OTHERCONNECTIONREQUIRED (** You need other connection for
                                 this operation. *)
   | WRONGCRC            (** Wrong CRC *)
   | INVALIDDATETIME     (** Invalid date/time *)
@@ -53,7 +56,7 @@ type error =
   | SHOULDBEFOLDER      (** You have to give folder (not file) name *)
   | SHOULDBEFILE        (** You have to give file (not folder) name *)
   | NOSIM               (** Can not access SIM card *)
-  | GNAPPLETWRONG       (** 50 Invalid gnapplet version *)
+  | GNAPPLETWRONG       (** Invalid gnapplet version *)
   | FOLDERPART          (** Only part of folders listed *)
   | FOLDERNOTEMPTY      (** Folder is not empty *)
   | DATACONVERTED       (** Data were converted *)
@@ -63,7 +66,7 @@ type error =
   | WRITING_FILE        (** Could not write to a file (on local filesystem). *)
   | NONE_SECTION        (** No such section exists. *)
   | USING_DEFAULTS      (** Using default values. *)
-  | CORRUPTED           (** 60 Corrupted data returned by phone. *)
+  | CORRUPTED           (** Corrupted data returned by phone. *)
   | BADFEATURE          (** Bad feature string. *)
   | DISABLED            (** Some functions not compiled in your OS *)
   | SPECIFYCHANNEL      (** Bluetooth configuration requires channel option. *)
@@ -148,11 +151,6 @@ type t
     machine"). *)
 
 (** Configuration of state machine.  *)
-(* TODO:?? Do we modify the ordering of fields to have something more
-   coherent ?  e.g put debug_file and debug_level next to each other.
-
-   implies cost of non clear stub code when accessing fields in sake of
-   interface "beauty". *)
 type config = {
   model : string;              (** Model from config file  *)
   debug_level : string;        (** Debug level  *)

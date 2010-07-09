@@ -26,6 +26,9 @@
 #include <caml/custom.h>
 #include <caml/intext.h>
 
+/************************************************************************/
+/* Error handling */
+
 #define Error_val(v) (Int_val(v) + 1)
 #define Val_Error(v) (Val_int(v - 1)
 
