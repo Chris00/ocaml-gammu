@@ -2,3 +2,4 @@
 *.cm[ioax]
 *.cmxa
 .depend.ocaml
+RE:doc/.*\.(html|css)
