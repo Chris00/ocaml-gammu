@@ -131,7 +131,7 @@ struct
 
   let get_value file_info ~section ~key =
     _get_value file_info.head section key file_info.unicode
-  external get_value : section_node -> string -> string -> bool -> string
+  external _get_value : section_node -> string -> string -> bool -> string
     = "gammu_caml_INI_GetValue"
 
   (*let find_last_entry file_info ~section =
@@ -210,7 +210,7 @@ let find_gammurc ?path () =
     | Some path -> _find_gammurc_force path
   in
   { INI.section_node=s_node; unicode=false; }
-external _find_gammurc_force : path -> INI.section_node
+external _find_gammurc_force : string -> INI.section_node
   = "gammu_caml_FindGammuRC_force"
 external _find_gammurc : unit -> INI.section_node = "gammu_caml_FindGammuRC"
 

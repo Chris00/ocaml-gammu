@@ -245,7 +245,7 @@ value gammu_caml_CreateStateMachine()
 CAMLprim
 INI_Section* gammu_caml_FindGammuRC_force(value vpath)
 {
-  CAMLparam1(path);
+  CAMLparam1(vpath);
   const INI_Section *file_info = GSM_FindGammuRC(String_val(vpath));
   CAMLreturn(Val_INI_Section(file_info));
 }
