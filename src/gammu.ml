@@ -128,15 +128,15 @@ struct
     unicode : bool;
   }
 
+  external _read : string -> bool -> section_node = "gammu_caml_INI_ReadFile"
   let read ?(unicode=true) file_name =
     { head = _read file_name unicode;
       unicode = unicode; }
-  external _read : string -> bool -> section_node = "gammu_caml_INI_ReadFile"
 
-  let get_value file_info ~section ~key =
-    _get_value file_info.head section key file_info.unicode
   external _get_value : section_node -> string -> string -> bool -> string
     = "gammu_caml_INI_GetValue"
+  let get_value file_info ~section ~key =
+    _get_value file_info.head section key file_info.unicode
 
   (*let find_last_entry file_info ~section =
     _find_last_entry file_info.head file_info.unicode ~section
@@ -200,29 +200,29 @@ type connection_type =
 
 external get_debug : t -> debug_info = "gammu_caml_GetDebug"
 
+external _init_locales : string -> unit = "gammu_caml_InitLocales"
+external _init_default_locales : unit -> unit = "gammu_caml_InitDefaultLocales"
 let init_locales ?path () = match path with
   | None -> _init_default_locales ()
   | Some path -> _init_locales path
-external _init_locales : path -> unit = "gammu_caml_InitLocales"
-external _init_default_locales : unit -> unit = "gammu_caml_InitDefaultLocales"
 
 external make : unit -> t = "gammu_caml_CreateStateMachine"
 
+external _find_gammurc_force : string -> INI.section_node
+  = "gammu_caml_FindGammuRC_force"
+external _find_gammurc : unit -> INI.section_node = "gammu_caml_FindGammuRC"
 let find_gammurc ?path () =
   let s_node = match path with
     | None -> _find_gammurc ()
     | Some path -> _find_gammurc_force path
   in
-  { INI.section_node=s_node; unicode=false; }
-external _find_gammurc_force : string -> INI.section_node
-  = "gammu_caml_FindGammuRC_force"
-external _find_gammurc : unit -> INI.section_node = "gammu_caml_FindGammuRC"
-
-let read_config cfg_info num =
-  _read_config cfg_info.INI.head num
+  { INI.head = s_node;  unicode=false; }
 
 external _read_config : INI.section_node -> int -> config =
   "gammu_caml_ReadConfig"
+
+let read_config cfg_info num =
+  _read_config cfg_info.INI.head num
 
 external get_config : t -> int -> config = "gammu_caml_GetConfig"
 
@@ -232,12 +232,13 @@ external remove_config : t -> config = "gammu_caml_RemoveConfig"
 
 external length_config : t -> int = "gammu_caml_GetConfigNum"
 
-let connect ?log ?(reply_num=3) s = match log with
-  | None -> _connect s reply_num
-  | Some log_func -> _connect_log s reply_num log_func
 external _connect : t -> int -> unit= "gammu_caml_InitConnection"
 external _connect_log : t -> int -> (string -> unit) -> unit
   = "gammu_caml_InitConnectionLog"
+
+let connect ?log ?(reply_num=3) s = match log with
+  | None -> _connect s reply_num
+  | Some log_func -> _connect_log s reply_num log_func
 
 external disconnect : t -> unit = "gammu_caml_TerminateConnection"
 
@@ -246,19 +247,14 @@ external is_connected : t -> bool = "gammu_caml_IsConnected"
 external get_used_connection : t -> connection_type =
   "gammu_caml_GetUsedConnection"
 
-let read_device : ?(wait_for_reply=true) s =
-  _read_device s wait_for_reply
 external _read_device : t -> bool -> int = "gammu_caml_ReadDevice"
+let read_device ?(wait_for_reply=true) s =
+  _read_device s wait_for_reply
 
 (************************************************************************)
 (* Security related operations with phone *)
 
-val security_code = {
-  code_type : security_code_type;
-  code : string;
-}
-
-val security_code_type =
+type security_code_type =
   | SEC_SecurityCode
   | SEC_Pin
   | SEC_Pin2
@@ -267,6 +263,11 @@ val security_code_type =
   | SEC_None
   | SEC_Phone
   | SEC_Network
+
+type security_code = {
+  code_type : security_code_type;
+  code : string;
+}
 
 external enter_security_code : t -> security_code -> unit =
   "gammu_caml_EnterSecurityCode"
@@ -318,7 +319,7 @@ type phone_model = {
 
 type network = {
   cid : string;
-  gprs : grps_state;
+  gprs : gprs_state;
   lac : string;
   code : string;
   name : string;
@@ -386,10 +387,10 @@ external check_time : date_time -> bool = "gammu_caml_CheckTime"
 
 external os_date : date_time -> string = "gammu_caml_OSDate"
 
-let os_date_time ?(timezone=false) dt =
-  _os_date_time timezone dt
-
 external _os_date_time : date_time -> bool -> string = "gammu_caml_OSDateTime"
+
+let os_date_time ?(timezone=false) dt =
+  _os_date_time dt timezone
 
 (************************************************************************)
 (* Memory *)
@@ -671,15 +672,16 @@ struct
     | AlcatelSMSTemplateName
     | SiemensFile
 
+  external _decode_multipart : debug_info -> multipart_info ->
+    multipart_message -> bool -> multipart_info
+      = "gammu_caml_DecodeMultiPartSMS"
+
   let decode_multipart ?di ?(ems=false) di multp_inf multp_mess =
-    let _di = match di with
+    let di = match di with
       | None -> get_global_debug ()
       | Some s_di -> s_di
     in
-    _decode_multipart _di multp_inf multp_mess ems
-  external decode_multipart : debug_info -> multipart_info ->
-    multipart_message -> bool -> value
-      = "gammu_caml_DecodeMultiPartSMS"
+    _decode_multipart di multp_inf multp_mess ems
 end
 
 (************************************************************************)

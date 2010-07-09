@@ -270,14 +270,9 @@ val read_device : t -> ?wait_for_reply:bool -> int
     @param wait_for_reply whether to wait for some event (default true). *)
 
 (************************************************************************)
-(** {2 Security related operations with phone. } *)
-val security_code = {
-  code_type : security_code_type;
-  code : string;
-}
 
 (** Definition of security codes. *)
-val security_code_type =
+type security_code_type =
   | SEC_SecurityCode (** Security code. *)
   | SEC_Pin     (** PIN. *)
   | SEC_Pin2    (** PIN 2. *)
@@ -286,6 +281,12 @@ val security_code_type =
   | SEC_None    (** Code not needed. *)
   | SEC_Phone   (** Phone code needed. *)
   | SEC_Network (** Network code needed. *)
+
+(** {2 Security related operations with phone. } *)
+type security_code = {
+  code_type : security_code_type;
+  code : string;
+}
 
 val enter_security_code : t -> security_code -> unit
 (** Enters security code (PIN, PUK,...). *)
@@ -341,7 +342,7 @@ type phone_model = {
 (** Current network informations *)
 type network = {
   cid : string;                 (** Cell ID (CID) *)
-  gprs : grps_state;            (** GRPS state *)
+  gprs : gprs_state;            (** GRPS state *)
   lac : string;                 (** LAC (Local Area Code) *)
   code : string;                (** GSM network code *)
   name : string;                (** Name of current netwrok as returned
@@ -608,7 +609,8 @@ module SMS : sig
   (* TODO:?? old :
      val get_next : ?message:message -> t -> multipart_message
      does giving message is important ? *)
-  val get_next : ?start:bool -> location:int -> folder:int -> t -> multipart_message
+  val get_next : ?start:bool -> location:int -> folder:int -> t
+    -> multipart_message
   (** Reads next (or first if [start] is set to true) SMS message.
       This might be faster for some phones than using
       {!Gammu.SMS.get} for each message.
