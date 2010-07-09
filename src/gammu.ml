@@ -554,11 +554,11 @@ struct
 
   type multipart_message = message array
 
-  val get : t -> location:int -> folder:int -> multipart_message =
+  (* val get : t -> location:int -> folder:int -> multipart_message =
     "gammu_caml_GetSMS"
 
-  val get_next : ?start:bool -> location:int -> folder:int -> t ->
-    multipart_message ="gammu_caml_GetNextSMS"
+     val get_next : ?start:bool -> location:int -> folder:int -> t ->
+     multipart_message ="gammu_caml_GetNextSMS" *)
 
   type folder = {
     inbox_folder : bool;
@@ -566,6 +566,106 @@ struct
     memory : memory_type;
     name : string;
   }
+
+  (* folders *)
+
+  type memory_status = {
+    phone_size : int;
+    phone_unread : int;
+    phone_used : int;
+    sim_size : int;
+    sim_unread : int;
+    sim_used : int;
+    templates_used : int;
+  }
+
+  external get_status :t -> memory_status = "gammu_caml_GetSMSStatus"
+
+  external set_incoming_sms : t -> bool -> unit = "gammu_caml_SetIncomingSMS"
+
+  external delete : t -> message -> unit = "gammu_caml_DeleteSMS"
+
+  type multipart_info = {
+    unicode_coding : bool;
+    info_class : int;
+    replace_message : char;
+    unknown : bool;
+    entries : entry array;
+  }
+  and entry = {
+    id : encode_multipart_sms_id;
+    number : int;
+    (* ringtone : ringtone; (* NYI *)
+       bitmap : multi_bitmap; (* NYI *)
+       bookmark : wap_bookmark; (* NYI *)
+       settings : wap_settings; (* NYI *)
+       mms_indicator : mms_indicator; (* NYI *) *)
+    phonebook : memory_entry;
+    (* calendar : calendar_entry; (* NYI *)
+       todo : todo_entry; (* NYI *)
+       file : file; (* NYI *) *)
+    protected : bool;
+    buffer : Buffer.t;
+    (* TODO:?? use a variant type for alignment ? *)
+    left : bool;
+    right : bool;
+    center : bool;
+    large : bool;
+    small : bool;
+    bold : bool;
+    italic : bool;
+    underlined : bool;
+    strikethrough : bool;
+    ringtone_notes : int;
+  }
+  and encode_multipart_sms_id =
+    | Text
+    | ConcatenatedTextLong
+    | ConcatenatedAutoTextLong
+    | ConcatenatedTextLong16bit
+    | ConcatenatedAutoTextLong16bit
+    | NokiaProfileLong
+    | NokiaPictureImageLong
+    | NokiaScreenSaverLong
+    | NokiaRingtone
+    | NokiaRingtoneLong
+    | NokiaOperatorLogo
+    | NokiaOperatorLogoLong
+    | NokiaCallerLogo
+    | NokiaWAPBookmarkLong
+    | NokiaWAPSettingsLong
+    | NokiaMMSSettingsLong
+    | NokiaVCARD10Long
+    | NokiaVCARD21Long
+    | NokiaVCALENDAR10Long
+    | NokiaVTODOLong
+    | VCARD10Long
+    | VCARD21Long
+    | DisableVoice
+    | DisableFax
+    | DisableEmail
+    | EnableVoice
+    | EnableFax
+    | EnableEmail
+    | VoidSMS
+    | EMSSound10
+    | EMSSound12
+    | EMSSonyEricssonSound
+    | EMSSound10Long
+    | EMSSound12Long
+    | EMSSonyEricssonSoundLong
+    | EMSPredefinedSound
+    | EMSPredefinedAnimation
+    | EMSAnimation
+    | EMSFixedBitmap
+    | EMSVariableBitmap
+    | EMSVariableBitmapLong
+    | MMSIndicatorLong
+    | WAPIndicatorLong
+    | AlcatelMonoBitmapLong
+    | AlcatelMonoAnimationLong
+    | AlcatelSMSTemplateName
+    | SiemensFile
 
   let decode_multipart ?di ?(ems=false) di multp_inf multp_mess =
     let _di = match di with
