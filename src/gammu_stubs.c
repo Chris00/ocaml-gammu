@@ -763,6 +763,123 @@ static value Val_SubMemoryEntry(GSM_SubMemoryEntry sub_mem_entry)
 /************************************************************************/
 /* Messages */
 
+#define SMSFormat_val(v) (Int_val(v) + 1)
+#define Val_SMSFormat(v) (Val_int(v) - 1)
+#define ValidyPeriod_val(v) (Int_val(v) + 1)
+#define Val_ValidyPeriod(v) (Val_int(v) - 1)
+#define SMS_State_val(v) (Int_val(v) + 1)
+#define Val_SMS_State(v) (Val_int(v) - 1)
+#define UDH_val(v) (Int_val(v) + 1)
+#define Val_UDH(v) (Val_int(v) - 1)
+
+static GSM_UDHHeader UDHHeader_val(value vudh_header)
+{
+  GSM_UDHHeader udh_header;
+  udh_header.udh = UDH_val(Field(vudh_header, 0));
+  udh_header.text = String_val(Field(vudh_header, 1));
+  udh_header.id8bit = Int_val(Field(vudh_header, 2));
+  udh_header.id16bit = Int_val(Field(vudh_header, 3));
+  udh_header.part_number = Int_val(Field(vudh_header, 4));
+  udh_header.all_parts = Int_val(Field(vudh_header, 5));
+  return udh_header;
+}
+
+static value Val_UDHHeader(GSM_UDHHeader udh_header)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(6, 0);
+  Store_field(res, 0, Val_UDH(udh_header.udh));
+  Store_field(res, 1, caml_copy_string(udh_header.text));
+  Store_field(res, 2, Val_int(udh_header.id8bit));
+  Store_field(res, 3, Val_int(udh_header.id16bit));
+  Store_field(res, 4, Val_int(udh_header.part_number));
+  Store_field(res, 5, Val_int(udh_header.all_parts));
+  return res;
+}
+
+#define SMSMessageType_val(v) (Int_val(v) + 1)
+#define Val_SMSMessageType(v) (Val_int(v) - 1)
+#define Coding_Type_val(v) (Int_val(v) + 1)
+#define Val_Coding_Type(v) (Val_int(v) - 1)
+
+#define Char_val(v) \
+  ((char) Int_val(caml_callback(*caml_named_value("Char.code"), v)))
+#define Val_char(v) \
+  caml_callback(*caml_named_value("Char.chr"), Val_int((int) v))
+
+static GSM_SMSMessage SMSMessage_val(value vsms)
+{
+  GSM_SMSMessage sms;
+  sms.replace_message = (unsigned char) Char_val(Field(vsms, 0));
+  sms.reject_duplicates = Bool_val(Field(vsms, 1));
+  sms.udh = UDHHeader_val(Field(vsms, 2));
+  sms.number = String_val(Field(vsms, 3));
+  sms.other_numbers = ???_val(Field(vsms, 4));
+  sms.smsc = SMSC_val(Field(vsms, 5));
+  sms.memory = MemoryType_val(Field(vsms, 6));
+  sms.location = Int_val(Field(vsms, 7));
+  sms.folder = Int_val(Field(vsms, 8));
+  sms.inbox_folder = Bool_val(Field(vsms, 9));
+  sms.state = SMS_State_val(Field(vsms, 10));
+  sms.name = (unsigned char) Char_val(Field(vudh_header, 11));
+  sms.text = (unsigned char) Char_val(Field(vsms, 12));
+  sms.pdu = SMSMessageType_val(Field(vsms, 13));
+  sms.coding = Coding_Type_val(Field(vsms, 14));
+  sms.date_time = DateTime_val(Field(vsms, 15));
+  sms.smsc_time = DateTime_val(Field(vsms, 16));
+  sms.delivery_status = (unsigned char) Char_val(Field(vsms, 17));
+  sms.reply_via_same_smsc = Bool_val(Field(vsms, 18));
+  sms.class = (signed char) Char_val(Field(vudh_header, 19));
+  sms.message_reference = (unsigned char) Char_val(Field(vsms, 20));
+  return sms;
+}
+
+static value Val_SMSMessage(GSM_SMSMessage sms)
+{
+  StoreField(res, 0, Val_Char(sms.replace_message));
+  StoreField(res, 1, Val_bool(sms.reject_duplicates));
+  StoreField(res, 2, Val_UDHHeader(sms.udh));
+  StoreField(res, 3, caml_copy_string(sms.number));
+  StoreField(res, 4, ???(sms.other_numbers));
+  StoreField(res, 5, Val_SMSC(sms.smsc));
+  StoreField(res, 6, Val_MemoryType(sms.memory));
+  StoreField(res, 7, caml_copy_string(sub_mem_entry.Text));
+  CAMLreturn(res);
+}
+
+/* ... */
+
+
+static GSM_OneSMSFolder OneSMSFolder_val(value vfolder)
+{
+  GSM_UDHHeader udh_header;
+  udh_header.udh = UDH_val(Field(vudh_header, 0));
+  udh_header.text = String_val(Field(vudh_header, 1));
+  udh_header.id8bit = Int_val(Field(vudh_header, 2));
+  udh_header.id16bit = Int_val(Field(vudh_header, 3));
+  return udh_header;
+}
+
+static value Val_UDHHeader(GSM_UDHHeader udh_header)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(6, 0);
+  Store_field(res, 0, Val_UDH(udh_header.udh));
+  Store_field(res, 1, caml_copy_string(udh_header.text));
+  Store_field(res, 2, Val_int(udh_header.id8bit));
+  Store_field(res, 3, Val_int(udh_header.id16bit));
+  Store_field(res, 4, Val_int(udh_header.part_number));
+  Store_field(res, 5, Val_int(udh_header.all_parts));
+  return res;
+}
+
+type folder = {
+    inbox_folder : bool;
+    outbox_folder : bool;
+    memory : memory_type;
+    name : string;
+  }
+  
 CAMLexport
 value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms, value vems)
 {

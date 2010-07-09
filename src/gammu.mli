@@ -575,7 +575,7 @@ module SMS : sig
 
   type message = {
     replace_message : char;
-    RejectDuplicates : bool;
+    reject_duplicates : bool;
     udh : udh_header;
     number : string;
     other_numbers : string array;
