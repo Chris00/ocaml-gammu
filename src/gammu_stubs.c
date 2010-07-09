@@ -107,13 +107,27 @@ static value Val_INI_Section(INI_Section *ini_section)
 }
 
 CAMLprim
-value gammu_caml_ReadFile(value file_name, value unicode)
+value gammu_caml_INI_ReadFile(value file_name, value unicode)
 {
   CAMLparam2(filename, unicode);
   INI_Section *cfg;
   INI_ReadFile(String_val(filename), Bool_val unicode, &cfg);
   CAMLreturn(Val_INI_Section(cfg));
 }
+
+CAMLexport
+value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
+                              value vunicode)
+{
+  CAMLparam4(file_info, section, key, unicode);
+  const unsigned char* res;
+  res = INI_GetValue(INI_Section_val(vfile_info),
+                     String_val(vsection),
+                     String_val(vkey),
+                     Bool_val(vunicode));
+  CAMLreturn(caml_copy_string(res));
+}
+
 
 /************************************************************************/
 /* State machine */
@@ -749,6 +763,33 @@ static value Val_SubMemoryEntry(GSM_SubMemoryEntry sub_mem_entry)
 /************************************************************************/
 /* Messages */
 
+CAMLexport
+value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms, value vems)
+{
+  CAMLparam4(vdi, vinfo, vsms, vems);
+  GSM_DecodeMultiPartSMS(Debug_Info_val(vdi),
+                         &MultiPartSMSInfo_val(vinfo),
+                         &MultiSMSMessage_val(vsms),
+                         Bool_val(vems));
+  CAMLreturn0;
+}
+
 /************************************************************************/
 /* Events */
 
+void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
+                           void *user_data)
+{
+  CAMLlocal1(f);
+  f = *((value) user_data);
+  caml_callback2(f, Val_StateMachine(sm), Val_SMSMessage(sms));
+}
+
+CAMLexport
+void gammu_caml_SetIncomingSMS(value s, value vf)
+{
+  CAMLparam2(s, vf);
+  GSM_StateMachine *sm = StateMachine_val(s);
+  GSM_SetIncomingSMSCallback(sm, incoming_sms_callback, (void *) &vf);
+  CAMLreturn0;
+}

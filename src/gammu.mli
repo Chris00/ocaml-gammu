@@ -741,22 +741,23 @@ module SMS : sig
     | AlcatelSMSTemplateName
     | SiemensFile (** Siemens OTA  *)
 
+  val decode_multipart : ?di:debug_info -> ?ems:bool -> debug_info ->
+    multipart_message -> bool -> multipart_info
+(** [decode_multipart sms] Decodes multi part SMS to "readable"
+    format. [sms] is modified, return a {!Gammu.multipart_info}
+    associated.
 
-  val decode_multipart : ?ems:bool -> multipart_info -> multipart_message -> bool
-(** [decode_multipart sms_info sms] Decodes multi part SMS to "readable"
-    format. [sms_info] and [sms] are modified.
+    @param di log according to debug setting from [di]. If not specified,
+    use the one returned by {!Gammu.get_global_debug}.
 
     @param ems consider the message as an EMS (Enhanced Messaging Service)
-    (default false).
-
-    @return true if succeed, false otherwise. *)
-
+    (default false). *)
 end
 
 (************************************************************************)
 (* Events *)
 
 val incoming_sms : t -> (SMS.message -> unit) -> unit
-(* [incoming_sms s f] register [f] as callback function in the event of an
+(** [incoming_sms s f] register [f] as callback function in the event of an
    incoming SMS. *)
 

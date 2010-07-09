@@ -123,9 +123,12 @@ struct
   let read ?(unicode=true) file_name =
     { head = _read file_name unicode;
       unicode = unicode; }
-  external _read : string -> bool -> section_node = "gammu_caml_ReadFile"
+  external _read : string -> bool -> section_node = "gammu_caml_INI_ReadFile"
 
-  val get_value : sections -> section:string -> key:string -> string
+  let get_value file_info ~section ~key =
+    _get_value file_info.head section key file_info.unicode
+  external get_value : section_node -> string -> string -> bool -> string
+    = "gammu_caml_INI_GetValue"
 
   (*let find_last_entry file_info ~section =
     _find_last_entry file_info.head file_info.unicode ~section
@@ -137,7 +140,13 @@ end
 (************************************************************************)
 (* State machine *)
 
-type t
+(* Abstract type to expose abstracted dependencies to the GC. *)
+type state_machine
+type t = {
+  s : state_machine;
+  di : debug_info;
+  (* Others ? *)
+}
 
 type config = {
   model : string;
@@ -293,7 +302,7 @@ type firmware = {
 }
 
 type phone_model = {
-  (* features : feature list;*)
+  (* features : feature list; *)
   irda : string;
   model : string;
   number : string;
@@ -462,5 +471,22 @@ and entry_type =
 (************************************************************************)
 (* Messages *)
 
+module SMS =
+struct
+
+  let decode_multipart ?di ?(ems=false) di multp_inf multp_mess =
+    let _di = match di with
+      | None -> get_global_debug ()
+      | Some s_di -> s_di
+    in
+    _decode_multipart _di multp_inf multp_mess ems
+  external decode_multipart : debug_info -> multipart_info ->
+    multipart_message -> bool -> value
+      = "gammu_caml_DecodeMultiPartSMS"
+end
+
 (************************************************************************)
 (* Events *)
+
+external incoming_sms : t -> (SMS.message -> unit) -> unit
+  = "gammu_caml_SetIncomingSMS"
