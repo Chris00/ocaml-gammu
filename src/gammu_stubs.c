@@ -833,6 +833,39 @@ static value Val_SMSMessage(GSM_SMSMessage sms)
   CAMLreturn(res);
 }
 
+/* ... */
+
+
+static GSM_OneSMSFolder OneSMSFolder_val(value vfolder)
+{
+  GSM_UDHHeader udh_header;
+  udh_header.udh = UDH_val(Field(vudh_header, 0));
+  udh_header.text = String_val(Field(vudh_header, 1));
+  udh_header.id8bit = Int_val(Field(vudh_header, 2));
+  udh_header.id16bit = Int_val(Field(vudh_header, 3));
+  return udh_header;
+}
+
+static value Val_UDHHeader(GSM_UDHHeader udh_header)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(6, 0);
+  Store_field(res, 0, Val_UDH(udh_header.udh));
+  Store_field(res, 1, caml_copy_string(udh_header.text));
+  Store_field(res, 2, Val_int(udh_header.id8bit));
+  Store_field(res, 3, Val_int(udh_header.id16bit));
+  Store_field(res, 4, Val_int(udh_header.part_number));
+  Store_field(res, 5, Val_int(udh_header.all_parts));
+  return res;
+}
+
+type folder = {
+    inbox_folder : bool;
+    outbox_folder : bool;
+    memory : memory_type;
+    name : string;
+  }
+
 /************************************************************************/
 /* Events */
 
