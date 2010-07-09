@@ -17,6 +17,10 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+let _ =
+  Callback.register "Char.code" Char.code;
+  Callback.register "Char.chr" Char.chr;;
+
 type error =
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
@@ -461,6 +465,94 @@ and entry_type =
 
 (************************************************************************)
 (* Messages *)
+
+module SMS =
+struct
+
+type format = Pager | Fax | Email | Text
+
+type validity_period = Hour_1 | Hour_6 | Day_1 | Day_3 | Week | Max_time
+
+type state = Sent | Unsent | Read | Unread
+
+type udh =
+  | No_udh
+  | ConcatenatedMessages
+  | ConcatenatedMessages16bit
+  | DisableVoice
+  | DisableFax
+  | DisableEmail
+  | EnableVoice
+  | EnableFax
+  | EnableEmail
+  | VoidSMS
+  | NokiaRingtone
+  | NokiaRingtoneLong
+  | NokiaOperatorLogo
+  | NokiaOperatorLogoLong
+  | NokiaCallerLogo
+  | NokiaWAP
+  | NokiaWAPLong
+  | NokiaCalendarLong
+  | NokiaProfileLong
+  | NokiaPhonebookLong
+  | UserUDH
+  | MMSIndicatorLong
+and udh_header = {
+  udh : udh;
+  text : string;
+  id8bit : int;
+  id16bit : int;
+  part_number : int;
+  all_parts : int;
+}
+
+type message_type =
+    | Deliver
+    | Status_Report
+    | Submit
+
+type coding =
+  | Unicode_No_Compression
+  | Unicode_Compression
+  | Default_No_Compression
+  | Default_Compression
+  | Eight_bit
+
+type message = {
+  replace_message : char;
+  reject_duplicates : bool;
+  udh : udh_header;
+  number : string;
+  other_numbers : string array;
+  smsc : smsc;
+  memory : memory_type;
+  location : int;
+  folder : int;
+  inbox_folder : bool;
+  state : state;
+  name : string;
+  text : string;
+  pdu : message_type;
+  coding : coding;
+  date_time : date_time;
+  smsc_time : date_time;
+  delivery_status : char;
+  reply_via_same_smsc : bool;
+  sms_class : char;
+  message_reference : char;
+}
+
+type multipart_message = message array
+
+val get : t -> location:int -> folder:int -> multipart_message =
+  "gammu_caml_GetSMS"
+
+val get_next : ?start:bool -> location:int -> folder:int -> t -> multipart_message =
+  "gammu_caml_GetNextSMS"
+
+
+end
 
 (************************************************************************)
 (* Events *)
