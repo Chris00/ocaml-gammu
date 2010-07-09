@@ -29,7 +29,7 @@
 #define Error_val(v) (Int_val(v) + 1)
 #define Val_Error(v) (Val_int(v - 1)
 
-CAMLprim
+CAMLexport
 value gammu_caml_ErrorString(value verr)
 {
   CAMLparam1(verr);
@@ -40,7 +40,7 @@ value gammu_caml_ErrorString(value verr)
 /************************************************************************/
 /* Debuging handling */
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetGlobalDebug()
 {
   CAMLparam0;
@@ -106,7 +106,7 @@ static value Val_INI_Section(INI_Section *ini_section)
   return res;
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_INI_ReadFile(value file_name, value unicode)
 {
   CAMLparam2(filename, unicode);
@@ -205,7 +205,7 @@ static GSM_Config Config_val(value vconfig)
 #define ConnectionType_val(v) (Int_val(v) + 1)
 #define Val_ConnectionType(v) Val_int(v - 1)
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetDebug(value s)
 {
   CAMLparam1(s);
@@ -219,7 +219,7 @@ value gammu_caml_GetDebug(value s)
   CAMLreturn((value) GSM_GetDebug(s));
 }
 
-CAMLprim
+CAMLexport
 void gammu_caml_InitLocales(value vpath)
 {
   CAMLparam1(path);
@@ -227,7 +227,7 @@ void gammu_caml_InitLocales(value vpath)
   CAMLreturn0;
 }
 
-CAMLprim
+CAMLexport
 void gammu_caml_InitDefaultLocales()
 {
   CAMLparam0;
@@ -235,14 +235,14 @@ void gammu_caml_InitDefaultLocales()
   CAMLreturn0;
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_CreateStateMachine()
 {
   CAMLparam0;
   CAMLreturn(Val_StateMachine(GSM_AllocStateMachine()));
 }
 
-CAMLprim
+CAMLexport
 INI_Section* gammu_caml_FindGammuRC_force(value vpath)
 {
   CAMLparam1(path);
@@ -250,14 +250,14 @@ INI_Section* gammu_caml_FindGammuRC_force(value vpath)
   CAMLreturn(Val_INI_Section(file_info));
 }
 
-CAMLprim
+CAMLexport
 INI_Section* gammu_caml_FindGammuRC()
 {
   CAMLparam0;
   CAMLreturn(Val_INI_Section(GSM_FindGammuRC(NULL)));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_ReadConfig(value vcfg_info, value vnum)
 {
   CAMLparam2(vcfg_info, vnum);
@@ -266,7 +266,7 @@ value gammu_caml_ReadConfig(value vcfg_info, value vnum)
   CAMLreturn(Val_Config(*cfg));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetConfig(value s, value vnum)
 {
   CAMLparam2(s, num);
@@ -305,7 +305,7 @@ void gammu_caml_RemoveConfig(value s)
   CAMLreturn0;
 }
   
-CAMLprim
+CAMLexport
 value gammu_caml_GetConfigNum(value s)
 {
   CAMLparam1(s);
@@ -341,7 +341,7 @@ void gammu_caml_InitConnectionLog(value s, value vreply_num, value vlog_func)
   CAMLreturn0;
 }
 
-CAMLprim
+CAMLexport
 void gammu_caml_TerminateConnection(value s)
 {
   CAMLparam1(s);
@@ -349,14 +349,14 @@ void gammu_caml_TerminateConnection(value s)
   CAMLreturn0;
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_IsConnected(value s)
 {
   CAMLparam1(s);
   CAMLreturn(Val_bool(GSM_IsConnected(StateMachine_val(s))));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetUsedConnection(value s)
 {
   CAMLparam1(s);
@@ -365,7 +365,7 @@ value gammu_caml_GetUsedConnection(value s)
   CAMLreturn(Val_ConnectionType(conn_type));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_ReadDevice(value s, value vwait_for_reply)
 {
   CAMLparam2(s, vwait_for_reply);
@@ -388,7 +388,7 @@ static GSM_SecurityCode SecurityCode_val(value vsecurity_code)
 #define SecurityCodeType_val(v) (Int_val(v) + 1)
 #define Val_SecurityCodeType(v) (Val_int(v - 1))
 
-CAMLprim
+CAMLexport
 void SecurityCode(value s, value code)
 {
   CAMLparam1(s, code);
@@ -396,7 +396,7 @@ void SecurityCode(value s, value code)
   CAMLreturn0;
 }
 
-CAMLprim
+CAMLexport
 value GetSecurityCode(value s)
 {
   CAMLparam1(s);
@@ -521,7 +521,7 @@ static value Val_SignalQuality(GSM_SignalQuality signal_quality)
   return res;
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetBatteryCharge(value s)
 {
   CAMLparam1(s);
@@ -530,7 +530,7 @@ value gammu_caml_GetBatteryCharge(value s)
   CAMLreturn(Val_BatteryCharge(bat));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetFirmWare(value s)
 {
   CAMLparam1(s);
@@ -545,7 +545,7 @@ value gammu_caml_GetFirmWare(value s)
   CAMLreturn(res);
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetHardware(value s)
 {
   CAMLparam1(s);
@@ -554,7 +554,7 @@ value gammu_caml_GetHardware(value s)
   CAMLreturn(caml_copy_string(val));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetIMEI(value s)
 {
   CAMLparam1(s);
@@ -563,7 +563,7 @@ value gammu_caml_GetIMEI(value s)
   CAMLreturn(caml_copy_string(val));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetManufactureMonth(value s)
 {
   CAMLparam1(s);
@@ -572,7 +572,7 @@ value gammu_caml_GetManufactureMonth(value s)
   CAMLreturn(caml_copy_string(val));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetManufacturer(value s)
 {
   CAMLparam1(s);
@@ -581,7 +581,7 @@ value gammu_caml_GetManufacturer(value s)
   CAMLreturn(caml_copy_string(val));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetModel(value s)
 {
   CAMLparam1(s);
@@ -590,7 +590,7 @@ value gammu_caml_GetModel(value s)
   CAMLreturn(caml_copy_string(val));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetModelInfo(value s)
 {
   CAMLparam1(s);
@@ -598,7 +598,7 @@ value gammu_caml_GetModelInfo(value s)
   CAMLreturn(Val_PhoneModel(*phone_model));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetNetworkInfo(value s)
 {
   CAMLparam1(s);
@@ -607,7 +607,7 @@ value gammu_caml_GetNetworkInfo(value s)
   CAMLreturn(Val_NetworkInfo(*netinfo));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetProductCode(value s)
 {
   CAMLparam1(s);
@@ -616,7 +616,7 @@ value gammu_caml_GetProductCode(value s)
   CAMLreturn(caml_copy_string(val));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_GetSignalQuality(value s)
 {
   CAMLparam1(s);
@@ -655,7 +655,7 @@ static value Val_DateTime(GSM_DateTime date_time)
   return res;
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_CheckDate(value date)
 {
   CAMLparam1(date);
@@ -663,7 +663,7 @@ value gammu_caml_CheckDate(value date)
   CAMLreturn(Val_bool(date_ok));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_CheckTime(value date)
 {
   CAMLparam1(date);
@@ -671,7 +671,7 @@ value gammu_caml_CheckTime(value date)
   CAMLreturn(Val_bool(time_ok));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_OSDate(value dt)
 {
   CAMLparam1(dt);
@@ -679,7 +679,7 @@ value gammu_caml_OSDate(value dt)
   CAMLreturn(caml_copy_string(os_date));
 }
 
-CAMLprim
+CAMLexport
 value gammu_caml_OSDateTime(value dt, value timezone)
 {
   CAMLparam2(dt, timezone);
