@@ -202,7 +202,7 @@ type connection_type =
 val get_debug : t -> debug_info
 (** Gets debug information for state machine. *)
 
-val init_locales : ?path:string -> unit
+val init_locales : ?path:string -> unit -> unit
 (** Initializes locales. This sets up things needed for proper string
     conversion from local charset as well as initializes gettext based
     translation.
@@ -258,7 +258,7 @@ val is_connected : t -> bool
 
 val get_used_connection : t -> connection_type
 
-val read_device : t -> ?wait_for_reply:bool -> int
+val read_device : ?wait_for_reply:bool -> t -> int
 (** Attempts to read data from phone. Thus can be used for getting status
     of incoming events, which would not be found out without polling
     device.
@@ -297,6 +297,7 @@ val get_security_status : t -> security_code_type
 
 (************************************************************************)
 (** {2 Informations on the phone} *)
+
 type battery_charge = {
   battery_type : battery_type; (** Battery type. *)
   battery_capacity : int;      (** Remaining battery capacity (in mAh). *)
@@ -384,7 +385,7 @@ val hardware : t -> string
 val imei : t -> string
   (** @return IMEI (International Mobile Equipment Identity) / Serial Number *)
 
-val manufecture_month : t -> string
+val manufacture_month : t -> string
 
 val manufacturer : t -> string
 
@@ -578,7 +579,7 @@ module SMS : sig
     udh : udh_header;
     number : string;
     other_numbers : string array;
-    smsc : smsc;     (** SMS Center *)
+    (* smsc : smsc;     (** NYI SMS Center *) *)
     memory : memory_type; (** For saved SMS: where exactly
                               it's saved (SIM/phone). *)
     location : int;  (** For saved SMS: location of SMS in memory. *)
@@ -603,22 +604,22 @@ module SMS : sig
   type multipart_message = message array
   (** Multiple SMS messages, used for Smart Messaging 3.0/EMS. *)
 
-  val get : t -> location:int -> folder:int -> multipart_message
-  (** Reads SMS message. *)
+  (* val get : t -> location:int -> folder:int -> multipart_message
+  (** NYI Reads SMS message. *) *)
 
   (* TODO:?? old :
      val get_next : ?message:message -> t -> multipart_message
      does giving message is important ? *)
-  val get_next : ?start:bool -> location:int -> folder:int -> t
+  (* val get_next : ?start:bool -> location:int -> folder:int -> t
     -> multipart_message
-  (** Reads next (or first if [start] is set to true) SMS message.
+  (** NYI Reads next (or first if [start] is set to true) SMS message.
       This might be faster for some phones than using
       {!Gammu.SMS.get} for each message.
 
       Please note that this command does not mark the message as
       read in phone. To do so, you have to call {!Gammu.SMS.get}.
 
-      @param start if true, start reading from beginning (default false). *)
+      @param start if true, start reading from beginning (default false). *) *)
 
   type folder = {
     inbox_folder : bool;  (** Whether it is inbox. *)
@@ -627,7 +628,7 @@ module SMS : sig
     name : string;        (** Name of the folder. *)
   }
 
-  val folders : t -> folder array
+  (* val folders : t -> folder array (* NYI *) *)
   (** @return SMS folders information. *)
 
   (** Status of SMS memory. *)
@@ -741,8 +742,8 @@ module SMS : sig
     | AlcatelSMSTemplateName
     | SiemensFile (** Siemens OTA  *)
 
-  val decode_multipart : ?di:debug_info -> ?ems:bool -> debug_info ->
-    multipart_message -> bool -> multipart_info
+  val decode_multipart : ?di:debug_info -> ?ems:bool ->
+    multipart_message -> multipart_info
 (** [decode_multipart sms] Decodes multi part SMS to "readable"
     format. [sms] is modified, return a {!Gammu.multipart_info}
     associated.
@@ -752,6 +753,7 @@ module SMS : sig
 
     @param ems consider the message as an EMS (Enhanced Messaging Service)
     (default false). *)
+
 end
 
 (************************************************************************)

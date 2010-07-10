@@ -3,7 +3,7 @@
    Copyright (C) 2010
 
      Christophe Troestler <Christophe.Troestler@umons.ac.be>
-     Noémie Meunier <Noemie.Meunier@student.umons.ac.be>     
+     Noémie Meunier <Noemie.Meunier@student.umons.ac.be>
      Pierre Hauweele <Pierre.Hauweele@student.umons.ac.be>
      WWW: http://math.umons.ac.be/an/software/
 
@@ -26,6 +26,7 @@
 #include <caml/custom.h>
 #include <caml/intext.h>
 
+
 /************************************************************************/
 /* Error handling */
 
@@ -40,21 +41,25 @@ value gammu_caml_ErrorString(value verr)
   CAMLreturn(caml_copy_string(msg));
 }
 
+
 /************************************************************************/
 /* Debuging handling */
+
+#define Debug_Info_val(v) ((GSM_Debug_Info *) v)
+#define Val_Debug_Info(v) ((value) v)
 
 CAMLexport
 value gammu_caml_GetGlobalDebug()
 {
   CAMLparam0;
-  CAMLreturn((value) GSM_GetGlobalDebug());
+  CAMLreturn(Val_Debug_Info(GSM_GetGlobalDebug()));
 }
 
 CAMLexport
 void gammu_caml_SetDebugGlobal(value vinfo, value vdi)
 {
   CAMLparam2(vinfo, vdi);
-  GSM_SetDebugGlobal(Bool_val(vinfo), (GSM_Debug_Info *) vdi);
+  GSM_SetDebugGlobal(Bool_val(vinfo), Debug_Info_val(vdi));
   CAMLreturn0;
 }
 
@@ -64,7 +69,7 @@ void gammu_caml_SetDebugFileDescriptor(value vfd, value vclosable, value vdi)
   CAMLparam3(vfd, vclosable, vdi);
   GSM_SetDebugFileDescriptor(Int_val(vfd),
                              Bool_val(vclosable),
-                             (GSM_Debug_Info *) vdi);
+                             Debug_Info_val(vdi));
   CAMLreturn0;
 }
 
@@ -72,12 +77,14 @@ CAMLexport
 void gammu_caml_SetDebugLevel(value vlevel, value vdi)
 {
   CAMLparam2(vlevel, vdi);
-  GSM_SetDebugLevel(String_val(vlevel), (GSM_Debug_Info *) vdi);
+  GSM_SetDebugLevel(String_val(vlevel), Debug_Info_val(vdi));
   CAMLreturn0;
 }
 
 /************************************************************************/
 /* INI files */
+
+#define INI_Section_val(v) (*(INI_Section **) (Data_Custom_val(v))
 
 static void gammu_caml_ini_section_finalize(value vini_section)
 {
@@ -96,10 +103,8 @@ static struct custom_operations gammu_caml_ini_section_ops = {
 static value alloc_INI_Section()
 {
   return alloc_custom(&gammu_caml_ini_section_ops, sizeof(INI_Section *),
-                      1, 1000);
+                      1, 100);
 }
-
-#define INI_Section_val(v) (*(INI_Section **) (Data_Custom_val(v))
 
 static value Val_INI_Section(INI_Section *ini_section)
 {
@@ -135,9 +140,19 @@ value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
 /************************************************************************/
 /* State machine */
 
-static void gammu_caml_sm_finalize(value state_machine)
+/* TODO: naming rule for state machines ? :
+   "value s" for caml type t
+   "value vsm" for caml type state_machine
+   "GSM_StateMachine *sm" for libGammu's (GSM_StateMachine *).
+   or maybe
+   "value vsm" - type t (often used)
+   "value vs" - type state_machine (nearly never used) */
+#define StateMachine_vsm(v) (*((GSM_StateMachine **) Data_Custom_val(v)))
+#define StateMachine_val(v) StateMachine_vsm(Field(v, 0))
+
+static void gammu_caml_sm_finalize(value s)
 {
-  GSM_FreeStateMachine(STATE_MACHINE_VAL(state_machine));
+  GSM_FreeStateMachine(StateMachine_val(s));
 }
 
 static struct custom_operations gammu_caml_sm_ops = {
@@ -149,22 +164,19 @@ static struct custom_operations gammu_caml_sm_ops = {
   custom_deserialize_default
 };
 
-static value alloc_StateMachine()
+static value Val_StateMachine(GSM_StateMachine *sm)
 {
-  return alloc_custom(&gammu_caml_sm_ops, sizeof(StateMachine *), 1, 1000);
+  CAMLparam0;
+  CAMLlocal2(res, vsm);
+  res = caml_alloc(2, 0);
+  vsm = alloc_custom(&gammu_caml_sm_ops, sizeof(GSM_StateMachine *), 1, 100);
+  StateMachine_vsm(vsm) = sm;
+  Store_field(res, 0, vsm);
+  Store_field(res, 1, Val_Debug_Info(GSM_GetDebug(sm)));
+  CAMLreturn(res);
 }
 
-#define StateMachine_val(v) (*(GSM_StateMachine **) Data_Custom_val(v))
-
-static value Val_StateMachine(StateMachine *state_machine)
-{
-  CAMLlocal1(res);
-  res = alloc_StateMachine();
-  StateMachine_val(res) = state_machine;
-  return res;
-}
-
-static value Val_Config(GSM_Config config)
+static value Val_Config(GSM_Config *config)
 {
   CAMLlocal1(res);
   res = caml_alloc(14, 0);
@@ -185,7 +197,7 @@ static value Val_Config(GSM_Config config)
   return res;
 }
 
-static GSM_Config Config_val(value vconfig)
+static GSM_Config *Config_val(value vconfig)
 {
   GSM_Config config;
   config.model = String_val(Field(vconfig, 0));
@@ -212,7 +224,7 @@ CAMLexport
 value gammu_caml_GetDebug(value s)
 {
   CAMLparam1(s);
-  /* How to declare dependence of DebugInfo on StateMachine ? 
+  /* How to declare dependence of DebugInfo on StateMachine ?
      StateMachine* s -> DebugInfo* di
      say
        let s = Gammu.make () in
@@ -307,7 +319,7 @@ void gammu_caml_RemoveConfig(value s)
   */
   CAMLreturn0;
 }
-  
+
 CAMLexport
 value gammu_caml_GetConfigNum(value s)
 {
@@ -323,7 +335,7 @@ void gammu_caml_InitConnection(value s, value vreply_num)
   CAMLreturn0;
 }
 
-#define Log_Function_val(v) 
+#define Log_Function_val(v)
 
 void log_function_callback(char *text, void *data)
 {
@@ -713,7 +725,7 @@ static GSM_MemoryEntry MemoryEntry_val(value vmem_entry)
   /* TODO:?? Alloc only length GSM_SubMemoryEntry. */
   mem_entry.Entries = malloc(GSM_PHONEBOOK_ENTRIES * sizeof(GSM_SubMemoryEntry));
   for (i=0; i < length; i++)
-    entries[i] = SubMemoryEntry_val(Field(ventries, i)); 
+    entries[i] = SubMemoryEntry_val(Field(ventries, i));
   mem_entry.EntriesNum = length;
   mem_entry.Entries = entries;
   return mem_entry;
@@ -864,7 +876,7 @@ static value Val_SMSMessage(GSM_SMSMessage sms)
   CAMLreturn(res);
 }
 
-/* message array 
+/* message array
    GetSMS
    GetNextSMS... */
 

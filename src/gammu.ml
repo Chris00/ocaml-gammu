@@ -345,7 +345,7 @@ type signal_quality = {
   bit_error_rate : int;
 }
 
-external baterry_charge : t -> battery_charge = "gammu_caml_GetBatteryCharge"
+external battery_charge : t -> battery_charge = "gammu_caml_GetBatteryCharge"
 
 external firmware : t -> firmware = "gammu_caml_GetFirmWare"
 
@@ -539,7 +539,7 @@ struct
     udh : udh_header;
     number : string;
     other_numbers : string array;
-    smsc : smsc;
+    (* smsc : smsc; (* NYI *) *)
     memory : memory_type;
     location : int;
     folder : int;
@@ -572,7 +572,7 @@ struct
     name : string;
   }
 
-  (* folders *)
+  (* TODO: folders *)
 
   type memory_status = {
     phone_size : int;
@@ -672,16 +672,17 @@ struct
     | AlcatelSMSTemplateName
     | SiemensFile
 
-  external _decode_multipart : debug_info -> multipart_info ->
-    multipart_message -> bool -> multipart_info
+  external _decode_multipart :
+    debug_info ->  multipart_message -> bool -> multipart_info
       = "gammu_caml_DecodeMultiPartSMS"
 
-  let decode_multipart ?di ?(ems=false) di multp_inf multp_mess =
+  let decode_multipart ?di ?(ems=false) multp_mess =
     let di = match di with
       | None -> get_global_debug ()
       | Some s_di -> s_di
     in
-    _decode_multipart di multp_inf multp_mess ems
+    _decode_multipart di multp_mess ems
+
 end
 
 (************************************************************************)
