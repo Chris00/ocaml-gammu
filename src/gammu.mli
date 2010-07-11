@@ -93,11 +93,9 @@ val set_debug_global : bool -> debug_info -> unit
 (** Enables using of global debugging configuration. Makes no effect on
     global debug configuration. *)
 
-val set_debug_file_descr : Unix.file_descr -> bool -> debug_info -> unit
-(** [set_debug_file_descr fd closable di] sets debug [di] file
-    descriptor to [fd]. [closable] tells whether Gammu can close the
-    file when it is no longer needed for debug output. Please note that
-    stderr and stdout are never closed. *)
+val set_debug_output : out_channel -> debug_info -> unit
+(** [set_debug_output channel di] sets output channel of [di] to
+    [channel]. *)
 
 (* TODO:?? if [level] is invalid, return a bool, raise an exception or
    ignore ? *)

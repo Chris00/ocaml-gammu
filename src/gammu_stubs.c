@@ -17,7 +17,8 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. */
 
-#include <gammu.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -26,6 +27,9 @@
 #include <caml/custom.h>
 #include <caml/intext.h>
 
+#include <gammu.h>
+
+#include "io.h"
 
 /************************************************************************/
 /* Error handling */
@@ -45,13 +49,16 @@ value gammu_caml_ErrorString(value verr)
 /************************************************************************/
 /* Debuging handling */
 
+/* The global Debug will never be freed and those from state machines are
+   freed through them and should not be freed before the associated state
+   machine. Thus, there's no need to wrap them in a finalized block. */
 #define Debug_Info_val(v) ((GSM_Debug_Info *) v)
 #define Val_Debug_Info(v) ((value) v)
 
 CAMLexport
 value gammu_caml_GetGlobalDebug()
 {
-  CAMLparam0;
+  CAMLparam0();
   CAMLreturn(Val_Debug_Info(GSM_GetGlobalDebug()));
 }
 
@@ -63,12 +70,26 @@ void gammu_caml_SetDebugGlobal(value vinfo, value vdi)
   CAMLreturn0;
 }
 
-CAMLexport
-void gammu_caml_SetDebugFileDescriptor(value vfd, value vclosable, value vdi)
+// TODO: It should work on Windows, but have to check.
+static FILE *FILE_val(value vchannel, const char *mode)
 {
-  CAMLparam3(vfd, vclosable, vdi);
-  GSM_SetDebugFileDescriptor(Int_val(vfd),
-                             Bool_val(vclosable),
+  int fd;
+  FILE *res;
+  struct channel *channel = Channel(vchannel);
+  assert(channel != NULL);
+  /* Duplicate channel's file descriptor so that the user can close the
+     channel without affecting us and inversely. */
+  fd = dup(channel->fd);
+  res = fdopen(fd, mode);
+  return res;
+}
+
+CAMLexport
+void gammu_caml_SetDebugFileDescriptor(value vchannel, value vdi)
+{
+  CAMLparam2(vchannel, vdi);
+  GSM_SetDebugFileDescriptor(FILE_val(vchannel, "a"),
+                             TRUE, // file descriptor is closable
                              Debug_Info_val(vdi));
   CAMLreturn0;
 }
@@ -84,7 +105,7 @@ void gammu_caml_SetDebugLevel(value vlevel, value vdi)
 /************************************************************************/
 /* INI files */
 
-#define INI_Section_val(v) (*(INI_Section **) (Data_Custom_val(v))
+#define INI_Section_val(v) (*(INI_Section **) (Data_custom_val(v)))
 
 static void gammu_caml_ini_section_finalize(value vini_section)
 {
@@ -115,11 +136,11 @@ static value Val_INI_Section(INI_Section *ini_section)
 }
 
 CAMLexport
-value gammu_caml_INI_ReadFile(value file_name, value unicode)
+value gammu_caml_INI_ReadFile(value vfilename, value vunicode)
 {
-  CAMLparam2(filename, unicode);
+  CAMLparam2(vfilename, vunicode);
   INI_Section *cfg;
-  INI_ReadFile(String_val(filename), Bool_val unicode, &cfg);
+  INI_ReadFile(String_val(vfilename), Bool_val(vunicode), &cfg);
   CAMLreturn(Val_INI_Section(cfg));
 }
 
@@ -127,13 +148,14 @@ CAMLexport
 value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
                               value vunicode)
 {
-  CAMLparam4(file_info, section, key, unicode);
+  CAMLparam4(vfile_info, vsection, vkey, vunicode);
   const unsigned char* res;
+  /* TODO: are those casts safe ? */
   res = INI_GetValue(INI_Section_val(vfile_info),
-                     String_val(vsection),
-                     String_val(vkey),
+                     (unsigned char *) String_val(vsection),
+                     (unsigned char *) String_val(vkey),
                      Bool_val(vunicode));
-  CAMLreturn(caml_copy_string(res));
+  CAMLreturn(caml_copy_string((char *) res));
 }
 
 
@@ -147,7 +169,7 @@ value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
    or maybe
    "value vsm" - type t (often used)
    "value vs" - type state_machine (nearly never used) */
-#define StateMachine_vsm(v) (*((GSM_StateMachine **) Data_Custom_val(v)))
+#define StateMachine_vsm(v) (*((GSM_StateMachine **) Data_custom_val(v)))
 #define StateMachine_val(v) StateMachine_vsm(Field(v, 0))
 
 static void gammu_caml_sm_finalize(value s)
@@ -166,7 +188,7 @@ static struct custom_operations gammu_caml_sm_ops = {
 
 static value Val_StateMachine(GSM_StateMachine *sm)
 {
-  CAMLparam0;
+  CAMLparam0();
   CAMLlocal2(res, vsm);
   res = caml_alloc(2, 0);
   vsm = alloc_custom(&gammu_caml_sm_ops, sizeof(GSM_StateMachine *), 1, 100);
@@ -180,40 +202,53 @@ static value Val_Config(GSM_Config *config)
 {
   CAMLlocal1(res);
   res = caml_alloc(14, 0);
-  Store_field(res, 0, caml_copy_string(config.model));
-  Store_field(res, 1, caml_copy_string(config.debug_level));
-  Store_field(res, 2, caml_copy_string(config.device));
-  Store_field(res, 3, caml_copy_string(config.connection));
-  Store_field(res, 4, Val_bool(config.sync_time));
-  Store_field(res, 5, Val_bool(config.lock_device));
-  Store_field(res, 6, caml_copy_string(config.debug_file));
-  Store_field(res, 7, Val_bool(config.start_info));
-  Store_field(res, 8, Val_bool(config.use_global_debug_file));
-  Store_field(res, 9, caml_copy_string(config.text_reminder));
-  Store_field(res, 10, caml_copy_string(config.text_reminder));
-  Store_field(res, 11, caml_copy_string(config.text_meeting));
-  Store_field(res, 12, caml_copy_string(config.text_birthday));
-  Store_field(res, 13, caml_copy_string(config.text_memo));
+  Store_field(res, 0, caml_copy_string(config->Model));
+  Store_field(res, 1, caml_copy_string(config->DebugLevel));
+  Store_field(res, 2, caml_copy_string(config->Device));
+  Store_field(res, 3, caml_copy_string(config->Connection));
+  Store_field(res, 4, Val_bool(config->SyncTime));
+  Store_field(res, 5, Val_bool(config->LockDevice));
+  Store_field(res, 6, caml_copy_string(config->DebugFile));
+  Store_field(res, 7, Val_bool(config->StartInfo));
+  Store_field(res, 8, Val_bool(config->UseGlobalDebugFile));
+  Store_field(res, 9, caml_copy_string(config->TextReminder));
+  Store_field(res, 10, caml_copy_string(config->TextReminder));
+  Store_field(res, 11, caml_copy_string(config->TextMeeting));
+  Store_field(res, 12, caml_copy_string(config->TextBirthday));
+  Store_field(res, 13, caml_copy_string(config->TextMemo));
   return res;
+}
+
+/* Similar to strncpy but doesn't pad with nulls and ensure that destination
+   string is null terminated. */
+static inline char *strncpy2(restrict char *dst, const char *src, size_t n)
+{  
+  size_t i;
+  
+  for (i = 0; i < (n - 1) && src[i] != 0; i++)
+    dst[i] = src[i];
+  dst[i] = '\0';
+
+  return dst;
 }
 
 static GSM_Config *Config_val(value vconfig)
 {
-  GSM_Config config;
-  config.model = String_val(Field(vconfig, 0));
-  config.debug_level = String_val(Field(vconfig, 1));
-  config.device = String_val(Field(vconfig, 2));
-  config.connection = String_val(Field(vconfig, 3));
-  config.sync_time = Bool_val(Field(vconfig, 4));
-  config.lock_device = Bool_val(Field(vconfig, 5));
-  config.debug_file = String_val(Field(vconfig, 6));
-  config.start_info = Bool_val(Field(vconfig, 7));
-  config.use_global_debug_file = Bool_val(Field(vconfig, 8));
-  config.text_reminder = String_val(Field(vconfig, 9));
-  config.text_meeting = String_val(Field(vconfig, 10));
-  config.text_call = String_val(Field(vconfig, 11));
-  config.text_birthday = String_val(Field(vconfig, 12));
-  config.text_memo = String_val(Field(vconfig, 13));
+  GSM_Config *config = malloc(sizeof(GSM_Config));
+  strncpy2(config->Model, String_val(Field(vconfig, 0)), 50);
+  strncpy2(config->DebugLevel, String_val(Field(vconfig, 1)), 50);
+  config->Device = String_val(Field(vconfig, 2));
+  config->Connection = String_val(Field(vconfig, 3));
+  config->SyncTime = Bool_val(Field(vconfig, 4));
+  config->LockDevice = Bool_val(Field(vconfig, 5));
+  config->DebugFile = String_val(Field(vconfig, 6));
+  config->StartInfo = Bool_val(Field(vconfig, 7));
+  config->UseGlobalDebugFile = Bool_val(Field(vconfig, 8));
+  strncpy2(config->TextReminder, String_val(Field(vconfig, 9)), 32);
+  strncpy2(config->TextMeeting, String_val(Field(vconfig, 10)), 32);
+  strncpy2(config->TextCall, String_val(Field(vconfig, 11)), 32);
+  strncpy2(config->TextBirthday, String_val(Field(vconfig, 12)), 32);
+  strncpy2(config->TextMemo, String_val(Field(vconfig, 13)), 32);
   return config;
 }
 
@@ -224,13 +259,6 @@ CAMLexport
 value gammu_caml_GetDebug(value s)
 {
   CAMLparam1(s);
-  /* How to declare dependence of DebugInfo on StateMachine ?
-     StateMachine* s -> DebugInfo* di
-     say
-       let s = Gammu.make () in
-       let di = get_debug s in
-       some_func di;;
-     and say s got garbage collected, it will free di... */
   CAMLreturn((value) GSM_GetDebug(s));
 }
 
@@ -245,7 +273,7 @@ void gammu_caml_InitLocales(value vpath)
 CAMLexport
 void gammu_caml_InitDefaultLocales()
 {
-  CAMLparam0;
+  CAMLparam0();
   GSM_InitLocales(NULL);
   CAMLreturn0;
 }
@@ -253,7 +281,7 @@ void gammu_caml_InitDefaultLocales()
 CAMLexport
 value gammu_caml_CreateStateMachine()
 {
-  CAMLparam0;
+  CAMLparam0();
   CAMLreturn(Val_StateMachine(GSM_AllocStateMachine()));
 }
 
@@ -268,7 +296,7 @@ INI_Section* gammu_caml_FindGammuRC_force(value vpath)
 CAMLexport
 INI_Section* gammu_caml_FindGammuRC()
 {
-  CAMLparam0;
+  CAMLparam0();
   CAMLreturn(Val_INI_Section(GSM_FindGammuRC(NULL)));
 }
 

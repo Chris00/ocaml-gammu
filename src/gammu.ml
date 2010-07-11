@@ -110,7 +110,7 @@ external get_global_debug : unit -> debug_info = "gammu_caml_GetGlobalDebug"
 external set_debug_global : bool -> debug_info -> unit
   = "gammu_caml_SetDebugGlobal"
 
-external set_debug_file_descr : Unix.file_descr -> bool -> debug_info -> unit
+external set_debug_output : out_channel -> debug_info -> unit
   = "gammu_caml_SetDebugFileDescriptor"
 
 external set_debug_level : string -> debug_info -> unit
