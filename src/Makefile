@@ -13,10 +13,10 @@ native: gammu.cmxa
 
 
 gammu.cma gammu.cmxa: gammu.cmo gammu.cmx $(STUBS_LIB)$(OBJ)
-	ocamlmklib -o $(basename $@) -oc $(STUBS_LIB) $^ -lGammu
+	ocamlmklib -o $(basename $@) -oc $(STUBS_LIB) $^ -lGammu -lm
 
-$(STUBS_LIB)(OBJ): $(STUBS_LIB).c
-	$(OCAMLC) -c $<
+$(STUBS_LIB)$(OBJ): $(STUBS_LIB).c
+	$(OCAMLC) -c $< -I /usr/include/gammu -cclib -lGammu -cclib -lm
 
 
 .PHONY: install uninstall reinstall doc
