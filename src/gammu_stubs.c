@@ -18,6 +18,7 @@
    LICENSE for more details. */
 
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 #include <caml/mlvalues.h>
@@ -34,6 +35,7 @@
 
 /* Similar to strncpy but doesn't pad with nulls and ensure that destination
    string is null terminated. */
+/* TODO: should be removed, not used anymore. */
 static inline char *strncpy2(char *dst, const char *src, size_t n)
 {
   size_t i;
@@ -45,11 +47,18 @@ static inline char *strncpy2(char *dst, const char *src, size_t n)
   return dst;
 }
 
+/* Copy string represented by the value v to dst, and trim if too long. */
+#define CPY_TRIM_String_val(dst, v)               \
+  do {                                            \
+    strncpy(dst, String_val(v), sizeof(dst));     \
+    dst[sizeof(dst)] = '\0';                      \
+  } while (0)
+
 /************************************************************************/
 /* Error handling */
 
 #define Error_val(v) (Int_val(v) + 1)
-#define Val_Error(v) (Val_int(v - 1))
+#define Val_Error(v) Val_int(v - 1)
 
 CAMLexport
 value gammu_caml_ErrorString(value verr)
@@ -236,8 +245,8 @@ static value Val_Config(const GSM_Config *config)
 /* Set values of config according to those from vconfig. */
 static void set_config_val(GSM_Config *config, value vconfig)
 {
-  strncpy2(config->Model, String_val(Field(vconfig, 0)), 50);
-  strncpy2(config->DebugLevel, String_val(Field(vconfig, 1)), 50);
+  CPY_TRIM_String_val(config->Model, String_val(Field(vconfig, 0)));
+  CPY_TRIM_String_val(config->DebugLevel, String_val(Field(vconfig, 1)));
   config->Device = String_val(Field(vconfig, 2));
   config->Connection = String_val(Field(vconfig, 3));
   config->SyncTime = Bool_val(Field(vconfig, 4));
@@ -245,11 +254,11 @@ static void set_config_val(GSM_Config *config, value vconfig)
   config->DebugFile = String_val(Field(vconfig, 6));
   config->StartInfo = Bool_val(Field(vconfig, 7));
   config->UseGlobalDebugFile = Bool_val(Field(vconfig, 8));
-  strncpy2(config->TextReminder, String_val(Field(vconfig, 9)), 32);
-  strncpy2(config->TextMeeting, String_val(Field(vconfig, 10)), 32);
-  strncpy2(config->TextCall, String_val(Field(vconfig, 11)), 32);
-  strncpy2(config->TextBirthday, String_val(Field(vconfig, 12)), 32);
-  strncpy2(config->TextMemo, String_val(Field(vconfig, 13)), 32);
+  CPY_TRIM_String_val(config->TextReminder, String_val(Field(vconfig, 9)));
+  CPY_TRIM_String_val(config->TextMeeting, String_val(Field(vconfig, 10)));
+  CPY_TRIM_String_val(config->TextCall, String_val(Field(vconfig, 11)));
+  CPY_TRIM_String_val(config->TextBirthday, String_val(Field(vconfig, 12)));
+  CPY_TRIM_String_val(config->TextMemo, String_val(Field(vconfig, 13)));
 }
 
 #define ConnectionType_val(v) (Int_val(v) + 1)
@@ -424,15 +433,14 @@ value gammu_caml_ReadDevice(value s, value vwait_for_reply)
 /* Security related operations with phone */
 
 #define SecurityCodeType_val(v) (Int_val(v) + 1)
-#define Val_SecurityCodeType(v) (Val_int(v - 1))
+#define Val_SecurityCodeType(v) Val_int(v - 1)
 
 static GSM_SecurityCode SecurityCode_val(value vsecurity_code)
 {
   GSM_SecurityCode security_code;
   security_code.Type = SecurityCodeType_val(Field(vsecurity_code, 0));
-  strncpy2(security_code.Code,
-           String_val(Field(vsecurity_code, 1)),
-           GSM_SECURITY_CODE_LEN + 1);
+  CPY_TRIM_String_val(security_code.Code,
+                   String_val(Field(vsecurity_code, 1)));
   return security_code;
 }
 
@@ -457,9 +465,13 @@ value GetSecurityCode(value s)
 /* Informations on the phone */
 
 #define ChargeState_val(v) (Int_val(v) + 1)
-#define Val_ChargeState(v) (Val_int(v - 1))
+#define Val_ChargeState(v) Val_int(v - 1)
 #define BatteryType_val(v) (Int_val(v) + 1)
-#define Val_BatteryType(v) (Val_int(v - 1))
+#define Val_BatteryType(v) Val_int(v - 1)
+#define GPRS_State_val(v) (Int_val(v) + 1)
+#define Val_GPRS_State(v) Val_int(v - 1)
+#define NetworkState_val(v) (Int_val(v) + 1)
+#define Val_NetworkState(v) Val_int(v - 1)
 
 static GSM_BatteryCharge *BatteryCharge_val(value vbattery_charge)
 {
@@ -516,41 +528,38 @@ static value Val_PhoneModel(GSM_PhoneModel *phone_model)
   return res;
 }
 
-#define GPRS_State_val(v) (Int_val(v) + 1)
-#define Val_GPRS_State(v) (Val_int(v - 1))
-#define NetworkState_val(v) (Int_val(v) + 1)
-#define Val_NetworkState(v) (Val_int(v - 1))
-
+/* broken code, never used
 static GSM_NetworkInfo *NetworkInfo_val(value vnetwork)
 {
-  /* Check alloc */
   GSM_NetworkInfo *network = malloc(sizeof(GSM_NetworkInfo));
+  if (network == NULL)
+    return NULL
   network->CID = String_val(Field(vnetwork, 0));
   network->NetworkCode = String_val(Field(vnetwork, 1));
   network->State = NetworkState_val(Field(vnetwork, 2));
   network->LAC = String_val(Field(vnetwork, 3));
   network->NetworkName = String_val(Field(vnetwork, 4));
-  network->GPRS = GPRS_State_val(Field(vnetwork, 5));  
+  network->GPRS = GPRS_State_val(Field(vnetwork, 5));
   network->PacketCID = String_val(Field(vnetwork, 6));
   network->PacketState = NetworkState_val(Field(vnetwork, 7));
   network->PacketLAC = String_val(Field(vnetwork, 8));
   return network;
-}
+}*/
 
 static value Val_NetworkInfo(GSM_NetworkInfo *network)
 {
   CAMLlocal1(res);
   res = caml_alloc(9, 0);
   Store_field(res, 0, caml_copy_string(network->CID));
-  Store_field(res, 1, caml_copy_string(network->NetworkCode));  
+  Store_field(res, 1, caml_copy_string(network->NetworkCode));
   Store_field(res, 2, Val_NetworkState(network->State));
   Store_field(res, 3, caml_copy_string(network->LAC));
   Store_field(res, 4, caml_copy_string(network->NetworkName));
-  Store_field(res, 5, Val_GPRS_State(network->GPRS));  
+  Store_field(res, 5, Val_GPRS_State(network->GPRS));
   Store_field(res, 6, caml_copy_string(network->PacketCID));
-  Store_field(res, 7, Val_NetworkState(network->PacketState));  
-  Store_field(res, 8, caml_copy_string(network->PacketLAC));  
-  return res; 
+  Store_field(res, 7, Val_NetworkState(network->PacketState));
+  Store_field(res, 8, caml_copy_string(network->PacketLAC));
+  return res;
 }
 
 static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
@@ -743,9 +752,9 @@ value gammu_caml_OSDateTime(value vdt, value vtimezone)
 /* Memory */
 
 #define MemoryType_val(v) (Int_val(v) + 1)
-#define Val_MemoryType(v) (Int_val(v - 1))
+#define Val_MemoryType(v) Int_val(v - 1)
 #define EntryType_val(v) (Int_val(v) + 1)
-#define Val_EntryType(v) (Val_int(v - 1))
+#define Val_EntryType(v) Val_int(v - 1)
 
 static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
 {
@@ -826,18 +835,17 @@ static value Val_SubMemoryEntry(GSM_SubMemoryEntry sub_mem_entry)
   CAMLreturn(res);
 }
 
-
 /************************************************************************/
 /* Messages */
 
 #define SMSFormat_val(v) (Int_val(v) + 1)
-#define Val_SMSFormat(v) (Val_int(v - 1))
+#define Val_SMSFormat(v) Val_int(v - 1)
 #define ValidyPeriod_val(v) (Int_val(v) + 1)
-#define Val_ValidyPeriod(v) (Val_int(v - 1))
+#define Val_ValidyPeriod(v) Val_int(v - 1)
 #define SMS_State_val(v) (Int_val(v) + 1)
-#define Val_SMS_State(v) (Val_int(v - 1))
+#define Val_SMS_State(v) Val_int(v - 1)
 #define UDH_val(v) (Int_val(v) + 1)
-#define Val_UDH(v) (Val_int(v - 1))
+#define Val_UDH(v) Val_int(v - 1)
 
 static GSM_UDHHeader *UDHHeader_val(value vudh_header)
 {
@@ -865,9 +873,9 @@ static value Val_UDHHeader(GSM_UDHHeader *udh_header)
 }
 
 #define SMSMessageType_val(v) (Int_val(v) + 1)
-#define Val_SMSMessageType(v) (Val_int(v - 1))
+#define Val_SMSMessageType(v) Val_int(v - 1)
 #define Coding_Type_val(v) (Int_val(v) + 1)
-#define Val_Coding_Type(v) (Val_int(v - 1))
+#define Val_Coding_Type(v) Val_int(v - 1)
 
 #define Char_val(v) \
   ((char) Int_val(caml_callback(*caml_named_value("Char.code"), v)))
@@ -961,13 +969,13 @@ static value Val_OneSMSFolder(GSM_OneSMSFolder *folder)
 static GSM_SMSMemoryStatus *SMSMemoryStatus_val(value vsms_mem)
 {
   GSM_SMSMemoryStatus *sms_mem = malloc(sizeof(GSM_SMSMemoryStatus));
-  sms_mem->SIMUnRead = Int_val(Field(vsms_mem, 0)); 
+  sms_mem->SIMUnRead = Int_val(Field(vsms_mem, 0));
   sms_mem->SIMUsed = Int_val(Field(vsms_mem, 1));
   sms_mem->SIMSize = Int_val(Field(vsms_mem, 2));
   sms_mem->TemplatesUsed = Int_val(Field(vsms_mem, 3));
   sms_mem->PhoneUnRead = Int_val(Field(vsms_mem, 4));
   sms_mem->PhoneUsed = Int_val(Field(vsms_mem, 5));
-  sms_mem->PhoneSize = Int_val(Field(vsms_mem, 6)); 
+  sms_mem->PhoneSize = Int_val(Field(vsms_mem, 6));
   return sms_mem;
 }
 
@@ -1079,7 +1087,7 @@ static value Val_MultipartSMSEntry(GSM_MultipartSMSEntry mult_part_sms)
 }
 
 #define EncodeMultiPartSMSID_val(v) (Int_val(v) + 1)
-#define Val_EncodeMultiPartSMSID(v) (Val_int(v - 1))
+#define Val_EncodeMultiPartSMSID(v) Val_int(v - 1)
 
 CAMLexport
 value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms,
