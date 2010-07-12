@@ -577,13 +577,13 @@ struct
   (* TODO: folders *)
 
   type memory_status = {
-    phone_size : int;
-    phone_unread : int;
-    phone_used : int;
-    sim_size : int;
     sim_unread : int;
     sim_used : int;
+    sim_size : int;
     templates_used : int;
+    phone_unread : int;
+    phone_used : int;
+    phone_size : int;
   }
 
   external get_status :t -> memory_status = "gammu_caml_GetSMSStatus"

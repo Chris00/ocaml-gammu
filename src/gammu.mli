@@ -635,14 +635,14 @@ module SMS : sig
 
   (** Status of SMS memory. *)
   type memory_status = {
-    phone_size : int;     (** Number of all possible messages on phone. *)
-    phone_unread : int;   (** Number of unread messages in phone. *)
-    phone_used : int;     (** Number of all saved messages in phone. *)
-    sim_size : int;       (** Number of all possible messages on SIM. *)
     sim_unread : int;     (** Number of unread messages on SIM. *)
     sim_used : int;       (** Number of all saved messages
                              (including unread) on SIM. *)
+    sim_size : int;       (** Number of all possible messages on SIM. *)
     templates_used : int; (** Number of used templates (62xx/63xx/7110/etc.). *)
+    phone_unread : int;   (** Number of unread messages in phone. *)
+    phone_used : int;     (** Number of all saved messages in phone. *)
+    phone_size : int;     (** Number of all possible messages on phone. *)
   }
 
   val get_status : t -> memory_status
