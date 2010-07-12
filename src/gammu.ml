@@ -226,6 +226,8 @@ let read_config cfg_info num =
 
 external get_config : t -> int -> config = "gammu_caml_GetConfig"
 
+external set_config : t -> config -> int -> unit = "gammu_caml_SetConfig"
+
 external push_config : t -> config -> unit = "gammu_caml_PushConfig"
 
 external remove_config : t -> config = "gammu_caml_RemoveConfig"
@@ -234,7 +236,7 @@ external length_config : t -> int = "gammu_caml_GetConfigNum"
 
 external _connect : t -> int -> unit= "gammu_caml_InitConnection"
 external _connect_log : t -> int -> (string -> unit) -> unit
-  = "gammu_caml_InitConnectionLog"
+  = "gammu_caml_InitConnection_Log"
 
 let connect ?log ?(reply_num=3) s = match log with
   | None -> _connect s reply_num
@@ -311,22 +313,22 @@ type firmware = {
 }
 
 type phone_model = {
-  (* features : feature list; *)
-  irda : string;
   model : string;
   number : string;
+  irda : string;
+  (* features : feature list; *)
 }
 
 type network = {
   cid : string;
-  gprs : gprs_state;
-  lac : string;
   code : string;
-  name : string;
-  packet_cid : string;
-  packet_lac : string;
-  packet_state : network_state;
   state : network_state;
+  lac : string;
+  name : string;
+  gprs : gprs_state;
+  packet_cid : string;
+  packet_state : network_state;
+  packet_lac : string;
 }
 and gprs_state =
   | Detached

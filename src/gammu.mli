@@ -230,6 +230,10 @@ val get_config : t -> int -> config
     where [num] is the number of the section to read, [-1] for the
     currently used one. *)
 
+val set_config : t -> config -> int -> unit
+(** [set_config s config num] sets [num]th state machine configuration [s] to
+    [config]. *)
+
 val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the
     configuration stack of [s]. *)
@@ -332,26 +336,26 @@ type firmware = {
 
 (** Model identification, used for finding phone features. *)
 type phone_model = {
-  (* features : feature list; (** NYI List of supported features *)*)
-  irda : string;           (** Model as used over IrDA *)
   model : string;          (** Model as returned by phone *)
   number : string;         (** Identification by Gammu *)
+  irda : string;           (** Model as used over IrDA *)
+  (* features : feature list; (** NYI List of supported features *)*)
 }
 
 (** Current network informations *)
 type network = {
   cid : string;                 (** Cell ID (CID) *)
-  gprs : gprs_state;            (** GRPS state *)
-  lac : string;                 (** LAC (Local Area Code) *)
   code : string;                (** GSM network code *)
+  state : network_state;        (** Status of network logging. *)
+  lac : string;                 (** LAC (Local Area Code) *)
   name : string;                (** Name of current netwrok as returned
                                    from phone (or empty) *)
+  gprs : gprs_state;            (** GRPS state *)
   packet_cid : string;          (** Cell ID (CID) for packet network *)
-  packet_lac : string;          (** LAC (Local Area Code)
-                                   for packet network *)
   packet_state : network_state; (** Status of network logging
                                    for packet data. *)
-  state : network_state;        (** Status of network logging. *)
+  packet_lac : string;          (** LAC (Local Area Code)
+                                   for packet network *)
 }
 and gprs_state =
   | Detached

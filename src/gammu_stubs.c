@@ -24,12 +24,26 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
+#include <caml/callback.h>
 #include <caml/custom.h>
 #include <caml/intext.h>
 
 #include <gammu.h>
 
 #include "io.h"
+
+/* Similar to strncpy but doesn't pad with nulls and ensure that destination
+   string is null terminated. */
+static inline char *strncpy2(char *dst, const char *src, size_t n)
+{
+  size_t i;
+
+  for (i = 0; i < (n - 1) && src[i] != 0; i++)
+    dst[i] = src[i];
+  dst[i] = '\0';
+
+  return dst;
+}
 
 /************************************************************************/
 /* Error handling */
@@ -70,7 +84,7 @@ void gammu_caml_SetDebugGlobal(value vinfo, value vdi)
   CAMLreturn0;
 }
 
-// TODO: It should work on Windows, but have to check.
+/* TODO: It should work on Windows, but have to check. */
 static FILE *FILE_val(value vchannel, const char *mode)
 {
   int fd;
@@ -198,7 +212,7 @@ static value Val_StateMachine(GSM_StateMachine *sm)
   CAMLreturn(res);
 }
 
-static value Val_Config(GSM_Config *config)
+static value Val_Config(const GSM_Config *config)
 {
   CAMLlocal1(res);
   res = caml_alloc(14, 0);
@@ -219,22 +233,9 @@ static value Val_Config(GSM_Config *config)
   return res;
 }
 
-/* Similar to strncpy but doesn't pad with nulls and ensure that destination
-   string is null terminated. */
-static inline char *strncpy2(restrict char *dst, const char *src, size_t n)
-{  
-  size_t i;
-  
-  for (i = 0; i < (n - 1) && src[i] != 0; i++)
-    dst[i] = src[i];
-  dst[i] = '\0';
-
-  return dst;
-}
-
-static GSM_Config *Config_val(value vconfig)
+/* Set values of config according to those from vconfig. */
+static void set_config_val(GSM_Config *config, value vconfig)
 {
-  GSM_Config *config = malloc(sizeof(GSM_Config));
   strncpy2(config->Model, String_val(Field(vconfig, 0)), 50);
   strncpy2(config->DebugLevel, String_val(Field(vconfig, 1)), 50);
   config->Device = String_val(Field(vconfig, 2));
@@ -249,7 +250,6 @@ static GSM_Config *Config_val(value vconfig)
   strncpy2(config->TextCall, String_val(Field(vconfig, 11)), 32);
   strncpy2(config->TextBirthday, String_val(Field(vconfig, 12)), 32);
   strncpy2(config->TextMemo, String_val(Field(vconfig, 13)), 32);
-  return config;
 }
 
 #define ConnectionType_val(v) (Int_val(v) + 1)
@@ -259,13 +259,13 @@ CAMLexport
 value gammu_caml_GetDebug(value s)
 {
   CAMLparam1(s);
-  CAMLreturn((value) GSM_GetDebug(s));
+  CAMLreturn((value) GSM_GetDebug(StateMachine_val(s)));
 }
 
 CAMLexport
 void gammu_caml_InitLocales(value vpath)
 {
-  CAMLparam1(path);
+  CAMLparam1(vpath);
   GSM_InitLocales(String_val(vpath));
   CAMLreturn0;
 }
@@ -286,46 +286,50 @@ value gammu_caml_CreateStateMachine()
 }
 
 CAMLexport
-INI_Section* gammu_caml_FindGammuRC_force(value vpath)
+value gammu_caml_FindGammuRC_force(value vpath)
 {
   CAMLparam1(vpath);
-  const INI_Section *file_info = GSM_FindGammuRC(String_val(vpath));
-  CAMLreturn(Val_INI_Section(file_info));
+  INI_Section **res;
+  GSM_FindGammuRC(res, String_val(vpath));
+  CAMLreturn(Val_INI_Section(*res));
 }
 
 CAMLexport
-INI_Section* gammu_caml_FindGammuRC()
+value gammu_caml_FindGammuRC()
 {
   CAMLparam0();
-  CAMLreturn(Val_INI_Section(GSM_FindGammuRC(NULL)));
+  INI_Section **res;
+  GSM_FindGammuRC(res, NULL);
+  CAMLreturn(Val_INI_Section(*res));
 }
 
 CAMLexport
 value gammu_caml_ReadConfig(value vcfg_info, value vnum)
 {
   CAMLparam2(vcfg_info, vnum);
-  const INI_Section *cfg_info = INI_Section_val(vcfg_info);
-  const GSM_Config *cfg = GSM_ReadConfig(cfg_info, Int_val(vnum));
-  CAMLreturn(Val_Config(*cfg));
+  GSM_Config *cfg;
+  INI_Section *cfg_info = INI_Section_val(vcfg_info);
+  GSM_ReadConfig(cfg_info, cfg, Int_val(vnum));
+  CAMLreturn(Val_Config(cfg));
 }
 
 CAMLexport
 value gammu_caml_GetConfig(value s, value vnum)
 {
-  CAMLparam2(s, num);
-  GSM_Config *cfg = GSM_GetConfig(StateMachine_val(s), Int_val(vnum));
-  CAMLreturn(Val_Config(*cfg));
+  CAMLparam2(s, vnum);
+  const GSM_Config *cfg = GSM_GetConfig(StateMachine_val(s), Int_val(vnum));
+  CAMLreturn(Val_Config(cfg));
 }
 
 CAMLexport
 void gammu_caml_PushConfig(value s, value vcfg)
 {
   CAMLparam2(s, vcfg);
-  const GSM_StateMachine *sm = StateMachine_val(s);
+  GSM_StateMachine *sm = StateMachine_val(s);
   const int cfg_num = GSM_GetConfigNum(sm);
   GSM_Config *dest_cfg = GSM_GetConfig(sm, cfg_num);
-  if (cfg != NULL)
-    dest_cfg = Config_val(*cfg);
+  if (dest_cfg != NULL)
+    set_config_val(dest_cfg, vcfg);
   /* else
        To many configs (more than MAX_CONFIG_NUM (=5),
        unfortunately this const is not exported)
@@ -337,9 +341,8 @@ CAMLexport
 void gammu_caml_RemoveConfig(value s)
 {
   CAMLparam1(s);
-  const GSM_StateMachine* sm = StateMachine_val(s);
+  GSM_StateMachine* sm = StateMachine_val(s);
   const int cfg_num = GSM_GetConfigNum(sm);
-  /* TODO: explicitly free old config or use GC (-> pop)*/
   if (cfg_num > 0)
     GSM_SetConfigNum(sm, cfg_num - 1);
   /* else
@@ -365,21 +368,21 @@ void gammu_caml_InitConnection(value s, value vreply_num)
 
 #define Log_Function_val(v)
 
-void log_function_callback(char *text, void *data)
+static void log_function_callback(const char *text, void *data)
 {
   CAMLlocal1(f);
-  f = *((value) data);
+  f = *((value *) data);
   caml_callback(f, caml_copy_string(text));
 }
 
 CAMLexport
-void gammu_caml_InitConnectionLog(value s, value vreply_num, value vlog_func)
+void gammu_caml_InitConnection_Log(value s, value vreply_num, value vlog_func)
 {
   CAMLparam3(s, vreply_num, vlog_func);
   /* TODO:?? vlog_func should not be freed until TerminateConnection. But
      the GC could forget about her through the side effect and free it. */
-  GSM_InitConnectionLog(StateMachine_val(s),
-                        Int_val(reply_num),
+  GSM_InitConnection_Log(StateMachine_val(s),
+                        Int_val(vreply_num),
                         log_function_callback, (void *) &vlog_func);
   CAMLreturn0;
 }
@@ -403,7 +406,7 @@ CAMLexport
 value gammu_caml_GetUsedConnection(value s)
 {
   CAMLparam1(s);
-  const GSM_StateMachine *sm = StateMachine_val(s);
+  GSM_StateMachine *sm = StateMachine_val(s);
   const GSM_ConnectionType conn_type = GSM_GetUsedConnection(sm);
   CAMLreturn(Val_ConnectionType(conn_type));
 }
@@ -412,30 +415,32 @@ CAMLexport
 value gammu_caml_ReadDevice(value s, value vwait_for_reply)
 {
   CAMLparam2(s, vwait_for_reply);
-  const GSM_StateMachine *sm = StateMachine_val(s);
-  GSM_ReadDevice(sm, Bool_val(wait_for_reply))
-  CAMLreturn();
+  GSM_StateMachine *sm = StateMachine_val(s);
+  int read_bytes = GSM_ReadDevice(sm, Bool_val(vwait_for_reply));
+  CAMLreturn(Val_int(read_bytes));
 }
 
 /************************************************************************/
 /* Security related operations with phone */
 
-static GSM_SecurityCode SecurityCode_val(value vsecurity_code)
-{
-  GSM_SecurityCode security_code;
-  security_code.code_type = SecurityCodeType_val(Field(vsecurity_code, 0));
-  config.debug_level = String_val(Field(vsecurity_code, 1));
-  return security_code;
-}
-
 #define SecurityCodeType_val(v) (Int_val(v) + 1)
 #define Val_SecurityCodeType(v) (Val_int(v - 1))
 
-CAMLexport
-void SecurityCode(value s, value code)
+static GSM_SecurityCode SecurityCode_val(value vsecurity_code)
 {
-  CAMLparam1(s, code);
-  GSM_EnterSecurityCode(StateMachine_val(s), SecurityCode_val(code));
+  GSM_SecurityCode security_code;
+  security_code.Type = SecurityCodeType_val(Field(vsecurity_code, 0));
+  strncpy2(security_code.Code,
+           String_val(Field(vsecurity_code, 1)),
+           GSM_SECURITY_CODE_LEN + 1);
+  return security_code;
+}
+
+CAMLexport
+void SecurityCode(value s, value vcode)
+{
+  CAMLparam2(s, vcode);
+  GSM_EnterSecurityCode(StateMachine_val(s), SecurityCode_val(vcode));
   CAMLreturn0;
 }
 
@@ -443,101 +448,104 @@ CAMLexport
 value GetSecurityCode(value s)
 {
   CAMLparam1(s);
-  GSM_SecurityCodeType *status;
+  GSM_SecurityCodeType *status = malloc(sizeof(GSM_SecurityCodeType));
   GSM_GetSecurityStatus(StateMachine_val(s), status);
-  CAMLreturn(Val_SecurityCodeType status);
+  CAMLreturn(Val_SecurityCodeType(status));
 }
 
 /************************************************************************/
 /* Informations on the phone */
-
-static GSM_BatteryCharge BatteryCharge_val(value vbattery_charge)
-{
-  GSM_BatteryCharge battery_charge;
-  battery_charge.battery_type = BatteryType_val(Field(vbattery_charge, 0));
-  battery_charge.battery_capacity = Int_val(Field(vbattery_charge, 1));
-  battery_charge.battery_percent = Int_val(Field(vbattery_charge, 2));
-  battery_charge.charge_state = ChargeState_val(Field(vbattery_charge, 3));
-  battery_charge.battery_voltage = Int_val(Field(vbattery_charge, 4));
-  battery_charge.charge_voltage = Int_val(Field(vbattery_charge, 5));
-  battery_charge.charge_current = Int_val(Field(vbattery_charge, 6));
-  battery_charge.phone_current = Int_val(Field(vbattery_charge, 7));
-  battery_charge.battery_temperature = Int_val(Field(vbattery_charge, 8));
-  battery_charge.phone_temperature = Int_val(Field(vbattery_charge, 9));
-  return battery_charge;
-}
-
-static value Val_BatteryCharge(GSM_BatteryCharge battery_charge)
-{
-  CAMLlocal1(res);
-  res = caml_alloc(10, 0);
-  Store_field(res, 0, Val_BatteryType(battery_charge.battery_type));
-  Store_field(res, 1, Val_int(battery_charge.battery_capacity));
-  Store_field(res, 2, Val_int(battery_charge.battery_percent));
-  Store_field(res, 3, Val_ChargeState(battery_charge.charge_state));
-  Store_field(res, 4, Val_int(battery_charge.battery_voltage));
-  Store_field(res, 5, Val_int(battery_charge.charge_voltage));
-  Store_field(res, 6, Val_int(battery_charge.charge_current));
-  Store_field(res, 7, Val_int(battery_charge.phone_current));
-  Store_field(res, 8, Val_int(battery_charge.battery_temperature));
-  Store_field(res, 9, Val_int(battery_charge.phone_temperature));
-  return res;
-}
 
 #define ChargeState_val(v) (Int_val(v) + 1)
 #define Val_ChargeState(v) (Val_int(v - 1))
 #define BatteryType_val(v) (Int_val(v) + 1)
 #define Val_BatteryType(v) (Val_int(v - 1))
 
-static GSM_PhoneModel PhoneModel_val(value vphone_model)
+static GSM_BatteryCharge *BatteryCharge_val(value vbattery_charge)
 {
-  GSM_PhoneModel phone_model;
-  /* phone_model.features = ?  0!!!! ;*/
-  phone_model.irda = String_val(Field(vphone_model, 1));
-  phone_model.model = String_val(Field(vphone_model, 2));
-  phone_model.number = String_val(Field(vphone_model, 3));
-  return phone_model;
+  GSM_BatteryCharge *battery_charge = malloc(sizeof(GSM_BatteryCharge));
+  battery_charge->BatteryType = BatteryType_val(Field(vbattery_charge, 0));
+  battery_charge->BatteryCapacity = Int_val(Field(vbattery_charge, 1));
+  battery_charge->BatteryPercent = Int_val(Field(vbattery_charge, 2));
+  battery_charge->ChargeState = ChargeState_val(Field(vbattery_charge, 3));
+  battery_charge->BatteryVoltage = Int_val(Field(vbattery_charge, 4));
+  battery_charge->ChargeVoltage = Int_val(Field(vbattery_charge, 5));
+  battery_charge->ChargeCurrent = Int_val(Field(vbattery_charge, 6));
+  battery_charge->PhoneCurrent = Int_val(Field(vbattery_charge, 7));
+  battery_charge->BatteryTemperature = Int_val(Field(vbattery_charge, 8));
+  battery_charge->PhoneTemperature = Int_val(Field(vbattery_charge, 9));
+  return battery_charge;
 }
 
-static value Val_PhoneModel(GSM_PhoneModel phone_model)
+static value Val_BatteryCharge(GSM_BatteryCharge *battery_charge)
+{
+  CAMLlocal1(res);
+  res = caml_alloc(10, 0);
+  Store_field(res, 0, Val_BatteryType(battery_charge->BatteryType));
+  Store_field(res, 1, Val_int(battery_charge->BatteryCapacity));
+  Store_field(res, 2, Val_int(battery_charge->BatteryPercent));
+  Store_field(res, 3, Val_ChargeState(battery_charge->ChargeState));
+  Store_field(res, 4, Val_int(battery_charge->BatteryVoltage));
+  Store_field(res, 5, Val_int(battery_charge->ChargeVoltage));
+  Store_field(res, 6, Val_int(battery_charge->ChargeCurrent));
+  Store_field(res, 7, Val_int(battery_charge->PhoneCurrent));
+  Store_field(res, 8, Val_int(battery_charge->BatteryTemperature));
+  Store_field(res, 9, Val_int(battery_charge->PhoneTemperature));
+  return res;
+}
+
+static GSM_PhoneModel *PhoneModel_val(value vphone_model)
+{
+  /* Check alloc */
+  GSM_PhoneModel *phone_model = malloc(sizeof(phone_model));
+  /* TODO: implement that.
+    phone_model->features = NULL; */
+  phone_model->model = String_val(Field(vphone_model, 0));
+  phone_model->number = String_val(Field(vphone_model, 1));
+  phone_model->irdamodel = String_val(Field(vphone_model, 2));
+ return phone_model;
+}
+
+static value Val_PhoneModel(GSM_PhoneModel *phone_model)
 {
   CAMLlocal1(res);
   res = caml_alloc(3, 0);
-  Store_field(res, 0, caml_copy_string(phone_model.irda));
-  Store_field(res, 1, caml_copy_string(phone_model.model));
-  Store_field(res, 2, caml_copy_string(phone_model.number));
+  Store_field(res, 0, caml_copy_string(phone_model->model));
+  Store_field(res, 1, caml_copy_string(phone_model->number));
+  Store_field(res, 2, caml_copy_string(phone_model->irdamodel));
   return res;
 }
 
-static GSM_NetworkInfo NetworkInfo_val(value vnetwork)
+static GSM_NetworkInfo *NetworkInfo_val(value vnetwork)
 {
-  GSM_NetworkInfo network;
-  network.cid = String_val(Field(vnetwork, 0));
-  network.gprs = GPRS_State_val(Field(vnetwork, 1)); /*nom?*/
-  network.lac = String_val(Field(vnetwork, 2));
-  network.code = String_val(Field(vnetwork, 3));
-  network.name = String_val(Field(vnetwork, 4));
-  network.packet_cid = String_val(Field(vnetwork, 5));
-  network.packet_lac = String_val(Field(vnetwork, 6));
-  network.packet_state = NetworkState_val(Field(vnetwork, 7));
-  network.state = NetworkState_val(Field(vnetwork, 8));
+  /* Check alloc */
+  GSM_NetworkInfo *network = malloc(sizeof(GSM_NetworkInfo));
+  network->CID = String_val(Field(vnetwork, 0));
+  network->NetworkCode = String_val(Field(vnetwork, 1));
+  network->State = NetworkState_val(Field(vnetwork, 2));
+  network->LAC = String_val(Field(vnetwork, 3));
+  network->NetworkName = String_val(Field(vnetwork, 4));
+  network->GRPS = GPRS_State_val(Field(vnetwork, 5));  
+  network->PacketCID = String_val(Field(vnetwork, 6));
+  network->PacketState = NetworkState_val(Field(vnetwork, 7));
+  network->PacketLac = String_val(Field(vnetwork, 8));
   return network;
 }
 
-static value Val_NetworkInfo(GSM_NetworkInfo network)
+static value Val_NetworkInfo(GSM_NetworkInfo *network)
 {
   CAMLlocal1(res);
   res = caml_alloc(9, 0);
-  Store_field(res, 0, caml_copy_string(network.cid));
-  Store_field(res, 1, Val_GPRS_State(network.gprs));
-  Store_field(res, 2, caml_copy_string(network.lac));
-  Store_field(res, 3, caml_copy_string(network.code));
-  Store_field(res, 4, caml_copy_string(network.name));
-  Store_field(res, 5, caml_copy_string(network.packet_cid));
-  Store_field(res, 6, caml_copy_string(network.packet_lac));
-  Store_field(res, 7, Val_NetworkState(network.packet_state));
-  Store_field(res, 8, Val_NetworkState(network.state));
-  return res;
+  Store_field(res, 0, caml_copy_string(network->CID));
+  Store_field(res, 1, caml_copy_string(network->NetworkCode));  
+  Store_field(res, 2, Val_NetworkState(network->State));
+  Store_field(res, 3, caml_copy_string(network->LAC));
+  Store_field(res, 4, caml_copy_string(network->NetworkName));
+  Store_field(res, 5, Val_GPRS_State(network->GRPS));  
+  Store_field(res, 6, caml_copy_string(network->PacketCID));
+  Store_field(res, 7, Val_NetworkState(network->PacketState));  
+  Store_field(res, 8, caml_copy_string(network->PacketLAC));  
+  return res; 
 }
 
 #define GPRS_Sate_val(v) (Int_val(v) + 1)
@@ -545,22 +553,22 @@ static value Val_NetworkInfo(GSM_NetworkInfo network)
 #define NetworkState_val(v) (Int_val(v) + 1)
 #define Val_NetworkState(v) (Val_int(v) - 1)
 
-static GSM_SignalQuality SignalQuality_val(value vsignal_quality)
+static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
 {
-  GSM_SignalQuality signal_quality;
-  signal_quality.signal_strength = Int_val(Field(vsignal_quality, 0));
-  signal_quality.signal_percent = Int_val(Field(vsignal_quality, 1));
-  signal_quality.bit_error_rate = Int_val(Field(vsignal_quality, 2));
+  GSM_SignalQuality *signal_quality = malloc(sizeof(GSM_SignalQuality));
+  signal_quality->signal_strength = Int_val(Field(vsignal_quality, 0));
+  signal_quality->signal_percent = Int_val(Field(vsignal_quality, 1));
+  signal_quality->bit_error_rate = Int_val(Field(vsignal_quality, 2));
   return signal_quality;
 }
 
-static value Val_SignalQuality(GSM_SignalQuality signal_quality)
+static value Val_SignalQuality(GSM_SignalQuality *signal_quality)
 {
   CAMLlocal1(res);
   res = caml_alloc(3, 0);
-  Store_field(res, 0, Val_int(signal_quality.signal_strength));
-  Store_field(res, 1, Val_int(signal_quality.signal_percent));
-  Store_field(res, 2, Val_int(signal_quality.bit_error_rate));
+  Store_field(res, 0, Val_int(signal_quality->SignalStrength));
+  Store_field(res, 1, Val_int(signal_quality->SignalPercent));
+  Store_field(res, 2, Val_int(signal_quality->BitErrorRate));
   return res;
 }
 
