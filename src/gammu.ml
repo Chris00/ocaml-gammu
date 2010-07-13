@@ -333,6 +333,7 @@ type network = {
 and gprs_state =
   | Detached
   | Attached
+  | Unknown
 and network_state =
   | HomeNetwork
   | NoNetwork
