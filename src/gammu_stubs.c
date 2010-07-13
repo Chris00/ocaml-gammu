@@ -36,6 +36,9 @@
 /* Assume that gammu-types.h deals with glib.
 // typedef int gboolean;
 But in some versions, it doesn't : */
+#if VERSION_NUM < 12792
+typedef int gboolean;
+#endif
 #ifndef FALSE
   #define FALSE (0)
 #endif
@@ -572,12 +575,12 @@ static value Val_NetworkInfo(GSM_NetworkInfo *network)
   Store_field(res, 2, Val_NetworkState(network->State));
   Store_field(res, 3, caml_copy_string(network->LAC));
   Store_field(res, 4, caml_copy_string((char *) network->NetworkName));
-  #if VERSIONNUM >= 12400
+  #if VERSION_NUM >= 12792
   Store_field(res, 5, Val_GPRS_State(network->GPRS));
   #else
   Store_field(res, 5, Val_int(2) /* grps_state = Unknown */);
   #endif
-  #if VERSIONNUM >= 12796
+  #if VERSION_NUM >= 12796
   Store_field(res, 6, caml_copy_string(network->PacketCID));
   Store_field(res, 7, Val_NetworkState(network->PacketState));
   Store_field(res, 8, caml_copy_string(network->PacketLAC));
@@ -989,7 +992,7 @@ static GSM_MultiSMSMessage *MultiSMSMessage_val(value vmulti_sms)
 {
   CAMLparam1(vmulti_sms);
   CAMLlocal1(vsms);
-  GSM_MultiSMSMessage *multi_sms = malloc(sizeof(GSM_MultipartSMSMessage));
+  GSM_MultiSMSMessage *multi_sms = malloc(sizeof(GSM_MultiSMSMessage));
   int length;
   int i;
   vsms = Field(vmulti_sms, 0);
@@ -1099,9 +1102,12 @@ void gammu_caml_DeleteSMS(value s, value vsms)
   CAMLreturn0;
 }
 
-static GSM_MultipartSMSEntry MultipartSMSEntry_val(value vmult_part_sms)
+#define EncodeMultiPartSMSID_val(v) (Int_val(v) + 1)
+#define Val_EncodeMultiPartSMSID(v) Val_int(v - 1)
+
+static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
 {
-  GSM_MultipartSMSEntry mult_part_sms;
+  GSM_MultiPartSMSEntry mult_part_sms;
   mult_part_sms.ID = EncodeMultiPartSMSID_val(Field(vmult_part_sms, 0));
   mult_part_sms.Number = Int_val(Field(vmult_part_sms, 1));
   mult_part_sms.Phonebook = MemoryEntry_val(Field(vmult_part_sms, 2));
@@ -1120,7 +1126,7 @@ static GSM_MultipartSMSEntry MultipartSMSEntry_val(value vmult_part_sms)
   return mult_part_sms;
 }
 
-static value Val_MultipartSMSEntry(GSM_MultipartSMSEntry mult_part_sms)
+static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
 {
   CAMLparam0();
   CAMLlocal1(res);
@@ -1143,11 +1149,11 @@ static value Val_MultipartSMSEntry(GSM_MultipartSMSEntry mult_part_sms)
   CAMLreturn(res);
 }
 
-static GSM_MultipartSMSInfo *MultipartSMSInfo_val(value vmult_part_sms)
+static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
 {
   CAMLparam1(vmult_par_sms);
   CAMLlocal1(ventries);
-  GSM_MultipartSMSInfo *mult_part_sms = malloc(sizeof(GSM_MultiPartSMSInfo));
+  GSM_MultiPartSMSInfo *mult_part_sms = malloc(sizeof(GSM_MultiPartSMSInfo));
   int length;
   int i;
   ventries = Field(vmult_part_sms, 4);
@@ -1162,11 +1168,11 @@ static GSM_MultipartSMSInfo *MultipartSMSInfo_val(value vmult_part_sms)
   mult_part_sms->Entries =
     malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SubMemoryEntry));
   for (i=0; i < length; i++)
-    mult_part_sms->Entries[i] = MultipartSMSEntry_val(Field(ventries, i));
+    mult_part_sms->Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
   CAMLreturn(mult_part_sms);
 }
 
-static value Val_MultipartSMSInfo(GSM_MultipartSMSInfo *mult_part_sms)
+static value Val_MultiPartSMSInfo(GSM_MultiPartSMSInfo *mult_part_sms)
 {
   CAMLparam0();
   CAMLlocal2(res, ventries);
@@ -1179,25 +1185,22 @@ static value Val_MultipartSMSInfo(GSM_MultipartSMSInfo *mult_part_sms)
   Store_field(res, 3, Val_bool(mult_part_sms->Unknown));
   ventries = caml_alloc(length, 0);
   for (i=0; i < length; i++)
-    Store_field(ventries, i, Val_MultipartSMSEntry(mult_part_info->Entries[i]));
+    Store_field(ventries, i, Val_MultiPartSMSEntry(mult_part_info->Entries[i]));
   Store_field(res, 4, ventries);
   CAMLreturn(res);
 }
-
-#define EncodeMultiPartSMSID_val(v) (Int_val(v) + 1)
-#define Val_EncodeMultiPartSMSID(v) Val_int(v - 1)
 
 CAMLexport
 value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms,
                                     value vems)
 {
   CAMLparam3(vdi, vsms, vems);
-  GSM_MultipartSMSInfo *info;
+  GSM_MultiPartSMSInfo *info;
   GSM_DecodeMultiPartSMS(Debug_Info_val(vdi),
                          info,
                          MultiSMSMessage_val(vsms),
                          Bool_val(vems));
-  CAMLreturn(Val_MultipartSMSInfo(info));
+  CAMLreturn(Val_MultiPartSMSInfo(info));
 }
 
 /************************************************************************/
