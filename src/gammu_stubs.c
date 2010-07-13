@@ -1037,8 +1037,6 @@ static GSM_MultiSMSMessage *MultiSMSMessage_val(value vmulti_sms)
   length = Wosize_val(vmulti_sms);
   if (length > GSM_MAX_MULTI_SMS)
     length = GSM_MAX_MULTI_SMS;
-  multi_sms->SMS =
-    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SMSMessage));
   for (i=0; i < length; i++)
     multi_sms->SMS[i] = *SMSMessage_val(Field(vsms, i));
   multi_sms->Number = length;
@@ -1195,8 +1193,6 @@ static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
   mult_part_sms->Unknown = Bool_val(Field(vmult_part_sms, 3));
   if (length > (GSM_MAX_MULTI_SMS))
     length = GSM_MAX_MULTI_SMS;
-  mult_part_sms->Entries =
-    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_MultiPartSMSEntry));
   for (i=0; i < length; i++)
     mult_part_sms->Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
   mult_part_sms->EntriesNum = length;
