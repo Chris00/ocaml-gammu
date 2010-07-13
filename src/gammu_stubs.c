@@ -1087,14 +1087,6 @@ value gammu_caml_GetSMSStatus(value s)
 }
 
 CAMLexport
-void gammu_caml_SetIncomingSMS(value s, value venable)
-{
-  CAMLparam2(s, venable);
-  GSM_SetIncomingSMS(StateMachine_val(s), Bool_val(venable));
-  CAMLreturn0;
-}
-
-CAMLexport
 void gammu_caml_DeleteSMS(value s, value vsms)
 {
   CAMLparam2(s, vsms);
@@ -1151,41 +1143,40 @@ static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
 
 static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
 {
-  CAMLparam1(vmult_par_sms);
-  CAMLlocal1(ventries);
-  GSM_MultiPartSMSInfo *mult_part_sms = malloc(sizeof(GSM_MultiPartSMSInfo));
+  value ventries;
+  GSM_MultiPartSMSInfo mult_part_sms;
   int length;
-  int i;
+  int i; 
   ventries = Field(vmult_part_sms, 4);
   length = Wosize_val(ventries);
-  mult_part_sms->UnicodeCoding = Bool_val(Field(vmult_part_sms, 0));
-  mult_part_sms->Class = Int_val(Field(vmult_part_sms, 1));
-  mult_part_sms->ReplaceMessage =
+  mult_part_sms.UnicodeCoding = Bool_val(Field(vmult_part_sms, 0));
+  mult_part_sms.Class = Int_val(Field(vmult_part_sms, 1));
+  mult_part_sms.ReplaceMessage =
     (unsigned char) Char_val(Field(vmult_part_sms, 2));
-  mult_part_sms->Unknown = Bool_val(Field(vmult_part_sms, 3));
+  mult_part_sms.Unknown = Bool_val(Field(vmult_part_sms, 3));
   if (length > (GSM_MAX_MULTI_SMS))
     length = GSM_MAX_MULTI_SMS;
-  mult_part_sms->Entries =
+  mult_part_sms.Entries =
     malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SubMemoryEntry));
   for (i=0; i < length; i++)
-    mult_part_sms->Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
-  CAMLreturn(mult_part_sms);
+    mult_part_sms.Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
+  return &mult_part_sms;
 }
 
-static value Val_MultiPartSMSInfo(GSM_MultiPartSMSInfo *mult_part_sms)
+static value Val_MultiPartSMSInfo(GSM_MultiPartSMSInfo *mult_part_sms_info)
 {
   CAMLparam0();
   CAMLlocal2(res, ventries);
   res = caml_alloc(5, 0);
-  int length = mult_part_info->EntriesNum;
+  int length = mult_part_sms_info->EntriesNum;
   int i;
-  Store_field(res, 0, Val_bool(mult_part_sms->UnicodeCoding));
-  Store_field(res, 1, VAl_int(mult_part_sms->Class));
-  Store_field(res, 2, Val_char(mult_part_sms->ReplaceMessage));
-  Store_field(res, 3, Val_bool(mult_part_sms->Unknown));
+  Store_field(res, 0, Val_bool(mult_part_sms_info->UnicodeCoding));
+  Store_field(res, 1, VAl_int(mult_part_sms_info->Class));
+  Store_field(res, 2, Val_char(mult_part_sms_info->ReplaceMessage));
+  Store_field(res, 3, Val_bool(mult_part_sms_info->Unknown));
   ventries = caml_alloc(length, 0);
   for (i=0; i < length; i++)
-    Store_field(ventries, i, Val_MultiPartSMSEntry(mult_part_info->Entries[i]));
+    Store_field(ventries, i, Val_MultiPartSMSEntry(mult_part_sms_info->Entries[i]));
   Store_field(res, 4, ventries);
   CAMLreturn(res);
 }
@@ -1206,12 +1197,14 @@ value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms,
 /************************************************************************/
 /* Events */
 
-void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
+static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
                            void *user_data)
 {
+  CAMLparam0();
   CAMLlocal1(f);
-  f = *((value) user_data);
+  f = *((value *) user_data);
   caml_callback2(f, Val_StateMachine(sm), Val_SMSMessage(&sms));
+  CAMLreturn0;
 }
 
 CAMLexport
