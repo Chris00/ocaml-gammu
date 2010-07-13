@@ -655,7 +655,7 @@ value gammu_caml_GetNetworkInfo(value s)
   CAMLparam1(s);
   GSM_NetworkInfo *netinfo;
   GSM_GetNetworkInfo(StateMachine_val(s), netinfo);
-  CAMLreturn(Val_NetworkInfo(*netinfo));
+  CAMLreturn(Val_NetworkInfo(netinfo));
 }
 
 CAMLexport
@@ -673,7 +673,7 @@ value gammu_caml_GetSignalQuality(value s)
   CAMLparam1(s);
   GSM_SignalQuality *sig;
   GSM_GetSignalQuality(StateMachine_val(s), sig);
-  CAMLreturn(Val_SignalQuality(*sig));
+  CAMLreturn(Val_SignalQuality(sig));
 }
 
 /************************************************************************/
@@ -755,7 +755,7 @@ static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
   const int length;
   int i;
   ventries = Field(vmem_entry, 2);
-  length = wosize_val(ventries);
+  length = Wosize_val(ventries);
   mem_entry->MemoryType = MemoryType_val(Field(vmem_entry, 0));
   mem_entry->Location = Int_val(Field(vmem_entry, 1));
   /* TODO: raise exception if too many entries. */
@@ -811,18 +811,18 @@ static value Val_SubMemoryEntry(GSM_SubMemoryEntry sub_mem_entry)
   CAMLlocal2(res, vsms_list);
   const int *sms_list;
   int i;
-  StoreField(res, 0, Val_EntryType(sub_mem_entry->EntryType));
-  StoreField(res, 1, Val_DateTime(sub_mem_entry->Date));
-  StoreField(res, 2, Val_int(sub_mem_entry->Number));
-  StoreField(res, 3, Val_int(sub_mem_entry->VoiceTag));
+  Store_field(res, 0, Val_EntryType(sub_mem_entry->EntryType));
+  Store_field(res, 1, Val_DateTime(sub_mem_entry->Date));
+  Store_field(res, 2, Val_int(sub_mem_entry->Number));
+  Store_field(res, 3, Val_int(sub_mem_entry->VoiceTag));
   sms_list = sub_mem_entry->SMSList;
   vsms_list = caml_alloc(20, 0);
   for (i=0; i < 20; i++)
-    StoreField(vsms_list, i, sms_list[i]);
-  StoreField(res, 4, vsms_list);
-  StoreField(res, 5, Val_int(sub_mem_entry->CallLength));
-  StoreField(res, 6, Val_Error(sub_mem_entry->AddError));
-  StoreField(res, 7, caml_copy_string(sub_mem_entry->Text));
+    Store_field(vsms_list, i, sms_list[i]);
+  Store_field(res, 4, vsms_list);
+  Store_field(res, 5, Val_int(sub_mem_entry->CallLength));
+  Store_field(res, 6, Val_Error(sub_mem_entry->AddError));
+  Store_field(res, 7, caml_copy_string(sub_mem_entry->Text));
   CAMLreturn(res);
 }
 
@@ -876,12 +876,23 @@ static value Val_UDHHeader(GSM_UDHHeader *udh_header)
 
 static GSM_SMSMessage *SMSMessage_val(value vsms)
 {
-  GSM_SMSMessage *sms = malloc(sizeof(GSM_Message));
+  CAMLparam1(vsms);
+  CAMLlocal1(vother_numbers);
+  GSM_SMSMessage *sms = malloc(sizeof(GSM_SMSMessage));
+  const int length;
+  int i;
+  vother_numbers = Field(vsms, 4);
+  length = Wosize_val(vother_numbers);
   sms->ReplaceMessage = (unsigned char) Char_val(Field(vsms, 0));
   sms->RejectDuplicates = Bool_val(Field(vsms, 1));
   sms->UDH = UDHHeader_val(Field(vsms, 2));
   sms->Number = String_val(Field(vsms, 3));
-  sms->OtherNumbers = ???_val(Field(vsms, 4));
+  if (length > (GSM_MAX_NUMBER_LENGTH + 1) * 2)
+    length = (GSM_MAX_NUMBER_LENGTH + 1) * 2;
+  sms->OtherNumbers =
+    malloc((GSM_MAX_NUMBER_LENGTH + 1) * 2 * sizeof(GSM_SubMemoryEntry));
+  for (i=0; i < length; i++)
+    other_numbers[i] = caml_copy_string(Field(vother_numbers, i));
   /* sms->SMSC = SMSC_val(Field(vsms, 5)); NYI*/
   sms->Memory = MemoryType_val(Field(vsms, 6));
   sms->Location = Int_val(Field(vsms, 7));
@@ -905,27 +916,27 @@ static value Val_SMSMessage(GSM_SMSMessage *sms)
 {
   CAMLlocal1(res);
   res = caml_alloc(21, 0);
-  StoreField(res, 0, Val_Char(sms->ReplaceMessage));
-  StoreField(res, 1, Val_bool(sms->RejectDuplicates));
-  StoreField(res, 2, Val_UDHHeader(sms->UDH));
-  StoreField(res, 3, caml_copy_string(sms->Number));
-  /* StoreField(res, 4, ???(sms->OtherNumbers)); */
-  /* StoreField(res, 5, Val_SMSC(sms->SMSC)); NYI */
-  StoreField(res, 6, Val_MemoryType(sms->Memory));
-  StoreField(res, 7, Val_int(sms->Location));
-  StoreField(res, 8, Val_int(sms->Folder));
-  StoreField(res, 9, Val_bool(sms->InboxFolder));
-  StoreField(res, 10, Val_SMS_State(sms->State));
-  StoreField(res, 11, caml_copy_string(sms->Name));
-  StoreField(res, 12, caml_copy_string(sms->Text));
-  StoreField(res, 13, Val_SMSMessageType(sms->PDU));
-  StoreField(res, 14, Val_CodingType(sms->Coding));
-  StoreField(res, 15, Val_DateTime(sms->DateTime));
-  StoreField(res, 16, Val_DateTime(sms->SMSCTime));
-  StoreField(res, 17, Val_char(sms->DeliveryStatus));
-  StoreField(res, 18, Val_bool(sms->ReplyViaSameSMSC));
-  StoreField(res, 19, Val_char(sms->Class));
-  StoreField(res, 20, Val_char(sms->MessageReference));
+  Store_field(res, 0, Val_Char(sms->ReplaceMessage));
+  Store_field(res, 1, Val_bool(sms->RejectDuplicates));
+  Store_field(res, 2, Val_UDHHeader(sms->UDH));
+  Store_field(res, 3, caml_copy_string(sms->Number));
+  /* Store_field(res, 4, ???(sms->OtherNumbers)); */
+  /* Store_field(res, 5, Val_SMSC(sms->SMSC)); NYI */
+  Store_field(res, 6, Val_MemoryType(sms->Memory));
+  Store_field(res, 7, Val_int(sms->Location));
+  Store_field(res, 8, Val_int(sms->Folder));
+  Store_field(res, 9, Val_bool(sms->InboxFolder));
+  Store_field(res, 10, Val_SMS_State(sms->State));
+  Store_field(res, 11, caml_copy_string(sms->Name));
+  Store_field(res, 12, caml_copy_string(sms->Text));
+  Store_field(res, 13, Val_SMSMessageType(sms->PDU));
+  Store_field(res, 14, Val_CodingType(sms->Coding));
+  Store_field(res, 15, Val_DateTime(sms->DateTime));
+  Store_field(res, 16, Val_DateTime(sms->SMSCTime));
+  Store_field(res, 17, Val_char(sms->DeliveryStatus));
+  Store_field(res, 18, Val_bool(sms->ReplyViaSameSMSC));
+  Store_field(res, 19, Val_char(sms->Class));
+  Store_field(res, 20, Val_char(sms->MessageReference));
   CAMLreturn(res);
 }
 
@@ -990,12 +1001,12 @@ value gammu_caml_GetSMSStatus(value s)
 {
   CAMLparam1(s);
   GSM_SMSMemoryStatus *status;
-  CAMLreturn(Val_SMSMemoryStatus(GSM_GetSMSStatus(StateMachine_val(s),
-                                                  &status)));
+  GSM_GetSMSStatus(StateMachine_val(s), status);
+  CAMLreturn(Val_SMSMemoryStatus(status));
 }
 
 CAMLexport
-void gammu_caml_SetIncommingSMS(value s, value venable)
+void gammu_caml_SetIncomingSMS(value s, value venable)
 {
   CAMLparam2(s, venable);
   GSM_SetIncomingSMS(StateMachine_val(s), Bool_val(venable));
