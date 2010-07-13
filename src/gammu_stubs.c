@@ -282,9 +282,9 @@ static value Val_Config(const GSM_Config *config)
   Store_field(res, 7, Val_bool(config->StartInfo));
   #else
   /* for VERSION_NUM <= 12400, those are strings. */
-  Store_field(res, 4, caml_copy_string(is_true(config->SyncTime)));
-  Store_field(res, 5, caml_copy_string(is_true(config->LockDevice)));
-  Store_field(res, 7, caml_copy_string(is_true(config->StartInfo)));
+  Store_field(res, 4, Val_bool(is_true(config->SyncTime)));
+  Store_field(res, 5, Val_bool(is_true(config->LockDevice)));
+  Store_field(res, 7, Val_bool(is_true(config->StartInfo)));
   #endif
   Store_field(res, 6, caml_copy_sustring(config->DebugFile));
   Store_field(res, 8, Val_bool(config->UseGlobalDebugFile));
@@ -837,7 +837,6 @@ static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
 {
   value vsms_list;
   GSM_SubMemoryEntry *res = malloc(sizeof(GSM_SubMemoryEntry));
-  int sms_list[20];
   int i;
   res->EntryType = EntryType_val(Field(vsub_mem_entry, 0));
   res->Date = *DateTime_val(Field(vsub_mem_entry, 1));
@@ -847,8 +846,7 @@ static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
   if (Wosize_val(vsms_list) != 20)
     return NULL; /* TODO: Raise error ! */
   for (i=0; i < 20; i++)
-    sms_list[i] = Field(vsms_list, i);
-  res->SMSList = sms_list;
+    res->SMSList[i] = Field(vsms_list, i);
   res->CallLength = Int_val(Field(vsub_mem_entry, 5));
   res->AddError = Error_val(Field(vsub_mem_entry, 6));
   CPY_TRIM_String_val(res->Text, Field(vsub_mem_entry, 7));
@@ -1035,14 +1033,15 @@ static GSM_MultiSMSMessage *MultiSMSMessage_val(value vmulti_sms)
   GSM_MultiSMSMessage *multi_sms = malloc(sizeof(GSM_MultiSMSMessage));
   int length;
   int i;
-  vsms = Field(vmulti_sms, 0);
+  vsms = Field(vsms, 0);
   length = Wosize_val(vmulti_sms);
   if (length > GSM_MAX_MULTI_SMS)
-    length = (GSM_MAX_MULTI_SMS);
+    length = GSM_MAX_MULTI_SMS;
   multi_sms->SMS =
     malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SMSMessage));
   for (i=0; i < length; i++)
     multi_sms->SMS[i] = *SMSMessage_val(Field(vsms, i));
+  multi_sms->Number = length;
   return multi_sms;
 }
 
@@ -1200,6 +1199,7 @@ static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
     malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_MultiPartSMSEntry));
   for (i=0; i < length; i++)
     mult_part_sms->Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
+  mult_part_sms->EntriesNum = length;
   return mult_part_sms;
 }
 
