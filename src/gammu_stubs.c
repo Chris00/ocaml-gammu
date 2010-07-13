@@ -816,7 +816,7 @@ static value Val_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
   const int *sms_list;
   int i;
   Store_field(res, 0, Val_EntryType(sub_mem_entry->EntryType));
-  Store_field(res, 1, Val_DateTime(sub_mem_entry->Date));
+  Store_field(res, 1, Val_DateTime(&sub_mem_entry->Date));
   Store_field(res, 2, Val_int(sub_mem_entry->Number));
   Store_field(res, 3, Val_int(sub_mem_entry->VoiceTag));
   sms_list = sub_mem_entry->SMSList;
@@ -834,20 +834,20 @@ static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
 {
   CAMLparam1(vmem_entry);
   CAMLlocal1(ventries);
-  GSM_MemoryEntry mem_entry;
+  GSM_MemoryEntry *mem_entry = malloc(sizeof(GSM_MemoryEntry));
   int length;
   int i;
   ventries = Field(vmem_entry, 2);
   length = Wosize_val(ventries);
-  mem_entry.MemoryType = MemoryType_val(Field(vmem_entry, 0));
-  mem_entry.Location = Int_val(Field(vmem_entry, 1));
+  mem_entry->MemoryType = MemoryType_val(Field(vmem_entry, 0));
+  mem_entry->Location = Int_val(Field(vmem_entry, 1));
   /* TODO: raise exception if too many entries. */
   if (length > GSM_PHONEBOOK_ENTRIES)
     length = GSM_PHONEBOOK_ENTRIES;
   for (i=0; i < length; i++)
-    mem_entry.Entries[i] = *SubMemoryEntry_val(Field(ventries, i));
-  mem_entry.EntriesNum = length;
-  return &mem_entry;
+    mem_entry->Entries[i] = *SubMemoryEntry_val(Field(ventries, i));
+  mem_entry->EntriesNum = length;
+  return mem_entry;
 }
 
 static value Val_MemoryEntry(GSM_MemoryEntry *mem_entry)
@@ -931,7 +931,7 @@ static GSM_SMSMessage *SMSMessage_val(value vsms)
     length = (GSM_MAX_NUMBER_LENGTH + 1) * 2;
   for (i=0; i < length; i++)
     CPY_TRIM_String_val(sms.OtherNumbers[i], Field(vother_numbers, i));
-  sms.OtherNumberNum = length;
+  sms.OtherNumbersNum = length;
   /* sms.SMSC = SMSC_val(Field(vsms, 5)); NYI*/
   sms.Memory = MemoryType_val(Field(vsms, 6));
   sms.Location = Int_val(Field(vsms, 7));
@@ -1193,7 +1193,7 @@ value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms,
 {
   CAMLparam3(vdi, vsms, vems);
   GSM_MultipartSMSInfo *info;
-  GSM_DecodeMultiPartSMS(Debug_Info_val(vdi),
+  GSM_DecodeMultipartSMS(Debug_Info_val(vdi),
                          info,
                          MultiSMSMessage_val(vsms),
                          Bool_val(vems));
