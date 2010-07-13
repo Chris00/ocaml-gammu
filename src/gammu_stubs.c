@@ -809,7 +809,7 @@ static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
   res->SMSList = sms_list;
   res->CallLength = Int_val(Field(vsub_mem_entry, 5));
   res->AddError = Error_val(Field(vsub_mem_entry, 6));
-  res->Text = String_val(Field(vsub_mem_entry, 7));
+  CPY_TRIM_String_val(res->Text, Field(vsub_mem_entry, 7));
   return res;
 }
 
@@ -998,7 +998,7 @@ static GSM_MultiSMSMessage *MultiSMSMessage_val(value vmulti_sms)
   if (length > GSM_MAX_MULTI_SMS)
     length = (GSM_MAX_MULTI_SMS);
   multi_sms->SMS =
-    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_MultiSMSMessage));
+    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SMSMessage));
   for (i=0; i < length; i++)
     multi_sms->SMS[i] = *SMSMessage_val(Field(vsms, i));
   return multi_sms;
@@ -1142,23 +1142,23 @@ static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
 static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
 {
   value ventries;
-  GSM_MultiPartSMSInfo mult_part_sms;
+  GSM_MultiPartSMSInfo *mult_part_sms = malloc(sizeof(GSM_MultiPartSMSInfo));
   int length;
   int i; 
   ventries = Field(vmult_part_sms, 4);
   length = Wosize_val(ventries);
-  mult_part_sms.UnicodeCoding = Bool_val(Field(vmult_part_sms, 0));
-  mult_part_sms.Class = Int_val(Field(vmult_part_sms, 1));
-  mult_part_sms.ReplaceMessage =
+  mult_part_sms->UnicodeCoding = Bool_val(Field(vmult_part_sms, 0));
+  mult_part_sms->Class = Int_val(Field(vmult_part_sms, 1));
+  mult_part_sms->ReplaceMessage =
     (unsigned char) Char_val(Field(vmult_part_sms, 2));
-  mult_part_sms.Unknown = Bool_val(Field(vmult_part_sms, 3));
+  mult_part_sms->Unknown = Bool_val(Field(vmult_part_sms, 3));
   if (length > (GSM_MAX_MULTI_SMS))
     length = GSM_MAX_MULTI_SMS;
-  mult_part_sms.Entries =
-    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SubMemoryEntry));
+  mult_part_sms->Entries =
+    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_MultiPartSMSEntry));
   for (i=0; i < length; i++)
-    mult_part_sms.Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
-  return &mult_part_sms;
+    mult_part_sms->Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
+  return mult_part_sms;
 }
 
 static value Val_MultiPartSMSInfo(GSM_MultiPartSMSInfo *mult_part_sms_info)
@@ -1169,7 +1169,7 @@ static value Val_MultiPartSMSInfo(GSM_MultiPartSMSInfo *mult_part_sms_info)
   int length = mult_part_sms_info->EntriesNum;
   int i;
   Store_field(res, 0, Val_bool(mult_part_sms_info->UnicodeCoding));
-  Store_field(res, 1, VAl_int(mult_part_sms_info->Class));
+  Store_field(res, 1, Val_int(mult_part_sms_info->Class));
   Store_field(res, 2, Val_char(mult_part_sms_info->ReplaceMessage));
   Store_field(res, 3, Val_bool(mult_part_sms_info->Unknown));
   ventries = caml_alloc(length, 0);
