@@ -33,6 +33,17 @@
 
 #include "io.h"
 
+/* Check Gammu version. TODO: Check versions more precisely. */
+#if VERSION_NUM >= 12792
+  /* OK*/
+#elif VERSION_NUM <= 12400
+  /* OK */
+#else
+  #warning "Your version of libGammu was totally not tested\n"\
+    "If compilation fails, please report your version number\n"\
+    "and if possible attach the error log."
+#endif
+
 /* Assume that gammu-types.h deals with glib.
 // typedef int gboolean;
 But in some versions, it doesn't : */
@@ -45,6 +56,8 @@ typedef int gboolean;
 #ifndef TRUE
   #define TRUE (!FALSE)
 #endif
+
+/* Utils functions and macros. */
 
 /* Similar to strncpy but doesn't pad with nulls and ensure that destination
    string is null terminated. */
@@ -70,6 +83,21 @@ static inline char *strncpy2(char *dst, const char *src, size_t n)
 
  /* signed or unsigned type char definition is not constant across versions. */
 #define caml_copy_sustring(str) caml_copy_string((char *) str)
+
+static gboolean is_true(const char *str)
+{
+  if (strcasecmp(str, "true") == 0) return TRUE;
+  if (strcasecmp(str, "yes") == 0) return TRUE;
+  if (strcasecmp(str, "1") == 0) return TRUE;
+  return FALSE;
+}
+
+static char *yesno_bool(gboolean b)
+{
+  if (b) return "yes";
+  return "no";
+}
+
 
 /************************************************************************/
 /* Error handling */
@@ -248,10 +276,17 @@ static value Val_Config(const GSM_Config *config)
   Store_field(res, 1, caml_copy_sustring(config->DebugLevel));
   Store_field(res, 2, caml_copy_sustring(config->Device));
   Store_field(res, 3, caml_copy_sustring(config->Connection));
+  #if VERSION_NUM >= 12792
   Store_field(res, 4, Val_bool(config->SyncTime));
   Store_field(res, 5, Val_bool(config->LockDevice));
-  Store_field(res, 6, caml_copy_sustring(config->DebugFile));
   Store_field(res, 7, Val_bool(config->StartInfo));
+  #else
+  /* for VERSION_NUM <= 12400, those are strings. */
+  Store_field(res, 4, caml_copy_string(is_true(config->SyncTime)));
+  Store_field(res, 5, caml_copy_string(is_true(config->LockDevice)));
+  Store_field(res, 7, caml_copy_string(is_true(config->StartInfo)));
+  #endif
+  Store_field(res, 6, caml_copy_sustring(config->DebugFile));
   Store_field(res, 8, Val_bool(config->UseGlobalDebugFile));
   Store_field(res, 9, caml_copy_sustring(config->TextReminder));
   Store_field(res, 10, caml_copy_sustring(config->TextReminder));
@@ -268,10 +303,17 @@ static void set_config_val(GSM_Config *config, value vconfig)
   CPY_TRIM_String_val(config->DebugLevel, String_val(Field(vconfig, 1)));
   config->Device = String_val(Field(vconfig, 2));
   config->Connection = String_val(Field(vconfig, 3));
+  #if VERSION_NUM >= 12792
   config->SyncTime = Bool_val(Field(vconfig, 4));
   config->LockDevice = Bool_val(Field(vconfig, 5));
-  config->DebugFile = String_val(Field(vconfig, 6));
   config->StartInfo = Bool_val(Field(vconfig, 7));
+  #else
+  /* for VERSION_NUM <= 12400, those are strings. */
+  config->SyncTime = yesno_bool(Bool_val(Field(vconfig, 4)));
+  config->LockDevice = yesno_bool(Bool_val(Field(vconfig, 5)));
+  config->StartInfo = yesno_bool(Bool_val(Field(vconfig, 7)));
+  #endif
+  config->DebugFile = String_val(Field(vconfig, 6));
   config->UseGlobalDebugFile = Bool_val(Field(vconfig, 8));
   CPY_TRIM_String_val(config->TextReminder, String_val(Field(vconfig, 9)));
   CPY_TRIM_String_val(config->TextMeeting, String_val(Field(vconfig, 10)));
@@ -592,7 +634,7 @@ static value Val_NetworkInfo(GSM_NetworkInfo *network)
   Store_field(res, 8, caml_copy_sustring("Unknown"));
   #endif
   CAMLreturn(res);
-  
+
 }
 
 static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
@@ -617,7 +659,7 @@ static value Val_SignalQuality(GSM_SignalQuality *signal_quality)
 
 CAMLexport
 value gammu_caml_GetBatteryCharge(value s)
-{  
+{
   CAMLparam1(s);
   GSM_BatteryCharge *bat;
   GSM_GetBatteryCharge(StateMachine_val(s), bat);
@@ -1008,7 +1050,7 @@ static value Val_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
 {
   CAMLparam0();
   CAMLlocal2(res, vsms);
-  res = caml_alloc(1, 0);  
+  res = caml_alloc(1, 0);
   int length = multi_sms->Number;
   int i;
   vsms = caml_alloc(length, 0);
@@ -1144,7 +1186,7 @@ static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
   value ventries;
   GSM_MultiPartSMSInfo mult_part_sms;
   int length;
-  int i; 
+  int i;
   ventries = Field(vmult_part_sms, 4);
   length = Wosize_val(ventries);
   mult_part_sms.UnicodeCoding = Bool_val(Field(vmult_part_sms, 0));
