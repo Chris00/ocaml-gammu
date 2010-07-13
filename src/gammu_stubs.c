@@ -33,6 +33,9 @@
 
 #include "io.h"
 
+#define TRUE 1
+#define FALSE 0
+
 /* Similar to strncpy but doesn't pad with nulls and ensure that destination
    string is null terminated. */
 /* TODO: should be removed, not used anymore. */
