@@ -155,10 +155,11 @@ static value alloc_INI_Section()
 
 static value Val_INI_Section(INI_Section *ini_section)
 {
+  CAMLparam0();
   CAMLlocal1(res);
   res = alloc_INI_Section();
   INI_Section_val(res) = ini_section;
-  return res;
+  CAMLreturn(res);
 }
 
 CAMLexport
@@ -226,6 +227,7 @@ static value Val_StateMachine(GSM_StateMachine *sm)
 
 static value Val_Config(const GSM_Config *config)
 {
+  CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(14, 0);
   Store_field(res, 0, caml_copy_string(config->Model));
@@ -242,7 +244,7 @@ static value Val_Config(const GSM_Config *config)
   Store_field(res, 11, caml_copy_string(config->TextMeeting));
   Store_field(res, 12, caml_copy_string(config->TextBirthday));
   Store_field(res, 13, caml_copy_string(config->TextMemo));
-  return res;
+  CAMLreturn(res);
 }
 
 /* Set values of config according to those from vconfig. */
@@ -382,6 +384,7 @@ void gammu_caml_InitConnection(value s, value vreply_num)
 
 static void log_function_callback(const char *text, void *data)
 {
+  CAMLparam0();
   CAMLlocal1(f);
   f = *((value *) data);
   caml_callback(f, caml_copy_string(text));
@@ -494,6 +497,7 @@ static GSM_BatteryCharge *BatteryCharge_val(value vbattery_charge)
 
 static value Val_BatteryCharge(GSM_BatteryCharge *battery_charge)
 {
+  CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(10, 0);
   Store_field(res, 0, Val_BatteryType(battery_charge->BatteryType));
@@ -506,7 +510,7 @@ static value Val_BatteryCharge(GSM_BatteryCharge *battery_charge)
   Store_field(res, 7, Val_int(battery_charge->PhoneCurrent));
   Store_field(res, 8, Val_int(battery_charge->BatteryTemperature));
   Store_field(res, 9, Val_int(battery_charge->PhoneTemperature));
-  return res;
+  CAMLreturn(res);
 }
 
 static GSM_PhoneModel *PhoneModel_val(value vphone_model)
@@ -518,17 +522,18 @@ static GSM_PhoneModel *PhoneModel_val(value vphone_model)
   phone_model->model = String_val(Field(vphone_model, 0));
   phone_model->number = String_val(Field(vphone_model, 1));
   phone_model->irdamodel = String_val(Field(vphone_model, 2));
- return phone_model;
+  return phone_model;
 }
 
 static value Val_PhoneModel(GSM_PhoneModel *phone_model)
 {
+  CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(3, 0);
   Store_field(res, 0, caml_copy_string(phone_model->model));
   Store_field(res, 1, caml_copy_string(phone_model->number));
   Store_field(res, 2, caml_copy_string(phone_model->irdamodel));
-  return res;
+  CAMLreturn(res);
 }
 
 /* broken code, never used
@@ -551,6 +556,7 @@ static GSM_NetworkInfo *NetworkInfo_val(value vnetwork)
 
 static value Val_NetworkInfo(GSM_NetworkInfo *network)
 {
+  CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(9, 0);
   Store_field(res, 0, caml_copy_string(network->CID));
@@ -562,7 +568,7 @@ static value Val_NetworkInfo(GSM_NetworkInfo *network)
   Store_field(res, 6, caml_copy_string(network->PacketCID));
   Store_field(res, 7, Val_NetworkState(network->PacketState));
   Store_field(res, 8, caml_copy_string(network->PacketLAC));
-  return res;
+  CAMLreturn(res);
 }
 
 static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
@@ -576,17 +582,18 @@ static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
 
 static value Val_SignalQuality(GSM_SignalQuality *signal_quality)
 {
+  CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(3, 0);
   Store_field(res, 0, Val_int(signal_quality->SignalStrength));
   Store_field(res, 1, Val_int(signal_quality->SignalPercent));
   Store_field(res, 2, Val_int(signal_quality->BitErrorRate));
-  return res;
+  CAMLreturn(res);
 }
 
 CAMLexport
 value gammu_caml_GetBatteryCharge(value s)
-{
+{  
   CAMLparam1(s);
   GSM_BatteryCharge *bat;
   GSM_GetBatteryCharge(StateMachine_val(s), bat);
@@ -706,6 +713,7 @@ static GSM_DateTime *DateTime_val(value vdate_time)
 
 static value Val_DateTime(GSM_DateTime *date_time)
 {
+  CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(7, 0);
   Store_field(res, 0, Val_int(date_time->Timezone));
@@ -715,7 +723,7 @@ static value Val_DateTime(GSM_DateTime *date_time)
   Store_field(res, 4, Val_int(date_time->Day));
   Store_field(res, 5, Val_int(date_time->Month));
   Store_field(res, 6, Val_int(date_time->Year));
-  return res;
+  CAMLreturn(res);
 }
 
 CAMLexport
@@ -779,7 +787,7 @@ static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
   res->CallLength = Int_val(Field(vsub_mem_entry, 5));
   res->AddError = Error_val(Field(vsub_mem_entry, 6));
   res->Text = String_val(Field(vsub_mem_entry, 7));
-  return res;
+  CAMLreturn(res);
 }
 
 static value Val_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
@@ -877,7 +885,7 @@ static value Val_UDHHeader(GSM_UDHHeader *udh_header)
   Store_field(res, 3, Val_int(udh_header->ID16bit));
   Store_field(res, 4, Val_int(udh_header->PartNumber));
   Store_field(res, 5, Val_int(udh_header->AllParts));
-  return res;
+  CAMLreturn(res);
 }
 
 #define SMSMessageType_val(v) (Int_val(v) + 1)
@@ -1017,7 +1025,7 @@ static value Val_OneSMSFolder(GSM_OneSMSFolder *folder)
   Store_field(res, 1, Val_bool(folder->OutboxFolder));
   Store_field(res, 2, Val_MemoryType(folder->Memory));
   Store_field(res, 3, caml_copy_string(folder->Name));
-  return res;
+  CAMLreturn(res);
 }
 
 /* folders */
@@ -1048,7 +1056,7 @@ static value Val_SMSMemoryStatus(GSM_SMSMemoryStatus *sms_mem)
   Store_field(res, 4, Val_int(sms_mem->PhoneUnRead));
   Store_field(res, 5, Val_int(sms_mem->PhoneUsed));
   Store_field(res, 6, Val_int(sms_mem->PhoneSize));
-  return res;
+  CAMLreturn(res);
 }
 
 CAMLexport
@@ -1079,21 +1087,21 @@ void gammu_caml_DeleteSMS(value s, value vsms)
 static GSM_MultipartSMSEntry MultipartSMSEntry_val(value vmult_part_sms)
 {
   GSM_MultipartSMSEntry mult_part_sms;
-  mult_part_sms->ID = EncodeMultiPartSMSID_val(Field(vmult_part_sms, 0));
-  mult_part_sms->Number = Int_val(Field(vmult_part_sms, 1));
-  mult_part_sms->Phonebook = MemoryEntry_val(Field(vmult_part_sms, 2));
-  mult_part_sms->Protected = Bool_val(Field(vmult_part_sms, 3));
-  mult_part_sms->Buffer = /* ???_val(Field(vmult_part_sms, 4)*/;
-  mult_part_sms->Left = Bool_val(Field(vmult_part_sms, 5));
-  mult_part_sms->Right = Bool_val(Field(vmult_part_sms, 6));
-  mult_part_sms->Center = Bool_val(Field(vmult_part_sms, 7));
-  mult_part_sms->Large = Bool_val(Field(vmult_part_sms, 8));
-  mult_part_sms->Small = Bool_val(Field(vmult_part_sms, 9));
-  mult_part_sms->Bold = Bool_val(Field(vmult_part_sms, 10));
-  mult_part_sms->Italic = Bool_val(Field(vmult_part_sms, 11));
-  mult_part_sms->Underlined = Bool_val(Field(vmult_part_sms, 12));
-  mult_part_sms->Strikethrough = Bool_val(Field(vmult_part_sms, 13));
-  mult_part_sms->RingstoneNotes = Int_val(Field(vmult_part_sms, 14));
+  mult_part_sms.ID = EncodeMultiPartSMSID_val(Field(vmult_part_sms, 0));
+  mult_part_sms.Number = Int_val(Field(vmult_part_sms, 1));
+  mult_part_sms.Phonebook = MemoryEntry_val(Field(vmult_part_sms, 2));
+  mult_part_sms.Protected = Bool_val(Field(vmult_part_sms, 3));
+  mult_part_sms.Buffer = /* ???_val(Field(vmult_part_sms, 4)*/;
+  mult_part_sms.Left = Bool_val(Field(vmult_part_sms, 5));
+  mult_part_sms.Right = Bool_val(Field(vmult_part_sms, 6));
+  mult_part_sms.Center = Bool_val(Field(vmult_part_sms, 7));
+  mult_part_sms.Large = Bool_val(Field(vmult_part_sms, 8));
+  mult_part_sms.Small = Bool_val(Field(vmult_part_sms, 9));
+  mult_part_sms.Bold = Bool_val(Field(vmult_part_sms, 10));
+  mult_part_sms.Italic = Bool_val(Field(vmult_part_sms, 11));
+  mult_part_sms.Underlined = Bool_val(Field(vmult_part_sms, 12));
+  mult_part_sms.Strikethrough = Bool_val(Field(vmult_part_sms, 13));
+  mult_part_sms.RingstoneNotes = Int_val(Field(vmult_part_sms, 14));
   return mult_part_sms;
 }
 
@@ -1102,22 +1110,22 @@ static value Val_MultipartSMSEntry(GSM_MultipartSMSEntry mult_part_sms)
   CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(15, 0);
-  Store_field(res, 0, Val_EncodeMultiPartSMSID(mult_part_sms->ID));
-  Store_field(res, 1, VAl_int(mult_part_sms->Number));
-  Store_field(res, 2, Val_MemoryEntry(mult_part_sms->Phonebook));
-  Store_field(res, 3, Val_bool(mult_part_sms->Protected));
+  Store_field(res, 0, Val_EncodeMultiPartSMSID(mult_part_sms.ID));
+  Store_field(res, 1, VAl_int(mult_part_sms.Number));
+  Store_field(res, 2, Val_MemoryEntry(mult_part_sms.Phonebook));
+  Store_field(res, 3, Val_bool(mult_part_sms.Protected));
   Store_field(res, 4, /* ???(mult_part_sms->Buffer));*/);
-  Store_field(res, 5, Val_bool(mult_part_sms->Left));
-  Store_field(res, 6, VAl_bool(mult_part_sms->Right));
-  Store_field(res, 7, Val_bool(mult_part_sms->Center));
-  Store_field(res, 8, Val_bool(mult_part_sms->Large));
-  Store_field(res, 9, Val_bool(mult_part_sms->Small));
-  Store_field(res, 10, VAl_bool(mult_part_sms->Bold));
-  Store_field(res, 11, Val_bool(mult_part_sms->Italic));
-  Store_field(res, 12, Val_bool(mult_part_sms->Underlined));
-  Store_field(res, 13, Val_bool(mult_part_sms->Strikethrough));
-  Store_field(res, 9, Val_int(mult_part_sms->RingstoneNotes));
-  return res;
+  Store_field(res, 5, Val_bool(mult_part_sms.Left));
+  Store_field(res, 6, VAl_bool(mult_part_sms.Right));
+  Store_field(res, 7, Val_bool(mult_part_sms.Center));
+  Store_field(res, 8, Val_bool(mult_part_sms.Large));
+  Store_field(res, 9, Val_bool(mult_part_sms.Small));
+  Store_field(res, 10, VAl_bool(mult_part_sms.Bold));
+  Store_field(res, 11, Val_bool(mult_part_sms.Italic));
+  Store_field(res, 12, Val_bool(mult_part_sms.Underlined));
+  Store_field(res, 13, Val_bool(mult_part_sms.Strikethrough));
+  Store_field(res, 9, Val_int(mult_part_sms.RingstoneNotes));
+  CAMLreturn(res);
 }
 
 static GSM_MultipartSMSInfo *MultipartSMSInfo_val(value vmult_part_sms)
@@ -1140,7 +1148,7 @@ static GSM_MultipartSMSInfo *MultipartSMSInfo_val(value vmult_part_sms)
     malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SubMemoryEntry));
   for (i=0; i < length; i++)
     mult_part_sms->Entries[i] = MultipartSMSEntry_val(Field(ventries, i));
-  return mult_part_sms;
+  CAMLreturn(mult_part_sms);
 }
 
 static value Val_MultipartSMSInfo(GSM_MultipartSMSInfo *mult_part_sms)
@@ -1158,7 +1166,7 @@ static value Val_MultipartSMSInfo(GSM_MultipartSMSInfo *mult_part_sms)
   for (i=0; i < length; i++)
     Store_field(ventries, i, Val_MultipartSMSEntry(mult_part_info->Entries[i]));
   Store_field(res, 4, ventries);
-  return res;
+  CAMLreturn(res);
 }
 
 #define EncodeMultiPartSMSID_val(v) (Int_val(v) + 1)
