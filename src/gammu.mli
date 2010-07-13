@@ -1,6 +1,10 @@
 (* TODO:?? Split the modules in mutiple files as C Gammu does ? *)
 (** Interface to the gammu library (libGammu) to manage data in your
-    cell phone such as contacts, calendar or messages. *)
+    cell phone such as contacts, calendar or messages.
+
+    NOTE: Strings used by libGammu often have a maximum allowed
+    length. Strings too long will be trimmed before being passed to libGammu
+    (caml Strings remain immutable). *)
 
 (************************************************************************)
 (** {2 Error handling} **)
