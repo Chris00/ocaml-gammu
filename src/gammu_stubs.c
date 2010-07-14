@@ -231,6 +231,7 @@ static struct custom_operations gammu_caml_ini_section_ops = {
 
 static value alloc_INI_Section()
 {
+  /* Can alloc_custom fail ? */
   return alloc_custom(&gammu_caml_ini_section_ops, sizeof(INI_Section *),
                       1, 100);
 }
@@ -330,16 +331,18 @@ static value Val_Config(const GSM_Config *config)
   Store_field(res, 6, caml_copy_sustring(config->DebugFile));
   Store_field(res, 8, Val_bool(config->UseGlobalDebugFile));
   Store_field(res, 9, caml_copy_sustring(config->TextReminder));
-  Store_field(res, 10, caml_copy_sustring(config->TextReminder));
-  Store_field(res, 11, caml_copy_sustring(config->TextMeeting));
+  Store_field(res, 10, caml_copy_sustring(config->TextMeeting));
+  Store_field(res, 11, caml_copy_sustring(config->TextCall));
   Store_field(res, 12, caml_copy_sustring(config->TextBirthday));
   Store_field(res, 13, caml_copy_sustring(config->TextMemo));
+  /* (+) GSM_Features PhoneFeatures */
   CAMLreturn(res);
 }
 
 /* Set values of config according to those from vconfig. */
 static void set_config_val(GSM_Config *config, value vconfig)
 {
+  assert(config != NULL); 
   CPY_TRIM_String_val(config->Model, String_val(Field(vconfig, 0)));
   CPY_TRIM_String_val(config->DebugLevel, String_val(Field(vconfig, 1)));
   config->Device = String_val(Field(vconfig, 2));
@@ -349,7 +352,8 @@ static void set_config_val(GSM_Config *config, value vconfig)
   config->LockDevice = Bool_val(Field(vconfig, 5));
   config->StartInfo = Bool_val(Field(vconfig, 7));
   #else
-  /* for VERSION_NUM <= 12400, those are strings. */
+  /* for VERSION_NUM <= 12400, those are strings.
+     we don't know about versions between 12400 and 12792 */
   config->SyncTime = yesno_bool(Bool_val(Field(vconfig, 4)));
   config->LockDevice = yesno_bool(Bool_val(Field(vconfig, 5)));
   config->StartInfo = yesno_bool(Bool_val(Field(vconfig, 7)));
@@ -370,7 +374,7 @@ CAMLexport
 value gammu_caml_GetDebug(value s)
 {
   CAMLparam1(s);
-  CAMLreturn((value) GSM_GetDebug(StateMachine_val(s)));
+  CAMLreturn(Debug_Info_Val(GSM_GetDebug(StateMachine_val(s)));
 }
 
 CAMLexport
