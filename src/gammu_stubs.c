@@ -1136,6 +1136,28 @@ void gammu_caml_DeleteSMS(value s, value vsms)
 #define EncodeMultiPartSMSID_val(v) (Int_val(v) + 1)
 #define Val_EncodeMultiPartSMSID(v) Val_int(v - 1)
 
+/* caml Buffer is
+  type t =
+  {mutable buffer : string;
+  mutable position : int;
+  mutable length : int;
+  initial_buffer : string}
+*/
+/* Not used anymore */
+/*
+#define Buffer_val(v) Bp_val(Field(v, 0))
+static value Val_buffer(char *buf)
+{
+  CAMLparam0();
+  CAMLlocal1(res);
+  res = caml_alloc(4, 0);
+  Store_field(res, 0, Val_Bp(buf));
+  Store_field(res, 1, Val_int(0));
+  Store_field(res, 2, Val_int());
+  Store_field(res, 3, caml_copy_string(""));
+  CAMLreturn(res);
+} */
+
 static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
 {
   GSM_MultiPartSMSEntry mult_part_sms;
@@ -1143,7 +1165,7 @@ static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
   mult_part_sms.Number = Int_val(Field(vmult_part_sms, 1));
   mult_part_sms.Phonebook = MemoryEntry_val(Field(vmult_part_sms, 2));
   mult_part_sms.Protected = Bool_val(Field(vmult_part_sms, 3));
-  mult_part_sms.Buffer = /* ???_val(Field(vmult_part_sms, 4)*/;
+  mult_part_sms.Buffer = String_val(Field(vmult_part_sms, 4));
   mult_part_sms.Left = Bool_val(Field(vmult_part_sms, 5));
   mult_part_sms.Right = Bool_val(Field(vmult_part_sms, 6));
   mult_part_sms.Center = Bool_val(Field(vmult_part_sms, 7));
@@ -1166,7 +1188,7 @@ static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
   Store_field(res, 1, Val_int(mult_part_sms.Number));
   Store_field(res, 2, Val_MemoryEntry(mult_part_sms.Phonebook));
   Store_field(res, 3, Val_bool(mult_part_sms.Protected));
-  Store_field(res, 4, /* ???(mult_part_sms->Buffer));*/);
+  Store_field(res, 4, caml_copy_string(mult_part_sms->Buffer));
   Store_field(res, 5, Val_bool(mult_part_sms.Left));
   Store_field(res, 6, Val_bool(mult_part_sms.Right));
   Store_field(res, 7, Val_bool(mult_part_sms.Center));

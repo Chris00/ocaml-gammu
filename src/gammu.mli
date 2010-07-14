@@ -682,7 +682,7 @@ module SMS : sig
        todo : todo_entry; (* NYI *)
        file : file; (* NYI *) *)
     protected : bool;
-    buffer : Buffer.t;
+    buffer : string;
     (* TODO:?? use a variant type for alignment ? *)
     left : bool;
     right : bool;
