@@ -221,7 +221,8 @@ let find_gammurc ?path () =
     | None -> _find_gammurc ()
     | Some path -> _find_gammurc_force path
   in
-  { INI.head = s_node;  unicode=false; }
+  (* TODO: Check if can set a better unicode flag. *)
+  { INI.head = s_node; unicode=false; }
 
 external _read_config : INI.section_node -> int -> config =
   "gammu_caml_ReadConfig"
@@ -238,6 +239,13 @@ external push_config : t -> config -> unit = "gammu_caml_PushConfig"
 external remove_config : t -> config = "gammu_caml_RemoveConfig"
 
 external length_config : t -> int = "gammu_caml_GetConfigNum"
+
+let load_gammurc ?path s =
+  let ini = find_gammurc ?path () in
+  (* Read first config from INI file.
+     TODO: we should read all sections from * the INI file. *)
+  let cfg = read_config ini 0 in
+  push_config s cfg
 
 external _connect : t -> int -> unit= "gammu_caml_InitConnection"
 external _connect_log : t -> int -> (string -> unit) -> unit
