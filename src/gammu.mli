@@ -10,6 +10,7 @@
 (** {2 Error handling} **)
 
 type error =
+  | NONE                (** No error *)
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
   | DEVICENOTEXIST      (** Device does not exits *)
@@ -79,6 +80,8 @@ type error =
   | BUSY                (** Command failed. Try again. *)
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
+  (* Caml bindings own errors *)
+  | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
 
 val string_of_error : error -> string
 

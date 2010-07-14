@@ -33,6 +33,14 @@
 
 #include "io.h"
 
+static GSM_Debug_Info *safe_GSM_GetDebug(GSM_StateMachine *sm)
+{
+  res = GSM_GetDebug(sm);
+  if (res  == NULL)
+    res = GSM_GetGlobalDebug();
+  return res;
+}
+
 /* Check Gammu version. TODO: Check versions more precisely. */
 #if VERSION_NUM >= 12792
   /* OK*/
@@ -75,13 +83,13 @@ static inline char *strncpy2(char *dst, const char *src, size_t n)
 }*/
 
 /* Copy string represented by the value v to dst, and trim if too long. */
-#define CPY_TRIM_String_val(dst, v)                     \
- do {                                                   \
-   strncpy((char *) dst, String_val(v), sizeof(dst));   \
-   dst[sizeof(dst)] = '\0';                             \
- } while (0)
+#define CPY_TRIM_String_val(dst, v)                        \
+  do {                                                     \
+    strncpy((char *) dst, String_val(v), sizeof(dst));     \
+    dst[sizeof(dst)] = '\0';                               \
+  } while (0)
 
- /* signed or unsigned type char definition is not constant across versions. */
+/* signed or unsigned type char definition is not constant across versions. */
 #define caml_copy_sustring(str) caml_copy_string((char *) str)
 
 #if VERSION_NUM < 12792
@@ -103,14 +111,37 @@ static char *yesno_bool(gboolean b)
 /************************************************************************/
 /* Error handling */
 
+/* Error codes added to our bindings implementation. */
+typedef enum {
+  INI_KEY_NOT_FOUND = 71
+} CAML_GAMMU_Error;
+
 #define Error_val(v) (Int_val(v) + 1)
 #define Val_Error(v) Val_int(v - 1)
 
+/* raise [Error] if the error code doesn't indicates no error. */
+static void caml_gammu_raise_Error(int err)
+{
+  static value *exn = NULL;
+
+  if (err != ERR_NONE) {
+    if (exn == NULL) {
+      /* First time around, look up by name */
+      exn = caml_named_value("Gammu.Error");
+    }
+    caml_raise_with_arg(*exn, Val_Error(err));
+  }
+}
+
+/*#define caml_gammu_raise_Error(err)           \
+  caml_gammu_raise_Error((GSM_Error) err)
+*/
 CAMLexport
 value gammu_caml_ErrorString(value verr)
 {
   CAMLparam1(verr);
   const char *msg = GSM_ErrorString(Error_val(verr));
+  assert(msg != NULL);
   CAMLreturn(caml_copy_sustring(msg));
 }
 
@@ -122,12 +153,12 @@ value gammu_caml_ErrorString(value verr)
    freed through them and should not be freed before the associated state
    machine. Thus, there's no need to wrap them in a finalized block. */
 #define Debug_Info_val(v) ((GSM_Debug_Info *) v)
-#define Val_Debug_Info(v) ((value) v)
+#define Val_Debug_Info(di) ((value) di)
 
 CAMLexport
-value gammu_caml_GetGlobalDebug()
+value gammu_caml_GetGlobalDebug(value vunit)
 {
-  CAMLparam0();
+  CAMLparam1(vunit);
   CAMLreturn(Val_Debug_Info(GSM_GetGlobalDebug()));
 }
 
@@ -146,10 +177,15 @@ static FILE *FILE_val(value vchannel, const char *mode)
   FILE *res;
   struct channel *channel = Channel(vchannel);
   assert(channel != NULL);
+
   /* Duplicate channel's file descriptor so that the user can close the
      channel without affecting us and inversely. */
   fd = dup(channel->fd);
+  if (fd == -1)
+    /* TODO: raise exception */
+    return NULL;
   res = fdopen(fd, mode);
+
   return res;
 }
 
@@ -157,9 +193,10 @@ CAMLexport
 void gammu_caml_SetDebugFileDescriptor(value vchannel, value vdi)
 {
   CAMLparam2(vchannel, vdi);
-  GSM_SetDebugFileDescriptor(FILE_val(vchannel, "a"),
-                             TRUE, // file descriptor is closable
-                             Debug_Info_val(vdi));
+  caml_gammu_raise_Error(GSM_SetDebugFileDescriptor(
+                           FILE_val(vchannel, "a"),
+                           TRUE, // file descr is closable
+                           Debug_Info_val(vdi)));
   CAMLreturn0;
 }
 
@@ -167,7 +204,9 @@ CAMLexport
 void gammu_caml_SetDebugLevel(value vlevel, value vdi)
 {
   CAMLparam2(vlevel, vdi);
-  GSM_SetDebugLevel(String_val(vlevel), Debug_Info_val(vdi));
+  if (!GSM_SetDebugLevel(String_val(vlevel), Debug_Info_val(vdi)))
+    caml_invalid_argument("Gammu.set_debug_level: "             \
+                          "invalid debug level identifier.");
   CAMLreturn0;
 }
 
@@ -182,7 +221,7 @@ static void gammu_caml_ini_section_finalize(value vini_section)
 }
 
 static struct custom_operations gammu_caml_ini_section_ops = {
-  "be.umons.ml-gammu.ini_section",
+  "ml-gammu.Gammu.ini_section",
   gammu_caml_ini_section_finalize,
   custom_compare_default,
   custom_hash_default,
@@ -210,7 +249,9 @@ value gammu_caml_INI_ReadFile(value vfilename, value vunicode)
 {
   CAMLparam2(vfilename, vunicode);
   INI_Section *cfg;
-  INI_ReadFile(String_val(vfilename), Bool_val(vunicode), &cfg);
+  caml_gammu_raise_Error(INI_ReadFile(String_val(vfilename),
+                                      Bool_val(vunicode),
+                                      &cfg));
   CAMLreturn(Val_INI_Section(cfg));
 }
 
@@ -225,6 +266,8 @@ value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
                      (unsigned char *) String_val(vsection),
                      (unsigned char *) String_val(vkey),
                      Bool_val(vunicode));
+  if (res == NULL)
+    caml_gammu_raise_Error(INI_KEY_NOT_FOUND);
   CAMLreturn(caml_copy_sustring(res));
 }
 
@@ -235,10 +278,7 @@ value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
 /* TODO: naming rule for state machines ? :
    "value s" for caml type t
    "value vsm" for caml type state_machine
-   "GSM_StateMachine *sm" for libGammu's (GSM_StateMachine *).
-   or maybe
-   "value vsm" - type t (often used)
-   "value vs" - type state_machine (nearly never used) */
+   "GSM_StateMachine *sm" for libGammu's (GSM_StateMachine *). */
 #define StateMachine_vsm(v) (*((GSM_StateMachine **) Data_custom_val(v)))
 #define StateMachine_val(v) StateMachine_vsm(Field(v, 0))
 
@@ -248,7 +288,7 @@ static void gammu_caml_sm_finalize(value s)
 }
 
 static struct custom_operations gammu_caml_sm_ops = {
-  "be.umons.ml-gammu.state_machine",
+  "ml-gammu.Gammu.state_machine",
   gammu_caml_sm_finalize,
   custom_compare_default,
   custom_hash_default,
