@@ -84,6 +84,7 @@ static inline char *strncpy2(char *dst, const char *src, size_t n)
  /* signed or unsigned type char definition is not constant across versions. */
 #define caml_copy_sustring(str) caml_copy_string((char *) str)
 
+#if VERSION_NUM < 12792
 static gboolean is_true(const char *str)
 {
   if (strcasecmp(str, "true") == 0) return TRUE;
@@ -97,7 +98,7 @@ static char *yesno_bool(gboolean b)
   if (b) return "yes";
   return "no";
 }
-
+#endif
 
 /************************************************************************/
 /* Error handling */
@@ -534,6 +535,7 @@ value GetSecurityCode(value s)
 #define NetworkState_val(v) (Int_val(v) + 1)
 #define Val_NetworkState(v) Val_int(v - 1)
 
+/* Unused
 static GSM_BatteryCharge *BatteryCharge_val(value vbattery_charge)
 {
   GSM_BatteryCharge *battery_charge = malloc(sizeof(GSM_BatteryCharge));
@@ -549,6 +551,7 @@ static GSM_BatteryCharge *BatteryCharge_val(value vbattery_charge)
   battery_charge->PhoneTemperature = Int_val(Field(vbattery_charge, 9));
   return battery_charge;
 }
+*/
 
 static value Val_BatteryCharge(GSM_BatteryCharge *battery_charge)
 {
@@ -568,17 +571,18 @@ static value Val_BatteryCharge(GSM_BatteryCharge *battery_charge)
   CAMLreturn(res);
 }
 
-static GSM_PhoneModel *PhoneModel_val(value vphone_model)
-{
-  /* Check alloc */
-  GSM_PhoneModel *phone_model = malloc(sizeof(GSM_PhoneModel));
-  /* TODO: implement that.
-    phone_model->features = NULL; */
-  phone_model->model = String_val(Field(vphone_model, 0));
-  phone_model->number = String_val(Field(vphone_model, 1));
-  phone_model->irdamodel = String_val(Field(vphone_model, 2));
-  return phone_model;
-}
+// Unused
+//static GSM_PhoneModel *PhoneModel_val(value vphone_model)
+// {
+//  /* Check alloc */
+//  GSM_PhoneModel *phone_model = malloc(sizeof(GSM_PhoneModel));
+//  /* TODO: implement that.
+//    phone_model->features = NULL; */
+//  phone_model->model = String_val(Field(vphone_model, 0));
+//  phone_model->number = String_val(Field(vphone_model, 1));
+//  phone_model->irdamodel = String_val(Field(vphone_model, 2));
+//  return phone_model;
+//}
 
 static value Val_PhoneModel(GSM_PhoneModel *phone_model)
 {
@@ -637,6 +641,7 @@ static value Val_NetworkInfo(GSM_NetworkInfo *network)
 
 }
 
+/* Unused
 static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
 {
   GSM_SignalQuality *signal_quality = malloc(sizeof(GSM_SignalQuality));
@@ -645,6 +650,7 @@ static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
   signal_quality->BitErrorRate = Int_val(Field(vsignal_quality, 2));
   return signal_quality;
 }
+*/
 
 static value Val_SignalQuality(GSM_SignalQuality *signal_quality)
 {
@@ -833,6 +839,7 @@ value gammu_caml_OSDateTime(value vdt, value vtimezone)
 #define EntryType_val(v) (Int_val(v) + 1)
 #define Val_EntryType(v) Val_int(v - 1)
 
+/* Unused
 static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
 {
   value vsms_list;
@@ -844,7 +851,7 @@ static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
   res->VoiceTag = Int_val(Field(vsub_mem_entry, 3));
   vsms_list = Field(vsub_mem_entry, 4);
   if (Wosize_val(vsms_list) != 20)
-    return NULL; /* TODO: Raise error ! */
+    return NULL; // TODO: Raise error !
   for (i=0; i < 20; i++)
     res->SMSList[i] = Field(vsms_list, i);
   res->CallLength = Int_val(Field(vsub_mem_entry, 5));
@@ -852,6 +859,7 @@ static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
   CPY_TRIM_String_val(res->Text, Field(vsub_mem_entry, 7));
   return res;
 }
+*/
 
 static value Val_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
 {
@@ -874,6 +882,7 @@ static value Val_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
   CAMLreturn(res);
 }
 
+/* Unused
 static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
 {
   value ventries;
@@ -884,7 +893,7 @@ static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
   length = Wosize_val(ventries);
   mem_entry->MemoryType = MemoryType_val(Field(vmem_entry, 0));
   mem_entry->Location = Int_val(Field(vmem_entry, 1));
-  /* TODO: raise exception if too many entries. */
+  // TODO: raise exception if too many entries.
   if (length > GSM_PHONEBOOK_ENTRIES)
     length = GSM_PHONEBOOK_ENTRIES;
   for (i=0; i < length; i++)
@@ -892,6 +901,7 @@ static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
   mem_entry->EntriesNum = length;
   return mem_entry;
 }
+*/
 
 static value Val_MemoryEntry(GSM_MemoryEntry *mem_entry)
 {
@@ -1037,14 +1047,13 @@ static GSM_MultiSMSMessage *MultiSMSMessage_val(value vmulti_sms)
   length = Wosize_val(vmulti_sms);
   if (length > GSM_MAX_MULTI_SMS)
     length = GSM_MAX_MULTI_SMS;
-  multi_sms->SMS =
-    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_SMSMessage));
   for (i=0; i < length; i++)
     multi_sms->SMS[i] = *SMSMessage_val(Field(vsms, i));
   multi_sms->Number = length;
   return multi_sms;
 }
 
+/* Unused
 static value Val_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
 {
   CAMLparam0();
@@ -1057,12 +1066,12 @@ static value Val_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
     Store_field(vsms, i, Val_SMSMessage(&multi_sms->SMS[i]));
   Store_field(res, 0, vsms);
   CAMLreturn(res);
-}
+}*/
 
 /*   GetSMS
      GetNextSMS... */
 
-
+/* Unused
 static GSM_OneSMSFolder *OneSMSFolder_val(value vfolder)
 {
   GSM_OneSMSFolder *folder = malloc(sizeof(GSM_OneSMSFolder));
@@ -1071,8 +1080,9 @@ static GSM_OneSMSFolder *OneSMSFolder_val(value vfolder)
   folder->Memory = MemoryType_val(Field(vfolder, 2));
   CPY_TRIM_String_val(folder->Name, String_val(Field(vfolder, 3)));
   return folder;
-}
+} */
 
+/* Unused
 static value Val_OneSMSFolder(GSM_OneSMSFolder *folder)
 {
   CAMLparam0();
@@ -1083,11 +1093,11 @@ static value Val_OneSMSFolder(GSM_OneSMSFolder *folder)
   Store_field(res, 2, Val_MemoryType(folder->Memory));
   Store_field(res, 3, caml_copy_sustring(folder->Name));
   CAMLreturn(res);
-}
+} */
 
 /* folders */
 
-
+/* Unused
 static GSM_SMSMemoryStatus *SMSMemoryStatus_val(value vsms_mem)
 {
   GSM_SMSMemoryStatus *sms_mem = malloc(sizeof(GSM_SMSMemoryStatus));
@@ -1100,6 +1110,7 @@ static GSM_SMSMemoryStatus *SMSMemoryStatus_val(value vsms_mem)
   sms_mem->PhoneSize = Int_val(Field(vsms_mem, 6));
   return sms_mem;
 }
+*/
 
 static value Val_SMSMemoryStatus(GSM_SMSMemoryStatus *sms_mem)
 {
@@ -1158,6 +1169,7 @@ static value Val_buffer(char *buf)
   CAMLreturn(res);
 } */
 
+/* Unused
 static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
 {
   GSM_MultiPartSMSEntry mult_part_sms;
@@ -1165,7 +1177,7 @@ static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
   mult_part_sms.Number = Int_val(Field(vmult_part_sms, 1));
   mult_part_sms.Phonebook = MemoryEntry_val(Field(vmult_part_sms, 2));
   mult_part_sms.Protected = Bool_val(Field(vmult_part_sms, 3));
-  mult_part_sms.Buffer = String_val(Field(vmult_part_sms, 4));
+  mult_part_sms.Buffer = (unsigned char*) String_val(Field(vmult_part_sms, 4));
   mult_part_sms.Left = Bool_val(Field(vmult_part_sms, 5));
   mult_part_sms.Right = Bool_val(Field(vmult_part_sms, 6));
   mult_part_sms.Center = Bool_val(Field(vmult_part_sms, 7));
@@ -1178,6 +1190,7 @@ static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
   mult_part_sms.RingtoneNotes = Int_val(Field(vmult_part_sms, 14));
   return mult_part_sms;
 }
+*/
 
 static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
 {
@@ -1188,7 +1201,7 @@ static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
   Store_field(res, 1, Val_int(mult_part_sms.Number));
   Store_field(res, 2, Val_MemoryEntry(mult_part_sms.Phonebook));
   Store_field(res, 3, Val_bool(mult_part_sms.Protected));
-  Store_field(res, 4, caml_copy_string(mult_part_sms->Buffer));
+  Store_field(res, 4, caml_copy_sustring(mult_part_sms.Buffer));
   Store_field(res, 5, Val_bool(mult_part_sms.Left));
   Store_field(res, 6, Val_bool(mult_part_sms.Right));
   Store_field(res, 7, Val_bool(mult_part_sms.Center));
@@ -1202,6 +1215,7 @@ static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
   CAMLreturn(res);
 }
 
+/*
 static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
 {
   value ventries;
@@ -1217,13 +1231,12 @@ static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
   mult_part_sms->Unknown = Bool_val(Field(vmult_part_sms, 3));
   if (length > (GSM_MAX_MULTI_SMS))
     length = GSM_MAX_MULTI_SMS;
-  mult_part_sms->Entries =
-    malloc(GSM_MAX_MULTI_SMS * sizeof(GSM_MultiPartSMSEntry));
   for (i=0; i < length; i++)
     mult_part_sms->Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
   mult_part_sms->EntriesNum = length;
   return mult_part_sms;
 }
+*/
 
 static value Val_MultiPartSMSInfo(GSM_MultiPartSMSInfo *mult_part_sms_info)
 {
