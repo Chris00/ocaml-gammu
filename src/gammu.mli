@@ -4,7 +4,9 @@
 
     NOTE: Strings used by libGammu often have a maximum allowed
     length. Strings too long will be trimmed before being passed to libGammu
-    (caml Strings remain immutable). *)
+    (caml Strings remain immutable).
+
+    NOTE: this library is not thread safe. *)
 
 (************************************************************************)
 (** {2 Error handling} **)
