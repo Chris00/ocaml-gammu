@@ -1347,8 +1347,6 @@ value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms,
   CAMLlocal1(vmulti_sms);
   GSM_MultiSMSMessage sms;
   GSM_MultiPartSMSInfo info;
-  /* TODO: Change Debug_Info_val to take di as argument and modify it.
-     We have memory leak here. */
   GSM_Debug_Info *di = Debug_Info_val(vdi);
 
   MultiSMSMessage_val(vsms, &sms);
