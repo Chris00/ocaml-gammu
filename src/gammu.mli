@@ -232,7 +232,7 @@ val find_gammurc : ?path:string -> unit -> INI.sections
 val read_config : INI.sections -> int -> config
 (** [read_config section num] processes and returns gammu configuration
     represented by the [num]th section of the INI file representation
-    [section]. *)
+    [section]. Beware that [num]th section is in facts the section named "gammu[num]" *)
 
 val get_config : t -> int -> config
 (** [get_config s num] gets gammu configuration from state machine [s],
@@ -679,10 +679,10 @@ module SMS : sig
     info_class : int;
     replace_message : char;
     unknown : bool;
-    entries : entry array;
-  }
-  and entry = {
-    id : encode_multipart_sms_id;
+    entries : info array;
+  } (** SMS information, like type, text, text properties, etc... *)
+  and info = {
+    id : part_type_id;
     number : int;
     (* ringtone : ringtone; (* NYI *)
        bitmap : multi_bitmap; (* NYI *)
@@ -707,7 +707,7 @@ module SMS : sig
     strikethrough : bool;
     ringtone_notes : int;
   } (** ID during packing SMS for Smart Messaging 3.0, EMS and other *)
-  and encode_multipart_sms_id =
+  and part_type_id =
     | Text (** 1 text SMS. *)
     | ConcatenatedTextLong (** Contacenated SMS, when longer than 1 SMS. *)
     | ConcatenatedAutoTextLong (** Contacenated SMS, auto Default/Unicode
@@ -771,7 +771,7 @@ module SMS : sig
     use the one returned by {!Gammu.get_global_debug}.
 
     @param ems consider the message as an EMS (Enhanced Messaging Service)
-    (default false). *)
+    (default true). *)
 
 end
 

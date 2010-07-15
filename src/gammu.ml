@@ -611,10 +611,10 @@ struct
     info_class : int;
     replace_message : char;
     unknown : bool;
-    entries : entry array;
+    entries : info array;
   }
-  and entry = {
-    id : encode_multipart_sms_id;
+  and info = {
+    id : part_type_id;
     number : int;
     (* ringtone : ringtone; (* NYI *)
        bitmap : multi_bitmap; (* NYI *)
@@ -639,7 +639,7 @@ struct
     strikethrough : bool;
     ringtone_notes : int;
   }
-  and encode_multipart_sms_id =
+  and part_type_id =
     | Text
     | ConcatenatedTextLong
     | ConcatenatedAutoTextLong
@@ -689,10 +689,10 @@ struct
     | SiemensFile
 
   external _decode_multipart :
-    debug_info ->  multipart_message -> bool -> multipart_info
+    debug_info -> multipart_message -> bool -> multipart_info
       = "gammu_caml_DecodeMultiPartSMS"
 
-  let decode_multipart ?di ?(ems=false) multp_mess =
+  let decode_multipart ?di ?(ems=true) multp_mess =
     let di = match di with
       | None -> get_global_debug ()
       | Some s_di -> s_di
