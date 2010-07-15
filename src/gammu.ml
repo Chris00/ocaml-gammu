@@ -17,10 +17,6 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-(* Register OCAML callbacks for use in C stubs. *)
-let _ =
-  Callback.register "Char.code" Char.code;
-  Callback.register "Char.chr" Char.chr;;
 
 (************************************************************************)
 (* Error handling *)
@@ -98,6 +94,7 @@ type error =
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   (* Caml bindings own errors *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
+  | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
 
 exception Error of error
 
@@ -573,13 +570,17 @@ struct
     message_reference : char;
   }
 
-  type multipart_message = message array
+  type multi_sms = message array
 
-  (* val get : t -> location:int -> folder:int -> multipart_message =
-    "gammu_caml_GetSMS"
+  external _get : t -> int -> int -> multi_sms =
+    "gammu_caml_GSM_GetSMS"
+  let get s ~location ~folder =
+    _get s location folder
 
-     val get_next : ?start:bool -> location:int -> folder:int -> t ->
-     multipart_message ="gammu_caml_GetNextSMS" *)
+  external _get_next : t -> int -> int -> bool ->
+    multi_sms = "gammu_caml_GSM_GetNextSMS"
+  let get_next ?(start=false) ~location ~folder s =
+    _get_next s location folder start
 
   type folder = {
     inbox_folder : bool;
@@ -689,7 +690,7 @@ struct
     | SiemensFile
 
   external _decode_multipart :
-    debug_info -> multipart_message -> bool -> multipart_info
+    debug_info -> multi_sms -> bool -> multipart_info
       = "gammu_caml_DecodeMultiPartSMS"
 
   let decode_multipart ?di ?(ems=true) multp_mess =

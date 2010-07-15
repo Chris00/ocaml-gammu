@@ -84,6 +84,7 @@ type error =
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   (* Caml bindings own errors *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
+  | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
 
 val string_of_error : error -> string
 
@@ -620,25 +621,22 @@ module SMS : sig
     message_reference : char; (** Message reference. *)
   }
 
-  type multipart_message = message array
+  type multi_sms = message array
   (** Multiple SMS messages, used for Smart Messaging 3.0/EMS. *)
 
-  (* val get : t -> location:int -> folder:int -> multipart_message
-  (** NYI Reads SMS message. *) *)
+  val get : t -> location:int -> folder:int -> multi_sms
+  (** Reads SMS message. *)
 
-  (* TODO:?? old :
-     val get_next : ?message:message -> t -> multipart_message
-     does giving message is important ? *)
-  (* val get_next : ?start:bool -> location:int -> folder:int -> t
-    -> multipart_message
-  (** NYI Reads next (or first if [start] is set to true) SMS message.
+  val get_next : ?start:bool -> location:int -> folder:int -> t
+    -> multi_sms
+  (** Reads next (or first if [start] is set to true) SMS message.
       This might be faster for some phones than using
       {!Gammu.SMS.get} for each message.
 
       Please note that this command does not mark the message as
       read in phone. To do so, you have to call {!Gammu.SMS.get}.
 
-      @param start if true, start reading from beginning (default false). *) *)
+      @param start if true, start reading from beginning (default false). *)
 
   type folder = {
     inbox_folder : bool;  (** Whether it is inbox. *)
@@ -762,15 +760,15 @@ module SMS : sig
     | SiemensFile (** Siemens OTA  *)
 
   val decode_multipart : ?di:debug_info -> ?ems:bool ->
-    multipart_message -> multipart_info
+    multi_sms -> multipart_info
 (** [decode_multipart sms] Decodes multi part SMS to "readable"
     format. [sms] is modified, return a {!Gammu.multipart_info}
     associated.
 
-    @param di log according to debug setting from [di]. If not specified,
+    @param di log according to debug settings from [di]. If not specified,
     use the one returned by {!Gammu.get_global_debug}.
 
-    @param ems consider the message as an EMS (Enhanced Messaging Service)
+    @param ems whether to use EMS (Enhanced Messaging Service)
     (default true). *)
 
 end
