@@ -83,8 +83,10 @@ type error =
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   (* Caml bindings own errors *)
+  | OUT_OF_MEMORY       (** Out of memory on Computer. *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
+  | INVALID_CONFIG_NUM  (** Invalid config number. *)
 
 val string_of_error : error -> string
 

@@ -17,6 +17,8 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. */
 
+/* Todo: Handle unicode. */
+
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -33,14 +35,7 @@
 
 #include "io.h"
 
-static GSM_Debug_Info *safe_GSM_GetDebug(GSM_StateMachine *sm)
-{
-  GSM_Debug_Info *res;
-  res = GSM_GetDebug(sm);
-  if (res  == NULL)
-    res = GSM_GetGlobalDebug();
-  return res;
-}
+#define BUFFER_LENGTH 255
 
 /* Check Gammu version. TODO: Check versions more precisely. */
 #if VERSION_NUM >= 12792
@@ -84,14 +79,14 @@ static inline char *strncpy2(char *dst, const char *src, size_t n)
 }*/
 
 /* Copy string represented by the value v to dst, and trim if too long. */
-#define CPY_TRIM_String_val(dst, v)                        \
+#define CPY_TRIM_STRING_VAL(dst, v)                        \
   do {                                                     \
     strncpy((char *) dst, String_val(v), sizeof(dst));     \
     dst[sizeof(dst)] = '\0';                               \
   } while (0)
 
 /* signed or unsigned type char definition is not constant across versions. */
-#define caml_copy_sustring(str) caml_copy_string((char *) str)
+#define CAML_COPY_SUSTRING(str) caml_copy_string((char *) str)
 
 #define CHAR_VAL(v) ((char) Int_val(v))
 #define VAL_CHAR(c) (Val_int(c))
@@ -117,14 +112,17 @@ static char *yesno_bool(gboolean b)
 /************************************************************************/
 /* Error handling */
 
-/* Error codes added to our bindings implementation. */
+/* Error codes added to our bindings implementation.
+   TODO: ErrorString will fail with it. */
 typedef enum {
-  INI_KEY_NOT_FOUND = 71,
-  COULD_NOT_DECODE
+  ERR_OUT_OF_MEMORY = 71,
+  ERR_INI_KEY_NOT_FOUND,
+  ERR_COULD_NOT_DECODE,
+  ERR_INVALID_CONFIG_NUM
 } CAML_GAMMU_Error;
 
-#define Error_val(v) (Int_val(v) + 1)
-#define Val_Error(v) Val_int(v - 1)
+#define GSM_ERROR_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_ERROR(v) Val_int(v - 1)
 
 /* raise [Error] if the error code doesn't indicates no error. */
 static void caml_gammu_raise_Error(int err)
@@ -134,22 +132,19 @@ static void caml_gammu_raise_Error(int err)
   if (err != ERR_NONE) {
     if (exn == NULL) {
       /* First time around, look up by name */
-      exn = caml_named_value("Gammu.Error");
+      exn = caml_named_value("Gammu.GSM_Error");
     }
-    caml_raise_with_arg(*exn, Val_Error(err));
+    caml_raise_with_arg(*exn, VAL_GSM_ERROR(err));
   }
 }
 
-/*#define caml_gammu_raise_Error(err)           \
-  caml_gammu_raise_Error((GSM_Error) err)
-*/
 CAMLexport
-value gammu_caml_ErrorString(value verr)
+value caml_gammu_GSM_ErrorString(value verr)
 {
   CAMLparam1(verr);
-  const char *msg = GSM_ErrorString(Error_val(verr));
+  const char *msg = GSM_ErrorString(GSM_ERROR_VAL(verr));
   assert(msg != NULL);
-  CAMLreturn(caml_copy_sustring(msg));
+  CAMLreturn(CAML_COPY_SUSTRING(msg));
 }
 
 
@@ -159,21 +154,30 @@ value gammu_caml_ErrorString(value verr)
 /* The global Debug will never be freed and those from state machines are
    freed through them and should not be freed before the associated state
    machine. Thus, there's no need to wrap them in a finalized block. */
-#define Debug_Info_val(v) ((GSM_Debug_Info *) v)
-#define Val_Debug_Info(di) ((value) di)
+#define GSM_DEBUG_INFO_VAL(v) ((GSM_Debug_Info *) v)
+#define VAL_GSM_DEBUG_INFO(di) ((value) di)
 
-CAMLexport
-value gammu_caml_GetGlobalDebug(value vunit)
+static GSM_Debug_Info *safe_GSM_GetDebug(GSM_StateMachine *sm)
 {
-  CAMLparam1(vunit);
-  CAMLreturn(Val_Debug_Info(GSM_GetGlobalDebug()));
+  GSM_Debug_Info *res;
+  res = GSM_GetDebug(sm);
+  if (res  == NULL)
+    res = GSM_GetGlobalDebug();
+  return res;
 }
 
 CAMLexport
-void gammu_caml_SetDebugGlobal(value vinfo, value vdi)
+value caml_gammu_GSM_GetGlobalDebug(value vunit)
+{
+  CAMLparam1(vunit);
+  CAMLreturn(VAL_GSM_DEBUG_INFO(GSM_GetGlobalDebug()));
+}
+
+CAMLexport
+void caml_gammu_GSM_SetDebugGlobal(value vinfo, value vdi)
 {
   CAMLparam2(vinfo, vdi);
-  GSM_SetDebugGlobal(Bool_val(vinfo), Debug_Info_val(vdi));
+  GSM_SetDebugGlobal(Bool_val(vinfo), GSM_DEBUG_INFO_VAL(vdi));
   CAMLreturn0;
 }
 
@@ -197,21 +201,22 @@ static FILE *FILE_val(value vchannel, const char *mode)
 }
 
 CAMLexport
-void gammu_caml_SetDebugFileDescriptor(value vchannel, value vdi)
+void caml_gammu_GSM_SetDebugFileDescriptor(value vchannel, value vdi)
 {
   CAMLparam2(vchannel, vdi);
-  caml_gammu_raise_Error(GSM_SetDebugFileDescriptor(
-                           FILE_val(vchannel, "a"),
-                           TRUE, // file descr is closable
-                           Debug_Info_val(vdi)));
+  GSM_Error error;
+  error = GSM_SetDebugFileDescriptor(FILE_val(vchannel, "a"),
+                                     TRUE, // file descr is closable
+                                     GSM_DEBUG_INFO_VAL(vdi));
+  caml_gammu_raise_Error(error);
   CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_SetDebugLevel(value vlevel, value vdi)
+void caml_gammu_GSM_SetDebugLevel(value vlevel, value vdi)
 {
   CAMLparam2(vlevel, vdi);
-  if (!GSM_SetDebugLevel(String_val(vlevel), Debug_Info_val(vdi)))
+  if (!GSM_SetDebugLevel(String_val(vlevel), GSM_DEBUG_INFO_VAL(vdi)))
     caml_invalid_argument("Gammu.set_debug_level: "             \
                           "invalid debug level identifier.");
   CAMLreturn0;
@@ -220,16 +225,16 @@ void gammu_caml_SetDebugLevel(value vlevel, value vdi)
 /************************************************************************/
 /* INI files */
 
-#define INI_Section_val(v) (*(INI_Section **) (Data_custom_val(v)))
+#define INI_SECTION_VAL(v) (*(INI_Section **) (Data_custom_val(v)))
 
-static void gammu_caml_ini_section_finalize(value vini_section)
+static void caml_gammu_ini_section_finalize(value vini_section)
 {
-  INI_Free(INI_Section_val(vini_section));
+  INI_Free(INI_SECTION_VAL(vini_section));
 }
 
-static struct custom_operations gammu_caml_ini_section_ops = {
+static struct custom_operations caml_gammu_ini_section_ops = {
   "ml-gammu.Gammu.ini_section",
-  gammu_caml_ini_section_finalize,
+  caml_gammu_ini_section_finalize,
   custom_compare_default,
   custom_hash_default,
   custom_serialize_default,
@@ -238,8 +243,8 @@ static struct custom_operations gammu_caml_ini_section_ops = {
 
 static value alloc_INI_Section()
 {
-  /* Can alloc_custom fail ? */
-  return alloc_custom(&gammu_caml_ini_section_ops, sizeof(INI_Section *),
+  /* TODO: Can alloc_custom fail ? */
+  return alloc_custom(&caml_gammu_ini_section_ops, sizeof(INI_Section *),
                       1, 100);
 }
 
@@ -247,36 +252,41 @@ static value Val_INI_Section(INI_Section *ini_section)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = alloc_INI_Section();
-  INI_Section_val(res) = ini_section;
+  INI_SECTION_VAL(res) = ini_section;
+
   CAMLreturn(res);
 }
 
 CAMLexport
-value gammu_caml_INI_ReadFile(value vfilename, value vunicode)
+value caml_gammu_INI_ReadFile(value vfilename, value vunicode)
 {
   CAMLparam2(vfilename, vunicode);
   INI_Section *cfg;
+
   caml_gammu_raise_Error(INI_ReadFile(String_val(vfilename),
                                       Bool_val(vunicode),
                                       &cfg));
+
   CAMLreturn(Val_INI_Section(cfg));
 }
 
 CAMLexport
-value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
+value caml_gammu_INI_GetValue(value vfile_info, value vsection, value vkey,
                               value vunicode)
 {
   CAMLparam4(vfile_info, vsection, vkey, vunicode);
-  const unsigned char* res;
-  /* TODO: are those casts safe ? */
-  res = INI_GetValue(INI_Section_val(vfile_info),
+  unsigned char* res;
+
+  res = INI_GetValue(INI_SECTION_VAL(vfile_info),
                      (unsigned char *) String_val(vsection),
                      (unsigned char *) String_val(vkey),
                      Bool_val(vunicode));
   if (res == NULL)
-    caml_gammu_raise_Error(INI_KEY_NOT_FOUND);
-  CAMLreturn(caml_copy_sustring(res));
+    caml_gammu_raise_Error(ERR_INI_KEY_NOT_FOUND);
+
+  CAMLreturn(CAML_COPY_SUSTRING(res));
 }
 
 
@@ -287,44 +297,47 @@ value gammu_caml_INI_GetValue(value vfile_info, value vsection, value vkey,
    "value s" for caml type t
    "value vsm" for caml type state_machine
    "GSM_StateMachine *sm" for libGammu's (GSM_StateMachine *). */
-#define StateMachine_vsm(v) (*((GSM_StateMachine **) Data_custom_val(v)))
-#define StateMachine_val(v) StateMachine_vsm(Field(v, 0))
+#define GSM_STATEMACHINE_VSM(v) (*((GSM_StateMachine **) Data_custom_val(v)))
+#define GSM_STATEMACHINE_VAL(v) GSM_STATEMACHINE_VSM(Field(v, 0))
 
-static void gammu_caml_sm_finalize(value s)
+static void caml_gammu_state_machine_finalize(value s)
 {
-  GSM_FreeStateMachine(StateMachine_val(s));
+  GSM_FreeStateMachine(GSM_STATEMACHINE_VAL(s));
 }
 
-static struct custom_operations gammu_caml_sm_ops = {
+static struct custom_operations caml_gammu_state_machine_ops = {
   "ml-gammu.Gammu.state_machine",
-  gammu_caml_sm_finalize,
+  caml_gammu_state_machine_finalize,
   custom_compare_default,
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default
 };
 
-static value Val_StateMachine(GSM_StateMachine *sm)
+static value Val_GSM_StateMachine(GSM_StateMachine *sm)
 {
   CAMLparam0();
   CAMLlocal2(res, vsm);
+
   res = caml_alloc(2, 0);
-  vsm = alloc_custom(&gammu_caml_sm_ops, sizeof(GSM_StateMachine *), 1, 100);
-  StateMachine_vsm(vsm) = sm;
+  vsm = alloc_custom(&caml_gammu_state_machine_ops, sizeof(GSM_StateMachine *), 1, 100);
+  GSM_STATEMACHINE_VSM(vsm) = sm;
   Store_field(res, 0, vsm);
-  Store_field(res, 1, Val_Debug_Info(GSM_GetDebug(sm)));
+  Store_field(res, 1, VAL_GSM_DEBUG_INFO(safe_GSM_GetDebug(sm)));
+
   CAMLreturn(res);
 }
 
-static value Val_Config(const GSM_Config *config)
+static value Val_GSM_Config(const GSM_Config *config)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(14, 0);
-  Store_field(res, 0, caml_copy_sustring(config->Model));
-  Store_field(res, 1, caml_copy_sustring(config->DebugLevel));
-  Store_field(res, 2, caml_copy_sustring(config->Device));
-  Store_field(res, 3, caml_copy_sustring(config->Connection));
+  Store_field(res, 0, CAML_COPY_SUSTRING(config->Model));
+  Store_field(res, 1, CAML_COPY_SUSTRING(config->DebugLevel));
+  Store_field(res, 2, CAML_COPY_SUSTRING(config->Device));
+  Store_field(res, 3, CAML_COPY_SUSTRING(config->Connection));
   #if VERSION_NUM >= 12792
   Store_field(res, 4, Val_bool(config->SyncTime));
   Store_field(res, 5, Val_bool(config->LockDevice));
@@ -335,23 +348,23 @@ static value Val_Config(const GSM_Config *config)
   Store_field(res, 5, Val_bool(is_true(config->LockDevice)));
   Store_field(res, 7, Val_bool(is_true(config->StartInfo)));
   #endif
-  Store_field(res, 6, caml_copy_sustring(config->DebugFile));
+  Store_field(res, 6, CAML_COPY_SUSTRING(config->DebugFile));
   Store_field(res, 8, Val_bool(config->UseGlobalDebugFile));
-  Store_field(res, 9, caml_copy_sustring(config->TextReminder));
-  Store_field(res, 10, caml_copy_sustring(config->TextMeeting));
-  Store_field(res, 11, caml_copy_sustring(config->TextCall));
-  Store_field(res, 12, caml_copy_sustring(config->TextBirthday));
-  Store_field(res, 13, caml_copy_sustring(config->TextMemo));
+  Store_field(res, 9, CAML_COPY_SUSTRING(config->TextReminder));
+  Store_field(res, 10, CAML_COPY_SUSTRING(config->TextMeeting));
+  Store_field(res, 11, CAML_COPY_SUSTRING(config->TextCall));
+  Store_field(res, 12, CAML_COPY_SUSTRING(config->TextBirthday));
+  Store_field(res, 13, CAML_COPY_SUSTRING(config->TextMemo));
   /* (+) GSM_Features PhoneFeatures */
+
   CAMLreturn(res);
 }
 
 /* Set values of config according to those from vconfig. */
-static void set_config_val(GSM_Config *config, value vconfig)
+static void GSM_Config_val(GSM_Config *config, value vconfig)
 {
-  assert(config != NULL); 
-  CPY_TRIM_String_val(config->Model, String_val(Field(vconfig, 0)));
-  CPY_TRIM_String_val(config->DebugLevel, String_val(Field(vconfig, 1)));
+  CPY_TRIM_STRING_VAL(config->Model, String_val(Field(vconfig, 0)));
+  CPY_TRIM_STRING_VAL(config->DebugLevel, String_val(Field(vconfig, 1)));
   config->Device = String_val(Field(vconfig, 2));
   config->Connection = String_val(Field(vconfig, 3));
   #if VERSION_NUM >= 12792
@@ -367,233 +380,293 @@ static void set_config_val(GSM_Config *config, value vconfig)
   #endif
   config->DebugFile = String_val(Field(vconfig, 6));
   config->UseGlobalDebugFile = Bool_val(Field(vconfig, 8));
-  CPY_TRIM_String_val(config->TextReminder, String_val(Field(vconfig, 9)));
-  CPY_TRIM_String_val(config->TextMeeting, String_val(Field(vconfig, 10)));
-  CPY_TRIM_String_val(config->TextCall, String_val(Field(vconfig, 11)));
-  CPY_TRIM_String_val(config->TextBirthday, String_val(Field(vconfig, 12)));
-  CPY_TRIM_String_val(config->TextMemo, String_val(Field(vconfig, 13)));
+  CPY_TRIM_STRING_VAL(config->TextReminder, String_val(Field(vconfig, 9)));
+  CPY_TRIM_STRING_VAL(config->TextMeeting, String_val(Field(vconfig, 10)));
+  CPY_TRIM_STRING_VAL(config->TextCall, String_val(Field(vconfig, 11)));
+  CPY_TRIM_STRING_VAL(config->TextBirthday, String_val(Field(vconfig, 12)));
+  CPY_TRIM_STRING_VAL(config->TextMemo, String_val(Field(vconfig, 13)));
 }
 
-#define ConnectionType_val(v) (Int_val(v) + 1)
-#define Val_ConnectionType(v) Val_int(v - 1)
+/* Unused
+#define GSM_CONNECTIONTYPE_VAL(v) (Int_val(v) + 1) */
+#define VAL_GSM_CONNECTIONTYPE(ct) Val_int(ct - 1)
 
 CAMLexport
-value gammu_caml_GetDebug(value s)
+value caml_gammu_GSM_GetDebug(value s)
 {
   CAMLparam1(s);
-  CAMLreturn(Val_Debug_Info(GSM_GetDebug(StateMachine_val(s))));
+
+  CAMLreturn(VAL_GSM_DEBUG_INFO(safe_GSM_GetDebug(GSM_STATEMACHINE_VAL(s))));
 }
 
 CAMLexport
-void gammu_caml_InitLocales(value vpath)
+void caml_gammu_GSM_InitLocales(value vpath)
 {
   CAMLparam1(vpath);
+
   GSM_InitLocales(String_val(vpath));
+
   CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_InitDefaultLocales()
+void caml_gammu_GSM_InitDefaultLocales()
 {
   CAMLparam0();
+
   GSM_InitLocales(NULL);
+
   CAMLreturn0;
 }
 
 CAMLexport
-value gammu_caml_CreateStateMachine()
+value caml_gammu_GSM_AllocStateMachine(value vunit)
 {
-  CAMLparam0();
-  CAMLreturn(Val_StateMachine(GSM_AllocStateMachine()));
+  CAMLparam1(vunit);
+  GSM_StateMachine *res = GSM_AllocStateMachine();
+
+  if (res == NULL)
+    caml_gammu_raise_Error(ERR_OUT_OF_MEMORY);
+
+  CAMLreturn(Val_GSM_StateMachine(res));
 }
 
 CAMLexport
-value gammu_caml_FindGammuRC_force(value vpath)
+value caml_gammu_GSM_FindGammuRC_force(value vpath)
 {
   CAMLparam1(vpath);
-  INI_Section **res;
-  GSM_FindGammuRC(res, String_val(vpath));
-  CAMLreturn(Val_INI_Section(*res));
+  INI_Section *res;
+
+  caml_gammu_raise_Error(GSM_FindGammuRC(&res, String_val(vpath)));
+
+  CAMLreturn(Val_INI_Section(res));
 }
 
 CAMLexport
-value gammu_caml_FindGammuRC()
+value caml_gammu_GSM_FindGammuRC(value vunit)
 {
-  CAMLparam0();
-  INI_Section **res;
-  GSM_FindGammuRC(res, NULL);
-  CAMLreturn(Val_INI_Section(*res));
+  CAMLparam1(vunit);
+  INI_Section *res;
+
+  caml_gammu_raise_Error(GSM_FindGammuRC(&res, NULL));
+
+  CAMLreturn(Val_INI_Section(res));
 }
 
 CAMLexport
-value gammu_caml_ReadConfig(value vcfg_info, value vnum)
+value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
 {
   CAMLparam2(vcfg_info, vnum);
-  GSM_Config *cfg;
-  INI_Section *cfg_info = INI_Section_val(vcfg_info);
-  GSM_ReadConfig(cfg_info, cfg, Int_val(vnum));
-  CAMLreturn(Val_Config(cfg));
+  GSM_Config cfg;
+  INI_Section *cfg_info = INI_SECTION_VAL(vcfg_info);
+
+  caml_gammu_raise_Error(GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum)));
+
+  CAMLreturn(Val_GSM_Config(&cfg));
 }
 
 CAMLexport
-value gammu_caml_GetConfig(value s, value vnum)
+value caml_gammu_GSM_GetConfig(value s, value vnum)
 {
   CAMLparam2(s, vnum);
-  const GSM_Config *cfg = GSM_GetConfig(StateMachine_val(s), Int_val(vnum));
-  CAMLreturn(Val_Config(cfg));
+  GSM_Config *cfg = GSM_GetConfig(GSM_STATEMACHINE_VAL(s), Int_val(vnum));
+
+  if (cfg == NULL)
+    caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
+
+  CAMLreturn(Val_GSM_Config(cfg));
 }
 
+/* set_config */
+
 CAMLexport
-void gammu_caml_PushConfig(value s, value vcfg)
+void caml_gammu_push_config(value s, value vcfg)
 {
   CAMLparam2(s, vcfg);
-  GSM_StateMachine *sm = StateMachine_val(s);
-  const int cfg_num = GSM_GetConfigNum(sm);
+  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+  int cfg_num = GSM_GetConfigNum(sm);
   GSM_Config *dest_cfg = GSM_GetConfig(sm, cfg_num);
+
   if (dest_cfg != NULL)
-    set_config_val(dest_cfg, vcfg);
-  /* else
-       To many configs (more than MAX_CONFIG_NUM (=5),
-       unfortunately this const is not exported)
-  */
+    GSM_Config_val(dest_cfg, vcfg);
+  else
+    /* To many configs (more than MAX_CONFIG_NUM+1 (=6),
+       unfortunately this const is not exported) */
+    caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
+
   CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_RemoveConfig(value s)
+void caml_gammu_remove_config(value s)
 {
   CAMLparam1(s);
-  GSM_StateMachine *sm = StateMachine_val(s);
-  const int cfg_num = GSM_GetConfigNum(sm);
+  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+  int cfg_num = GSM_GetConfigNum(sm);
+
   if (cfg_num > 0)
     GSM_SetConfigNum(sm, cfg_num - 1);
-  /* else
-     Empty stack, can't remove
-  */
+  else
+    /* Empty stack, can't remove */
+    caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
+
   CAMLreturn0;
 }
 
 CAMLexport
-value gammu_caml_GetConfigNum(value s)
+value caml_gammu_GSM_GetConfigNum(value s)
 {
   CAMLparam1(s);
-  CAMLreturn(Val_int( GSM_GetConfigNum(StateMachine_val(s)) ));
+  CAMLreturn(Val_int( GSM_GetConfigNum(GSM_STATEMACHINE_VAL(s)) ));
 }
 
 CAMLexport
-void gammu_caml_InitConnection(value s, value vreply_num)
+void caml_gammu_GSM_InitConnection(value s, value vreply_num)
 {
   CAMLparam2(s, vreply_num);
-  GSM_InitConnection(StateMachine_val(s), Int_val(vreply_num));
+
+  GSM_InitConnection(GSM_STATEMACHINE_VAL(s), Int_val(vreply_num));
+
   CAMLreturn0;
 }
-
-#define Log_Function_val(v)
 
 static void log_function_callback(const char *text, void *data)
 {
+  CAMLparam0();
   CAMLlocal1(f);
+
+  /* The caml function value was saved as user data for the callback. */
   f = *((value *) data);
-  caml_callback(f, caml_copy_sustring(text));
+  caml_callback(f, CAML_COPY_SUSTRING(text));
+
+  CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_InitConnection_Log(value s, value vreply_num, value vlog_func)
+void caml_gammu_GSM_InitConnection_Log(value s, value vreply_num, value vlog_func)
 {
   CAMLparam3(s, vreply_num, vlog_func);
+  GSM_Error error;
+
   /* TODO:?? vlog_func should not be freed until TerminateConnection. But
      the GC could forget about her through the side effect and free it. */
-  GSM_InitConnection_Log(StateMachine_val(s),
-                        Int_val(vreply_num),
-                        log_function_callback, (void *) &vlog_func);
+  error = GSM_InitConnection_Log(GSM_STATEMACHINE_VAL(s),
+                                 Int_val(vreply_num),
+                                 log_function_callback, (void *) &vlog_func);
+  caml_gammu_raise_Error(error);
+
   CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_TerminateConnection(value s)
+void caml_gammu_GSM_TerminateConnection(value s)
 {
   CAMLparam1(s);
-  GSM_TerminateConnection(StateMachine_val(s));
+
+  caml_gammu_raise_Error(GSM_TerminateConnection(GSM_STATEMACHINE_VAL(s)));
+
   CAMLreturn0;
 }
 
 CAMLexport
-value gammu_caml_IsConnected(value s)
+value caml_gammu_GSM_IsConnected(value s)
 {
   CAMLparam1(s);
-  CAMLreturn(Val_bool(GSM_IsConnected(StateMachine_val(s))));
+
+  CAMLreturn(Val_bool(GSM_IsConnected(GSM_STATEMACHINE_VAL(s))));
 }
 
 CAMLexport
-value gammu_caml_GetUsedConnection(value s)
+value caml_gammu_GSM_GetUsedConnection(value s)
 {
   CAMLparam1(s);
-  GSM_StateMachine *sm = StateMachine_val(s);
-  const GSM_ConnectionType conn_type = GSM_GetUsedConnection(sm);
-  CAMLreturn(Val_ConnectionType(conn_type));
+  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+  GSM_ConnectionType conn_type = GSM_GetUsedConnection(sm);
+
+  CAMLreturn(VAL_GSM_CONNECTIONTYPE(conn_type));
 }
 
 CAMLexport
-value gammu_caml_ReadDevice(value s, value vwait_for_reply)
+value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
 {
   CAMLparam2(s, vwait_for_reply);
-  GSM_StateMachine *sm = StateMachine_val(s);
-  int read_bytes = GSM_ReadDevice(sm, Bool_val(vwait_for_reply));
+  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+  int read_bytes;
+
+  /* Bug in GSM_ReadDevice, the function already checks for connection, but
+     one can't make the difference between a GSM not connected or 33 bytes
+     read.  TODO: Send a bug report. */
+  if (!GSM_IsConnected(sm))
+    caml_gammu_raise_Error(ERR_NOTCONNECTED);
+
+  read_bytes = GSM_ReadDevice(sm, Bool_val(vwait_for_reply));
+
   CAMLreturn(Val_int(read_bytes));
 }
 
 /************************************************************************/
 /* Security related operations with phone */
 
-#define SecurityCodeType_val(v) (Int_val(v) + 1)
-#define Val_SecurityCodeType(v) Val_int(v - 1)
+#define GSM_SECURITYCODETYPE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_SECURITYCODETYPE(sct) Val_int(sct - 1)
 
-static GSM_SecurityCode SecurityCode_val(value vsecurity_code)
+static GSM_SecurityCode GSM_SecurityCode_val(value vsecurity_code)
 {
   GSM_SecurityCode security_code;
-  security_code.Type = SecurityCodeType_val(Field(vsecurity_code, 0));
-  CPY_TRIM_String_val(security_code.Code,
-                   String_val(Field(vsecurity_code, 1)));
+
+  security_code.Type = GSM_SECURITYCODETYPE_VAL(Field(vsecurity_code, 0));
+  CPY_TRIM_STRING_VAL(security_code.Code,
+                      String_val(Field(vsecurity_code, 1)));
+
   return security_code;
 }
 
 CAMLexport
-void SecurityCode(value s, value vcode)
+void caml_gammu_GSM_EnterSecurityCode(value s, value vcode)
 {
   CAMLparam2(s, vcode);
-  GSM_EnterSecurityCode(StateMachine_val(s), SecurityCode_val(vcode));
+  GSM_Error error;
+
+  error = GSM_EnterSecurityCode(GSM_STATEMACHINE_VAL(s),
+                                GSM_SecurityCode_val(vcode));
+  caml_gammu_raise_Error(error);
+
   CAMLreturn0;
 }
 
 CAMLexport
-value GetSecurityCode(value s)
+value caml_gammu_GSM_GetSecurityStatus(value s)
 {
   CAMLparam1(s);
-  GSM_SecurityCodeType *status = malloc(sizeof(GSM_SecurityCodeType));
-  GSM_GetSecurityStatus(StateMachine_val(s), status);
-  CAMLreturn(Val_SecurityCodeType(status));
+  GSM_Error error;
+  GSM_SecurityCodeType status;
+
+  error = GSM_GetSecurityStatus(GSM_STATEMACHINE_VAL(s), &status);
+  caml_gammu_raise_Error(error);
+
+  CAMLreturn(VAL_GSM_SECURITYCODETYPE(&status));
 }
 
 /************************************************************************/
 /* Informations on the phone */
 
-#define ChargeState_val(v) (Int_val(v) + 1)
-#define Val_ChargeState(v) Val_int(v - 1)
-#define BatteryType_val(v) (Int_val(v) + 1)
-#define Val_BatteryType(v) Val_int(v - 1)
-#define GPRS_State_val(v) (Int_val(v) + 1)
-#define Val_GPRS_State(v) Val_int(v - 1)
-#define NetworkState_val(v) (Int_val(v) + 1)
-#define Val_NetworkState(v) Val_int(v - 1)
+#define CHARGESTATE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_CHARGESTATE(cs) Val_int(cs - 1)
+#define GSM_BATTERYTYPE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_BATTERYTYPE(bt) Val_int(bt - 1)
+#define GSM_GPRS_STATE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_GPRS_STATE(gprss) Val_int(gprss - 1)
+#define GSM_NETWORKINFO_STATE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_NETWORKINFO_STATE(nis) Val_int(nis - 1)
 
 /* Unused
-static GSM_BatteryCharge *BatteryCharge_val(value vbattery_charge)
+static GSM_BatteryCharge *GSM_BatteryCharge_val(value vbattery_charge)
 {
   GSM_BatteryCharge *battery_charge = malloc(sizeof(GSM_BatteryCharge));
-  battery_charge->BatteryType = BatteryType_val(Field(vbattery_charge, 0));
+  battery_charge->BatteryType = GSM_BATTERYTYPE_VAL(Field(vbattery_charge, 0));
   battery_charge->BatteryCapacity = Int_val(Field(vbattery_charge, 1));
   battery_charge->BatteryPercent = Int_val(Field(vbattery_charge, 2));
-  battery_charge->ChargeState = ChargeState_val(Field(vbattery_charge, 3));
+  battery_charge->ChargeState = GSM_CHARGESTATE_VAL(Field(vbattery_charge, 3));
   battery_charge->BatteryVoltage = Int_val(Field(vbattery_charge, 4));
   battery_charge->ChargeVoltage = Int_val(Field(vbattery_charge, 5));
   battery_charge->ChargeCurrent = Int_val(Field(vbattery_charge, 6));
@@ -604,26 +677,28 @@ static GSM_BatteryCharge *BatteryCharge_val(value vbattery_charge)
 }
 */
 
-static value Val_BatteryCharge(GSM_BatteryCharge *battery_charge)
+static value Val_GSM_BatteryCharge(GSM_BatteryCharge *battery_charge)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(10, 0);
-  Store_field(res, 0, Val_BatteryType(battery_charge->BatteryType));
+  Store_field(res, 0, VAL_GSM_BATTERYTYPE(battery_charge->BatteryType));
   Store_field(res, 1, Val_int(battery_charge->BatteryCapacity));
   Store_field(res, 2, Val_int(battery_charge->BatteryPercent));
-  Store_field(res, 3, Val_ChargeState(battery_charge->ChargeState));
+  Store_field(res, 3, VAL_GSM_CHARGESTATE(battery_charge->ChargeState));
   Store_field(res, 4, Val_int(battery_charge->BatteryVoltage));
   Store_field(res, 5, Val_int(battery_charge->ChargeVoltage));
   Store_field(res, 6, Val_int(battery_charge->ChargeCurrent));
   Store_field(res, 7, Val_int(battery_charge->PhoneCurrent));
   Store_field(res, 8, Val_int(battery_charge->BatteryTemperature));
   Store_field(res, 9, Val_int(battery_charge->PhoneTemperature));
+
   CAMLreturn(res);
 }
 
 // Unused
-//static GSM_PhoneModel *PhoneModel_val(value vphone_model)
+//static GSM_PhoneModel *GSM_PhoneModel_val(value vphone_model)
 // {
 //  /* Check alloc */
 //  GSM_PhoneModel *phone_model = malloc(sizeof(GSM_PhoneModel));
@@ -635,195 +710,169 @@ static value Val_BatteryCharge(GSM_BatteryCharge *battery_charge)
 //  return phone_model;
 //}
 
-static value Val_PhoneModel(GSM_PhoneModel *phone_model)
+static value Val_GSM_PhoneModel(GSM_PhoneModel *phone_model)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(3, 0);
-  Store_field(res, 0, caml_copy_sustring(phone_model->model));
-  Store_field(res, 1, caml_copy_sustring(phone_model->number));
-  Store_field(res, 2, caml_copy_sustring(phone_model->irdamodel));
+  Store_field(res, 0, CAML_COPY_SUSTRING(phone_model->model));
+  Store_field(res, 1, CAML_COPY_SUSTRING(phone_model->number));
+  Store_field(res, 2, CAML_COPY_SUSTRING(phone_model->irdamodel));
+
   CAMLreturn(res);
 }
 
 /* broken code, never used
-static GSM_NetworkInfo *NetworkInfo_val(value vnetwork)
+static GSM_NetworkInfo *GSM_NetworkInfo_val(value vnetwork)
 {
   GSM_NetworkInfo *network = malloc(sizeof(GSM_NetworkInfo));
   if (network == NULL)
     return NULL
   network->CID = String_val(Field(vnetwork, 0));
   network->NetworkCode = String_val(Field(vnetwork, 1));
-  network->State = NetworkState_val(Field(vnetwork, 2));
+  network->State = GSM_NETWORKINFO_STATE_VAL(Field(vnetwork, 2));
   network->LAC = String_val(Field(vnetwork, 3));
   network->NetworkName = String_val(Field(vnetwork, 4));
-  network->GPRS = GPRS_State_val(Field(vnetwork, 5));
+  network->GPRS = GSM_GPRS_STATE_VAL(Field(vnetwork, 5));
   network->PacketCID = String_val(Field(vnetwork, 6));
-  network->PacketState = NetworkState_val(Field(vnetwork, 7));
+  network->PacketState = GSM_NETWORKINFO_STATE_VAL(Field(vnetwork, 7));
   network->PacketLAC = String_val(Field(vnetwork, 8));
   return network;
 }*/
 
-static value Val_NetworkInfo(GSM_NetworkInfo *network)
+static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(9, 0);
-  Store_field(res, 0, caml_copy_sustring(network->CID));
-  Store_field(res, 1, caml_copy_sustring(network->NetworkCode));
-  Store_field(res, 2, Val_NetworkState(network->State));
-  Store_field(res, 3, caml_copy_sustring(network->LAC));
-  Store_field(res, 4, caml_copy_sustring(network->NetworkName));
+  Store_field(res, 0, CAML_COPY_SUSTRING(network->CID));
+  Store_field(res, 1, CAML_COPY_SUSTRING(network->NetworkCode));
+  Store_field(res, 2, VAL_GSM_NETWORKINFO_STATE(network->State));
+  Store_field(res, 3, CAML_COPY_SUSTRING(network->LAC));
+  Store_field(res, 4, CAML_COPY_SUSTRING(network->NetworkName));
+  /* Some fields weren't present yet in older versions, give them unknown
+     values */
   #if VERSION_NUM >= 12792
-  Store_field(res, 5, Val_GPRS_State(network->GPRS));
+  Store_field(res, 5, VAL_GSM_GPRS_STATE(network->GPRS));
   #else
   Store_field(res, 5, Val_int(2) /* grps_state = Unknown */);
   #endif
   #if VERSION_NUM >= 12796
-  Store_field(res, 6, caml_copy_sustring(network->PacketCID));
-  Store_field(res, 7, Val_NetworkState(network->PacketState));
-  Store_field(res, 8, caml_copy_sustring(network->PacketLAC));
+  Store_field(res, 6, CAML_COPY_SUSTRING(network->PacketCID));
+  Store_field(res, 7, VAL_GSM_NETWORKINFO_STATE(network->PacketState));
+  Store_field(res, 8, CAML_COPY_SUSTRING(network->PacketLAC));
   #else
-  Store_field(res, 6, caml_copy_sustring("Unknown"));
+  Store_field(res, 6, CAML_COPY_SUSTRING("Unknown"));
   Store_field(res, 7, Val_int(4) /* network_state = Unknown */);
-  Store_field(res, 8, caml_copy_sustring("Unknown"));
+  Store_field(res, 8, CAML_COPY_SUSTRING("Unknown"));
   #endif
-  CAMLreturn(res);
 
+  CAMLreturn(res);
 }
 
 /* Unused
-static GSM_SignalQuality *SignalQuality_val(value vsignal_quality)
+static GSM_SignalQuality *GSM_SignalQuality_val(value vsignal_quality)
 {
   GSM_SignalQuality *signal_quality = malloc(sizeof(GSM_SignalQuality));
   signal_quality->SignalStrength = Int_val(Field(vsignal_quality, 0));
   signal_quality->SignalPercent = Int_val(Field(vsignal_quality, 1));
-  signal_quality->BitErrorRate = Int_val(Field(vsignal_quality, 2));
+  signal_quality->BitGSM_ErrorRate = Int_val(Field(vsignal_quality, 2));
   return signal_quality;
 }
 */
 
-static value Val_SignalQuality(GSM_SignalQuality *signal_quality)
+static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(3, 0);
   Store_field(res, 0, Val_int(signal_quality->SignalStrength));
   Store_field(res, 1, Val_int(signal_quality->SignalPercent));
   Store_field(res, 2, Val_int(signal_quality->BitErrorRate));
+
   CAMLreturn(res);
 }
 
-CAMLexport
-value gammu_caml_GetBatteryCharge(value s)
-{
-  CAMLparam1(s);
-  GSM_BatteryCharge *bat;
-  GSM_GetBatteryCharge(StateMachine_val(s), bat);
-  CAMLreturn(Val_BatteryCharge(bat));
-}
+#define GSM_STR_GET(name, buf_length)                                   \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_Get##name(value s)                               \
+  {                                                                     \
+    CAMLparam1(s);                                                      \
+    GSM_Error error;                                                    \
+    char val[buf_length];                                               \
+    error = GSM_Get##name(GSM_STATEMACHINE_VAL(s), val);                \
+    caml_gammu_raise_Error(error);                                      \
+    CAMLreturn(CAML_COPY_SUSTRING(val));                                \
+  }
+
+#define GSM_TYPE_GET(name)                                              \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_Get##name(value s)                               \
+  {                                                                     \
+    CAMLparam1(s);                                                      \
+    GSM_##name res;                                                     \
+    GSM_Get##name(GSM_STATEMACHINE_VAL(s), &res);                       \
+    CAMLreturn(Val_GSM_##name(&res));                                   \
+  }
+
+GSM_TYPE_GET(BatteryCharge)
 
 CAMLexport
-value gammu_caml_GetFirmWare(value s)
+value caml_gammu_GSM_GetFirmWare(value s)
 {
   CAMLparam1(s);
   CAMLlocal1(res);
-  char *val, *date;
-  double *num;
-  GSM_GetFirmware(StateMachine_val(s), val, date, num);
+  GSM_Error error;
+  char val[GSM_MAX_VERSION_LENGTH + 1];
+  char date[GSM_MAX_VERSION_DATE_LENGTH + 1];
+  double num;
+
+  error = GSM_GetFirmware(GSM_STATEMACHINE_VAL(s), val, date, &num);
+  caml_gammu_raise_Error(error);
+
   res = caml_alloc(3, 0);
-  Store_field(res, 0, caml_copy_sustring(val));
-  Store_field(res, 1, caml_copy_sustring(date));
-  Store_field(res, 2, caml_copy_double(*num));
+  Store_field(res, 0, CAML_COPY_SUSTRING(&val));
+  Store_field(res, 1, CAML_COPY_SUSTRING(&date));
+  Store_field(res, 2, caml_copy_double(num));
+
   CAMLreturn(res);
 }
 
-CAMLexport
-value gammu_caml_GetHardware(value s)
-{
-  CAMLparam1(s);
-  char *val;
-  GSM_GetHardware(StateMachine_val(s), val);
-  CAMLreturn(caml_copy_sustring(val));
-}
+GSM_STR_GET(Hardware, BUFFER_LENGTH)
+
+GSM_STR_GET(IMEI, GSM_MAX_IMEI_LENGTH + 1)
+
+GSM_STR_GET(ManufactureMonth, BUFFER_LENGTH)
+
+GSM_STR_GET(Manufacturer, GSM_MAX_MANUFACTURER_LENGTH + 1)
+
+GSM_STR_GET(Model, GSM_MAX_MODEL_LENGTH + 1)
 
 CAMLexport
-value gammu_caml_GetIMEI(value s)
+value caml_gammu_GSM_GetModelInfo(value s)
 {
   CAMLparam1(s);
-  char *val;
-  GSM_GetIMEI(StateMachine_val(s), val);
-  CAMLreturn(caml_copy_sustring(val));
+
+  GSM_PhoneModel *phone_model = GSM_GetModelInfo(GSM_STATEMACHINE_VAL(s));
+
+  CAMLreturn(Val_GSM_PhoneModel(phone_model));
 }
 
-CAMLexport
-value gammu_caml_GetManufactureMonth(value s)
-{
-  CAMLparam1(s);
-  char *val;
-  GSM_GetManufactureMonth(StateMachine_val(s), val);
-  CAMLreturn(caml_copy_sustring(val));
-}
+GSM_TYPE_GET(NetworkInfo)
 
-CAMLexport
-value gammu_caml_GetManufacturer(value s)
-{
-  CAMLparam1(s);
-  char *val;
-  GSM_GetManufacturer(StateMachine_val(s), val);
-  CAMLreturn(caml_copy_sustring(val));
-}
+GSM_STR_GET(ProductCode, BUFFER_LENGTH)
 
-CAMLexport
-value gammu_caml_GetModel(value s)
-{
-  CAMLparam1(s);
-  char *val;
-  GSM_GetModel(StateMachine_val(s), val);
-  CAMLreturn(caml_copy_sustring(val));
-}
+GSM_TYPE_GET(SignalQuality)
 
-CAMLexport
-value gammu_caml_GetModelInfo(value s)
-{
-  CAMLparam1(s);
-  GSM_PhoneModel *phone_model = GSM_GetModelInfo(StateMachine_val(s));
-  CAMLreturn(Val_PhoneModel(phone_model));
-}
-
-CAMLexport
-value gammu_caml_GetNetworkInfo(value s)
-{
-  CAMLparam1(s);
-  GSM_NetworkInfo *netinfo;
-  GSM_GetNetworkInfo(StateMachine_val(s), netinfo);
-  CAMLreturn(Val_NetworkInfo(netinfo));
-}
-
-CAMLexport
-value gammu_caml_GetProductCode(value s)
-{
-  CAMLparam1(s);
-  char *val;
-  GSM_GetProductCode(StateMachine_val(s), val);
-  CAMLreturn(caml_copy_sustring(val));
-}
-
-CAMLexport
-value gammu_caml_GetSignalQuality(value s)
-{
-  CAMLparam1(s);
-  GSM_SignalQuality *sig;
-  GSM_GetSignalQuality(StateMachine_val(s), sig);
-  CAMLreturn(Val_SignalQuality(sig));
-}
 
 /************************************************************************/
 /* Date and time */
 
-static GSM_DateTime *DateTime_val(value vdate_time)
+static GSM_DateTime *GSM_DateTime_val(GSM_DateTime *date_time, value vdate_time)
 {
-  GSM_DateTime *date_time = malloc(sizeof(GSM_DateTime));
   date_time->Timezone = Int_val(Field(vdate_time, 0));
   date_time->Second = Int_val(Field(vdate_time, 1));
   date_time->Minute = Int_val(Field(vdate_time, 2));
@@ -831,13 +880,15 @@ static GSM_DateTime *DateTime_val(value vdate_time)
   date_time->Day = Int_val(Field(vdate_time, 4));
   date_time->Month = Int_val(Field(vdate_time, 5));
   date_time->Year = Int_val(Field(vdate_time, 6));
+
   return date_time;
 }
 
-static value Val_DateTime(GSM_DateTime *date_time)
+static value Val_GSM_DateTime(GSM_DateTime *date_time)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(7, 0);
   Store_field(res, 0, Val_int(date_time->Timezone));
   Store_field(res, 1, Val_int(date_time->Second));
@@ -846,58 +897,77 @@ static value Val_DateTime(GSM_DateTime *date_time)
   Store_field(res, 4, Val_int(date_time->Day));
   Store_field(res, 5, Val_int(date_time->Month));
   Store_field(res, 6, Val_int(date_time->Year));
+
   CAMLreturn(res);
 }
 
 CAMLexport
-value gammu_caml_CheckDate(value vdate)
+value caml_gammu_GSM_CheckDate(value vdate)
 {
   CAMLparam1(vdate);
-  gboolean date_ok = CheckDate(DateTime_val(vdate));
+  GSM_DateTime dt;
+  gboolean date_ok;
+
+  date_ok = CheckDate(GSM_DateTime_val(vdate, &dt));
+
   CAMLreturn(Val_bool(date_ok));
 }
 
 CAMLexport
-value gammu_caml_CheckTime(value vdate)
+value caml_gammu_GSM_CheckTime(value vdate)
 {
   CAMLparam1(vdate);
-  const gboolean time_ok = CheckTime(DateTime_val(vdate));
-  CAMLreturn(Val_bool(time_ok));
+  GSM_DateTime dt;
+
+  GSM_DateTime_val(vdate, &dt);
+
+  CAMLreturn(Val_bool(CheckTime(&dt)));
 }
 
 CAMLexport
-value gammu_caml_OSDate(value vdt)
+value caml_gammu_GSM_OSDate(value vdt)
 {
   CAMLparam1(vdt);
-  const char *os_date = OSDate(*DateTime_val(vdt));
-  CAMLreturn(caml_copy_sustring(os_date));
+  GSM_DateTime dt;
+  char *os_date;
+
+  /* TODO: Ask why does OSDate takes value instead of pointer ? */
+  GSM_DateTime_val(vdt, &dt);
+  os_date = OSDate(dt);
+
+  CAMLreturn(CAML_COPY_SUSTRING(os_date));
 }
 
 CAMLexport
-value gammu_caml_OSDateTime(value vdt, value vtimezone)
+value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone)
 {
   CAMLparam2(vdt, vtimezone);
-  const char *os_date_time =
-    OSDateTime(*DateTime_val(vdt), Bool_val(vtimezone));
-  CAMLreturn(caml_copy_sustring(os_date_time));
+  GSM_DateTime dt;
+  char *os_date_time;
+
+  GSM_DateTime_val(vdt, &dt);
+  os_date_time = OSDateTime(dt, Bool_val(vtimezone));
+
+  CAMLreturn(CAML_COPY_SUSTRING(os_date_time));
 }
 
 /************************************************************************/
 /* Memory */
 
-#define MemoryType_val(v) (Int_val(v) + 1)
-#define Val_MemoryType(v) Int_val(v - 1)
-#define EntryType_val(v) (Int_val(v) + 1)
-#define Val_EntryType(v) Val_int(v - 1)
+#define GSM_MEMORYTYPE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_MEMORYTYPE(mt) Int_val(mt - 1)
+/* unused
+#define GSM_ENTRYTYPE_VAL(v) (Int_val(v) + 1)*/
+#define VAL_GSM_ENTRYTYPE(et) Val_int(et - 1)
 
 /* Unused
-static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
+static GSM_SubMemoryEntry *GSM_SubMemoryEntry_val(value vsub_mem_entry)
 {
   value vsms_list;
   GSM_SubMemoryEntry *res = malloc(sizeof(GSM_SubMemoryEntry));
   int i;
-  res->EntryType = EntryType_val(Field(vsub_mem_entry, 0));
-  res->Date = *DateTime_val(Field(vsub_mem_entry, 1));
+  res->EntryType = GSM_ENTRYTYPE_VAL(Field(vsub_mem_entry, 0));
+  res->Date = *GSM_DateTime_val(Field(vsub_mem_entry, 1));
   res->Number = Int_val(Field(vsub_mem_entry, 2));
   res->VoiceTag = Int_val(Field(vsub_mem_entry, 3));
   vsms_list = Field(vsub_mem_entry, 4);
@@ -906,35 +976,35 @@ static GSM_SubMemoryEntry *SubMemoryEntry_val(value vsub_mem_entry)
   for (i=0; i < 20; i++)
     res->SMSList[i] = Field(vsms_list, i);
   res->CallLength = Int_val(Field(vsub_mem_entry, 5));
-  res->AddError = Error_val(Field(vsub_mem_entry, 6));
-  CPY_TRIM_String_val(res->Text, Field(vsub_mem_entry, 7));
+  res->AddError = GSM_ERROR_VAL(Field(vsub_mem_entry, 6));
+  CPY_TRIM_STRING_VAL(res->Text, Field(vsub_mem_entry, 7));
   return res;
 }
 */
 
-static value Val_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
+static value Val_GSM_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
 {
   CAMLparam0();
   CAMLlocal2(res, vsms_list);
-  const int *sms_list;
   int i;
-  Store_field(res, 0, Val_EntryType(sub_mem_entry->EntryType));
-  Store_field(res, 1, Val_DateTime(&sub_mem_entry->Date));
+
+  Store_field(res, 0, VAL_GSM_ENTRYTYPE(sub_mem_entry->EntryType));
+  Store_field(res, 1, Val_GSM_DateTime(&sub_mem_entry->Date));
   Store_field(res, 2, Val_int(sub_mem_entry->Number));
   Store_field(res, 3, Val_int(sub_mem_entry->VoiceTag));
-  sms_list = sub_mem_entry->SMSList;
   vsms_list = caml_alloc(20, 0);
   for (i=0; i < 20; i++)
-    Store_field(vsms_list, i, sms_list[i]);
+    Store_field(vsms_list, i, sub_mem_entry->SMSList[i]);
   Store_field(res, 4, vsms_list);
   Store_field(res, 5, Val_int(sub_mem_entry->CallLength));
-  Store_field(res, 6, Val_Error(sub_mem_entry->AddError));
-  Store_field(res, 7, caml_copy_sustring(sub_mem_entry->Text));
+  Store_field(res, 6, VAL_GSM_ERROR(sub_mem_entry->AddError));
+  Store_field(res, 7, CAML_COPY_SUSTRING(sub_mem_entry->Text));
+
   CAMLreturn(res);
 }
 
 /* Unused
-static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
+static GSM_MemoryEntry *GSM_MemoryEntry_val(value vmem_entry)
 {
   value ventries;
   GSM_MemoryEntry *mem_entry = malloc(sizeof(GSM_MemoryEntry));
@@ -942,171 +1012,184 @@ static GSM_MemoryEntry *MemoryEntry_val(value vmem_entry)
   int i;
   ventries = Field(vmem_entry, 2);
   length = Wosize_val(ventries);
-  mem_entry->MemoryType = MemoryType_val(Field(vmem_entry, 0));
+  mem_entry->MemoryType = GSM_MEMORYTYPE_VAL(Field(vmem_entry, 0));
   mem_entry->Location = Int_val(Field(vmem_entry, 1));
   // TODO: raise exception if too many entries.
   if (length > GSM_PHONEBOOK_ENTRIES)
     length = GSM_PHONEBOOK_ENTRIES;
   for (i=0; i < length; i++)
-    mem_entry->Entries[i] = *SubMemoryEntry_val(Field(ventries, i));
+    mem_entry->Entries[i] = *GSM_SubMemoryEntry_val(Field(ventries, i));
   mem_entry->EntriesNum = length;
   return mem_entry;
 }
 */
 
-static value Val_MemoryEntry(GSM_MemoryEntry *mem_entry)
+static value Val_GSM_MemoryEntry(GSM_MemoryEntry *mem_entry)
 {
   CAMLparam0();
   CAMLlocal2(res, ventries);
   res = alloc(3, 0);
   int length = mem_entry->EntriesNum;
   int i;
-  Store_field(res, 0, Val_MemoryType(mem_entry->MemoryType));
+
+  Store_field(res, 0, VAL_GSM_MEMORYTYPE(mem_entry->MemoryType));
   Store_field(res, 1, Val_int(mem_entry->Location));
   ventries = caml_alloc(length, 0);
   for (i=0; i < length; i++)
-    Store_field(ventries, i, Val_SubMemoryEntry(&mem_entry->Entries[i]));
+    Store_field(ventries, i, Val_GSM_SubMemoryEntry(&mem_entry->Entries[i]));
   Store_field(res, 2, ventries);
+
   CAMLreturn(res);
 }
 
 /************************************************************************/
 /* Messages */
 
-#define SMSFormat_val(v) (Int_val(v) + 1)
-#define Val_SMSFormat(v) Val_int(v - 1)
-#define ValidyPeriod_val(v) (Int_val(v) + 1)
-#define Val_ValidyPeriod(v) Val_int(v - 1)
-#define SMS_State_val(v) (Int_val(v) + 1)
-#define Val_SMS_State(v) Val_int(v - 1)
-#define UDH_val(v) (Int_val(v) + 1)
-#define Val_UDH(v) Val_int(v - 1)
+/* unused
+#define GSM_SMSFORMAT_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_SMSFORMAT(smsf) Val_int(smsf - 1)
+#define GSM_VALIDITYPERIOD_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_VALIDITYPERIOD(vp) Val_int(vp - 1) */
+#define GSM_SMS_STATE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_SMS_STATE(sms_state) Val_int(sms_state - 1)
+#define GSM_UDH_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_UDH(udh) Val_int(udh - 1)
 
-static GSM_UDHHeader *UDHHeader_val(value vudh_header)
+static GSM_UDHHeader *GSM_UDHHeader_val(GSM_UDHHeader *udh_header,
+                                        value vudh_header)
 {
-  GSM_UDHHeader *udh_header = malloc(sizeof(GSM_UDHHeader));
-  udh_header->Type = UDH_val(Field(vudh_header, 0));
-  CPY_TRIM_String_val(udh_header->Text, Field(vudh_header, 1));
+  udh_header->Type = GSM_UDH_VAL(Field(vudh_header, 0));
+  CPY_TRIM_STRING_VAL(udh_header->Text, Field(vudh_header, 1));
   udh_header->ID8bit = Int_val(Field(vudh_header, 2));
   udh_header->ID16bit = Int_val(Field(vudh_header, 3));
   udh_header->PartNumber = Int_val(Field(vudh_header, 4));
   udh_header->AllParts = Int_val(Field(vudh_header, 5));
+
   return udh_header;
 }
 
-static value Val_UDHHeader(GSM_UDHHeader *udh_header)
+static value VAL_GSM_UDHHeader(GSM_UDHHeader *udh_header)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(6, 0);
-  Store_field(res, 0, Val_UDH(udh_header->Type));
-  Store_field(res, 1, caml_copy_sustring(udh_header->Text));
+  Store_field(res, 0, VAL_GSM_UDH(udh_header->Type));
+  Store_field(res, 1, CAML_COPY_SUSTRING(udh_header->Text));
   Store_field(res, 2, Val_int(udh_header->ID8bit));
   Store_field(res, 3, Val_int(udh_header->ID16bit));
   Store_field(res, 4, Val_int(udh_header->PartNumber));
   Store_field(res, 5, Val_int(udh_header->AllParts));
+
   CAMLreturn(res);
 }
 
-#define SMSMessageType_val(v) (Int_val(v) + 1)
-#define Val_SMSMessageType(v) Val_int(v - 1)
-#define Coding_Type_val(v) (Int_val(v) + 1)
-#define Val_Coding_Type(v) Val_int(v - 1)
+#define GSM_SMSMESSAGETYPE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_SMSMESSAGETYPE(mt) Val_int(mt - 1)
+#define GSM_CODING_TYPE_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_CODING_TYPE(ct) Val_int(ct - 1)
 
-static GSM_SMSMessage *SMSMessage_val(value vsms)
+static GSM_SMSMessage *GSM_SMSMessage_val(GSM_SMSMessage *sms, value vsms)
 {
-  const value vother_numbers = Field(vsms, 4);
-  const value vtext = Field(vsms, 12);
-  GSM_SMSMessage *sms = malloc(sizeof(GSM_SMSMessage));
+  value vother_numbers = Field(vsms, 4);
+  value vtext = Field(vsms, 12);
   int length = Wosize_val(vother_numbers);
   int i;
+
   sms->ReplaceMessage = UCHAR_VAL(Field(vsms, 0));
   sms->RejectDuplicates = Bool_val(Field(vsms, 1));
-  sms->UDH = *UDHHeader_val(Field(vsms, 2));
-  CPY_TRIM_String_val(sms->Number, Field(vsms, 3));
+  GSM_UDHHeader_val(Field(vsms, 2), &sms->UDH);
+  CPY_TRIM_STRING_VAL(sms->Number, Field(vsms, 3));
   if (length > sizeof(sms->OtherNumbers))
     length = sizeof(sms->OtherNumbers);
   for (i=0; i < length; i++)
-    CPY_TRIM_String_val(sms->OtherNumbers[i], Field(vother_numbers, i));
+    CPY_TRIM_STRING_VAL(sms->OtherNumbers[i], Field(vother_numbers, i));
   sms->OtherNumbersNum = length;
-  /* sms->SMSC = SMSC_val(Field(vsms, 5)); NYI*/
-  sms->Memory = MemoryType_val(Field(vsms, 6));
+  /* sms->SMSC = GSM_SMSC_val(Field(vsms, 5)); NYI*/
+  sms->Memory = GSM_MEMORYTYPE_VAL(Field(vsms, 6));
   sms->Location = Int_val(Field(vsms, 7));
   sms->Folder = Int_val(Field(vsms, 8));
   sms->InboxFolder = Bool_val(Field(vsms, 9));
   sms->Length = caml_string_length(vtext);
-  sms->State = SMS_State_val(Field(vsms, 10));
-  CPY_TRIM_String_val(sms->Name, String_val(Field(vsms, 11)));
-  CPY_TRIM_String_val(sms->Text, String_val(vtext));
-  sms->PDU = SMSMessageType_val(Field(vsms, 13));
-  sms->Coding = Coding_Type_val(Field(vsms, 14));
-  sms->DateTime = *DateTime_val(Field(vsms, 15));
-  sms->SMSCTime = *DateTime_val(Field(vsms, 16));
+  sms->State = GSM_SMS_STATE_VAL(Field(vsms, 10));
+  CPY_TRIM_STRING_VAL(sms->Name, String_val(Field(vsms, 11)));
+  CPY_TRIM_STRING_VAL(sms->Text, String_val(vtext));
+  sms->PDU = GSM_SMSMESSAGETYPE_VAL(Field(vsms, 13));
+  sms->Coding = GSM_CODING_TYPE_VAL(Field(vsms, 14));
+  GSM_DateTime_val(Field(vsms, 15), &sms->DateTime);
+  GSM_DateTime_val(Field(vsms, 16), &sms->SMSCTime);
   sms->DeliveryStatus = UCHAR_VAL(Field(vsms, 17));
   sms->ReplyViaSameSMSC = Bool_val(Field(vsms, 18));
   sms->Class = CHAR_VAL(Field(vsms, 19));
   sms->MessageReference = UCHAR_VAL(Field(vsms, 20));
+
   return sms;
 }
 
-static value Val_SMSMessage(GSM_SMSMessage *sms)
+static value Val_GSM_SMSMessage(GSM_SMSMessage *sms)
 {
   CAMLparam0();
   CAMLlocal2(res, vother_numbers);
   res = caml_alloc(21, 0);
-  const int length = sms->OtherNumbersNum;
+  int length = sms->OtherNumbersNum;
   int i;
+
   Store_field(res, 0, VAL_UCHAR(sms->ReplaceMessage));
   Store_field(res, 1, Val_bool(sms->RejectDuplicates));
-  Store_field(res, 2, Val_UDHHeader(&sms->UDH));
-  Store_field(res, 3, caml_copy_sustring(sms->Number));
+  Store_field(res, 2, VAL_GSM_UDHHeader(&sms->UDH));
+  Store_field(res, 3, CAML_COPY_SUSTRING(sms->Number));
   vother_numbers = caml_alloc(length, 0);
   for (i=0; i < length; i++)
-    Store_field(vother_numbers, i, caml_copy_sustring(sms->OtherNumbers[i]));
+    Store_field(vother_numbers, i, CAML_COPY_SUSTRING(sms->OtherNumbers[i]));
   Store_field(res, 4, vother_numbers);
-  /* Store_field(res, 5, Val_SMSC(sms->SMSC)); NYI */
-  Store_field(res, 6, Val_MemoryType(sms->Memory));
+  /* Store_field(res, 5, Val_GSM_SMSC(sms->SMSC)); NYI */
+  Store_field(res, 6, VAL_GSM_MEMORYTYPE(sms->Memory));
   Store_field(res, 7, Val_int(sms->Location));
   Store_field(res, 8, Val_int(sms->Folder));
   Store_field(res, 9, Val_bool(sms->InboxFolder));
-  Store_field(res, 10, Val_SMS_State(sms->State));
-  Store_field(res, 11, caml_copy_sustring(sms->Name));
+  Store_field(res, 10, VAL_GSM_SMS_STATE(sms->State));
+  Store_field(res, 11, CAML_COPY_SUSTRING(sms->Name));
   /* TODO: Check if it's null terminated */
-  Store_field(res, 12, caml_copy_sustring(sms->Text));
-  Store_field(res, 13, Val_SMSMessageType(sms->PDU));
-  Store_field(res, 14, Val_Coding_Type(sms->Coding));
-  Store_field(res, 15, Val_DateTime(&sms->DateTime));
-  Store_field(res, 16, Val_DateTime(&sms->SMSCTime));
+  Store_field(res, 12, CAML_COPY_SUSTRING(sms->Text));
+  Store_field(res, 13, VAL_GSM_SMSMESSAGETYPE(sms->PDU));
+  Store_field(res, 14, VAL_GSM_CODING_TYPE(sms->Coding));
+  Store_field(res, 15, Val_GSM_DateTime(&sms->DateTime));
+  Store_field(res, 16, Val_GSM_DateTime(&sms->SMSCTime));
   Store_field(res, 17, VAL_UCHAR(sms->DeliveryStatus));
   Store_field(res, 18, Val_bool(sms->ReplyViaSameSMSC));
   Store_field(res, 19, VAL_CHAR(sms->Class));
   Store_field(res, 20, VAL_UCHAR(sms->MessageReference));
+
   CAMLreturn(res);
 }
 
-static GSM_MultiSMSMessage *MultiSMSMessage_val(value vmulti_sms,
-                                                GSM_MultiSMSMessage *multi_sms)
+static GSM_MultiSMSMessage *GSM_MultiSMSMessage_val(
+    value vmulti_sms, GSM_MultiSMSMessage *multi_sms)
 {
   int length = Wosize_val(vmulti_sms);;
   int i;
-  /* We truncate the array if it's too big. TODO: warning ? */
+
+  /* We truncate the array if it's too big. TODO: issue a warning ? */
   if (length > sizeof(multi_sms->SMS))
     length = sizeof(multi_sms->SMS);
   for (i=0; i < length; i++)
-    multi_sms->SMS[i] = *SMSMessage_val(Field(vmulti_sms, i));
+    GSM_SMSMessage_val(Field(vmulti_sms, i), &(multi_sms->SMS[i]));
   multi_sms->Number = length;
+
   return multi_sms;
 }
 
-static value Val_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
+static value Val_GSM_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
 {
   CAMLparam0();
   CAMLlocal1(res);
   int length = multi_sms->Number;
   int i;
+  
   res = caml_alloc(length, 0);
   for (i=0; i < length; i++)
-    Store_field(res, i, Val_SMSMessage(&multi_sms->SMS[i]));
+    Store_field(res, i, Val_GSM_SMSMessage(&multi_sms->SMS[i]));
+  
   CAMLreturn(res);
 }
 
@@ -1121,14 +1204,15 @@ value caml_gammu_GSM_GetSMS(value s, value vlocation, value vfolder)
   /* Clear SMS structure */
   for (i = 0; i < GSM_MAX_MULTI_SMS; i++)
     GSM_SetDefaultSMSData(&sms.SMS[i]);
-  
+
   sms.SMS[0].Location = Int_val(vlocation);
   sms.SMS[0].Folder = Int_val(vfolder);
+  /* TODO: Is that necessary ? */
   sms.Number = 0;
 
-  caml_gammu_raise_Error(GSM_GetSMS(StateMachine_val(s), &sms));
- 
-  CAMLreturn(Val_MultiSMSMessage(&sms));
+  caml_gammu_raise_Error(GSM_GetSMS(GSM_STATEMACHINE_VAL(s), &sms));
+
+  CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
 
 CAMLexport
@@ -1138,50 +1222,51 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   CAMLparam4(s, vlocation, vfolder, vstart);
   GSM_MultiSMSMessage sms;
   int i;
-  
+
   /* Clear SMS structure */
   for (i = 0; i < GSM_MAX_MULTI_SMS; i++)
     GSM_SetDefaultSMSData(&sms.SMS[i]);
-  
+
   sms.SMS[0].Location = Int_val(vlocation);
   sms.SMS[0].Folder = Int_val(vfolder);
+  /* TODO: Is that necessary ? */
   sms.Number = 0;
-  
-  caml_gammu_raise_Error(GSM_GetNextSMS(StateMachine_val(s),
+
+  caml_gammu_raise_Error(GSM_GetNextSMS(GSM_STATEMACHINE_VAL(s),
                                         &sms,
                                         Bool_val(vstart)));
-  
-  CAMLreturn(Val_MultiSMSMessage(&sms));
+
+  CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
 
 /* Unused
-static GSM_OneSMSFolder *OneSMSFolder_val(value vfolder)
+static GSM_OneSMSFolder *GSM_OneSMSFolder_val(value vfolder)
 {
   GSM_OneSMSFolder *folder = malloc(sizeof(GSM_OneSMSFolder));
   folder->InboxFolder = Bool_val(Field(vfolder, 0));
   folder->OutboxFolder = Bool_val(Field(vfolder, 1));
-  folder->Memory = MemoryType_val(Field(vfolder, 2));
-  CPY_TRIM_String_val(folder->Name, String_val(Field(vfolder, 3)));
+  folder->Memory = GSM_MEMORYTYPE_VAL(Field(vfolder, 2));
+  CPY_TRIM_STRING_VAL(folder->Name, String_val(Field(vfolder, 3)));
   return folder;
 } */
 
 /* Unused
-static value Val_OneSMSFolder(GSM_OneSMSFolder *folder)
+static value Val_GSM_OneSMSFolder(GSM_OneSMSFolder *folder)
 {
   CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(4, 0);
   Store_field(res, 0, Val_bool(folder->InboxFolder));
   Store_field(res, 1, Val_bool(folder->OutboxFolder));
-  Store_field(res, 2, Val_MemoryType(folder->Memory));
-  Store_field(res, 3, caml_copy_sustring(folder->Name));
+  Store_field(res, 2, VAL_GSM_MEMORYTYPE(folder->Memory));
+  Store_field(res, 3, CAML_COPY_SUSTRING(folder->Name));
   CAMLreturn(res);
 } */
 
 /* folders */
 
 /* Unused
-static GSM_SMSMemoryStatus *SMSMemoryStatus_val(value vsms_mem)
+static GSM_SMSMemoryStatus *GSM_SMSMemoryStatus_val(value vsms_mem)
 {
   GSM_SMSMemoryStatus *sms_mem = malloc(sizeof(GSM_SMSMemoryStatus));
   sms_mem->SIMUnRead = Int_val(Field(vsms_mem, 0));
@@ -1195,10 +1280,11 @@ static GSM_SMSMemoryStatus *SMSMemoryStatus_val(value vsms_mem)
 }
 */
 
-static value Val_SMSMemoryStatus(GSM_SMSMemoryStatus *sms_mem)
+static value Val_GSM_SMSMemoryStatus(GSM_SMSMemoryStatus *sms_mem)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(7, 0);
   Store_field(res, 0, Val_int(sms_mem->SIMUnRead));
   Store_field(res, 1, Val_int(sms_mem->SIMUsed));
@@ -1207,28 +1293,39 @@ static value Val_SMSMemoryStatus(GSM_SMSMemoryStatus *sms_mem)
   Store_field(res, 4, Val_int(sms_mem->PhoneUnRead));
   Store_field(res, 5, Val_int(sms_mem->PhoneUsed));
   Store_field(res, 6, Val_int(sms_mem->PhoneSize));
+
   CAMLreturn(res);
 }
 
 CAMLexport
-value gammu_caml_GetSMSStatus(value s)
+value caml_gammu_GSM_GetSMSStatus(value s)
 {
   CAMLparam1(s);
-  GSM_SMSMemoryStatus *status;
-  GSM_GetSMSStatus(StateMachine_val(s), status);
-  CAMLreturn(Val_SMSMemoryStatus(status));
+  GSM_SMSMemoryStatus status;
+
+  GSM_GetSMSStatus(GSM_STATEMACHINE_VAL(s), &status);
+
+  CAMLreturn(Val_GSM_SMSMemoryStatus(&status));
 }
 
 CAMLexport
-void gammu_caml_DeleteSMS(value s, value vsms)
+void caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
 {
-  CAMLparam2(s, vsms);
-  GSM_DeleteSMS(StateMachine_val(s), SMSMessage_val(vsms));
+  CAMLparam3(s, vlocation, vfolder);
+  GSM_SMSMessage sms;
+  /* TODO: do we need a one time (w/ sms static) :
+     SetDefaultSMSData(sms); */
+
+  sms.Location = Int_val(vlocation);
+  sms.Folder = Int_val(vfolder);
+  GSM_DeleteSMS(GSM_STATEMACHINE_VAL(s), &sms);
+
   CAMLreturn0;
 }
 
-#define EncodeMultiPartSMSID_val(v) (Int_val(v) + 1)
-#define Val_EncodeMultiPartSMSID(v) Val_int(v - 1)
+/* unused
+#define GSM_ENCODEMULTIPARTSMSID_VAL(v) (Int_val(v) + 1) */
+#define VAL_GSM_ENCODEMULTIPARTSMSID(v) Val_int(v - 1)
 
 /* caml Buffer is
   type t =
@@ -1239,13 +1336,13 @@ void gammu_caml_DeleteSMS(value s, value vsms)
 */
 /* Not used anymore */
 /*
-#define Buffer_val(v) Bp_val(Field(v, 0))
-static value Val_buffer(char *buf)
+#define GSM_Buffer_val(v) GSM_Bp_val(Field(v, 0))
+static value Val_GSM_buffer(char *buf)
 {
   CAMLparam0();
   CAMLlocal1(res);
   res = caml_alloc(4, 0);
-  Store_field(res, 0, Val_Bp(buf));
+  Store_field(res, 0, Val_GSM_Bp(buf));
   Store_field(res, 1, Val_int(0));
   Store_field(res, 2, Val_int());
   Store_field(res, 3, caml_copy_string(""));
@@ -1253,12 +1350,12 @@ static value Val_buffer(char *buf)
 } */
 
 /* Unused
-static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
+static GSM_MultiPartSMSEntry GSM_MultiPartSMSEntry_val(value vmult_part_sms)
 {
   GSM_MultiPartSMSEntry mult_part_sms;
-  mult_part_sms.ID = EncodeMultiPartSMSID_val(Field(vmult_part_sms, 0));
+  mult_part_sms.ID = GSM_ENCODEMULTIPARTSMSID_VAL(Field(vmult_part_sms, 0));
   mult_part_sms.Number = Int_val(Field(vmult_part_sms, 1));
-  mult_part_sms.Phonebook = MemoryEntry_val(Field(vmult_part_sms, 2));
+  mult_part_sms.Phonebook = GSM_MemoryEntry_val(Field(vmult_part_sms, 2));
   mult_part_sms.Protected = Bool_val(Field(vmult_part_sms, 3));
   mult_part_sms.Buffer = (unsigned char*) String_val(Field(vmult_part_sms, 4));
   mult_part_sms.Left = Bool_val(Field(vmult_part_sms, 5));
@@ -1275,16 +1372,17 @@ static GSM_MultiPartSMSEntry MultiPartSMSEntry_val(value vmult_part_sms)
 }
 */
 
-static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
+static value Val_GSM_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
 {
   CAMLparam0();
   CAMLlocal1(res);
+
   res = caml_alloc(15, 0);
-  Store_field(res, 0, Val_EncodeMultiPartSMSID(mult_part_sms.ID));
+  Store_field(res, 0, VAL_GSM_ENCODEMULTIPARTSMSID(mult_part_sms.ID));
   Store_field(res, 1, Val_int(mult_part_sms.Number));
-  Store_field(res, 2, Val_MemoryEntry(mult_part_sms.Phonebook));
+  Store_field(res, 2, Val_GSM_MemoryEntry(mult_part_sms.Phonebook));
   Store_field(res, 3, Val_bool(mult_part_sms.Protected));
-  Store_field(res, 4, caml_copy_sustring(mult_part_sms.Buffer));
+  Store_field(res, 4, CAML_COPY_SUSTRING(mult_part_sms.Buffer));
   Store_field(res, 5, Val_bool(mult_part_sms.Left));
   Store_field(res, 6, Val_bool(mult_part_sms.Right));
   Store_field(res, 7, Val_bool(mult_part_sms.Center));
@@ -1295,11 +1393,12 @@ static value Val_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
   Store_field(res, 12, Val_bool(mult_part_sms.Underlined));
   Store_field(res, 13, Val_bool(mult_part_sms.Strikethrough));
   Store_field(res, 9, Val_int(mult_part_sms.RingtoneNotes));
+
   CAMLreturn(res);
 }
 
 /*
-static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
+static GSM_MultiPartSMSInfo *GSM_MultiPartSMSInfo_val(value vmult_part_sms)
 {
   value ventries;
   GSM_MultiPartSMSInfo *mult_part_sms = malloc(sizeof(GSM_MultiPartSMSInfo));
@@ -1310,54 +1409,60 @@ static GSM_MultiPartSMSInfo *MultiPartSMSInfo_val(value vmult_part_sms)
   mult_part_sms->UnicodeCoding = Bool_val(Field(vmult_part_sms, 0));
   mult_part_sms->Class = Int_val(Field(vmult_part_sms, 1));
   mult_part_sms->ReplaceMessage =
-    (unsigned char) Char_val(Field(vmult_part_sms, 2));
+    (unsigned char) GSM_Char_val(Field(vmult_part_sms, 2));
   mult_part_sms->Unknown = Bool_val(Field(vmult_part_sms, 3));
   if (length > (GSM_MAX_MULTI_SMS))
     length = GSM_MAX_MULTI_SMS;
   for (i=0; i < length; i++)
-    mult_part_sms->Entries[i] = MultiPartSMSEntry_val(Field(ventries, i));
+    mult_part_sms->Entries[i] = GSM_MultiPartSMSEntry_val(Field(ventries, i));
   mult_part_sms->EntriesNum = length;
   return mult_part_sms;
 }
 */
 
-static value Val_MultiPartSMSInfo(GSM_MultiPartSMSInfo *mult_part_sms_info)
+static value Val_GSM_MultiPartSMSInfo(GSM_MultiPartSMSInfo *multipart_sms_info)
 {
   CAMLparam0();
-  CAMLlocal2(res, ventries);
+  CAMLlocal3(res, ventries, ventry);
+  /* Todo: can caml_alloc fail ? */
   res = caml_alloc(5, 0);
-  int length = mult_part_sms_info->EntriesNum;
+  int length = multipart_sms_info->EntriesNum;
   int i;
-  Store_field(res, 0, Val_bool(mult_part_sms_info->UnicodeCoding));
-  Store_field(res, 1, Val_int(mult_part_sms_info->Class));
-  Store_field(res, 2, VAL_CHAR(mult_part_sms_info->ReplaceMessage));
-  Store_field(res, 3, Val_bool(mult_part_sms_info->Unknown));
+
+  Store_field(res, 0, Val_bool(multipart_sms_info->UnicodeCoding));
+  Store_field(res, 1, Val_int(multipart_sms_info->Class));
+  Store_field(res, 2, VAL_CHAR(multipart_sms_info->ReplaceMessage));
+  Store_field(res, 3, Val_bool(multipart_sms_info->Unknown));
+
   ventries = caml_alloc(length, 0);
-  for (i=0; i < length; i++)
-    Store_field(ventries, i, Val_MultiPartSMSEntry(mult_part_sms_info->Entries[i]));
+  for (i=0; i < length; i++) {
+    ventry = Val_GSM_MultiPartSMSEntry(multipart_sms_info->Entries[i]);
+    Store_field(ventries, i, ventry);
+  }  
   Store_field(res, 4, ventries);
+
   CAMLreturn(res);
 }
 
 CAMLexport
-value gammu_caml_DecodeMultiPartSMS(value vdi, value vsms,
-                                    value vems)
+value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
+                                        value vems)
 {
   CAMLparam3(vdi, vsms, vems);
   CAMLlocal1(vmulti_sms);
   GSM_MultiSMSMessage sms;
   GSM_MultiPartSMSInfo info;
-  GSM_Debug_Info *di = Debug_Info_val(vdi);
+  GSM_Debug_Info *di = GSM_DEBUG_INFO_VAL(vdi);
 
-  MultiSMSMessage_val(vsms, &sms);
+  GSM_MultiSMSMessage_val(vsms, &sms);
   if (!GSM_DecodeMultiPartSMS(di, &info, &sms, Bool_val(vems))) {
     GSM_FreeMultiPartSMSInfo(&info);
-    caml_gammu_raise_Error(COULD_NOT_DECODE);
+    caml_gammu_raise_Error(ERR_COULD_NOT_DECODE);
   }
-  vmulti_sms = Val_MultiPartSMSInfo(&info);
+  vmulti_sms = Val_GSM_MultiPartSMSInfo(&info);
 
   GSM_FreeMultiPartSMSInfo(&info);
-  
+
   CAMLreturn(vmulti_sms);
 }
 
@@ -1369,16 +1474,20 @@ static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
 {
   CAMLparam0();
   CAMLlocal1(f);
+
   f = *((value *) user_data);
-  caml_callback2(f, Val_StateMachine(sm), Val_SMSMessage(&sms));
+  caml_callback2(f, Val_GSM_StateMachine(sm), Val_GSM_SMSMessage(&sms));
+
   CAMLreturn0;
 }
 
 CAMLexport
-void gammu_caml_SetIncomingSMS(value s, value vf)
+void caml_gammu_GSM_SetIncomingSMS(value s, value vf)
 {
   CAMLparam2(s, vf);
-  GSM_StateMachine *sm = StateMachine_val(s);
+  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+
   GSM_SetIncomingSMSCallback(sm, incoming_sms_callback, (void *) &vf);
+
   CAMLreturn0;
 }

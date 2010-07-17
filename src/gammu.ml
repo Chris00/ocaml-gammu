@@ -93,8 +93,10 @@ type error =
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   (* Caml bindings own errors *)
+  | OUT_OF_MEMORY       (** Out of memory on Computer. *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
+  | INVALID_CONFIG_NUM  (** Invalid config number. *)
 
 exception Error of error
 
@@ -105,18 +107,18 @@ let () = Callback.register_exception "Gammu.Error" (Error NONE);
 
 type debug_info
 
-external string_of_error : error -> string = "gammu_caml_ErrorString"
+external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
 
-external get_global_debug : unit -> debug_info = "gammu_caml_GetGlobalDebug"
+external get_global_debug : unit -> debug_info = "caml_gammu_GSM_GetGlobalDebug"
 
 external set_debug_global : bool -> debug_info -> unit
-  = "gammu_caml_SetDebugGlobal"
+  = "caml_gammu_GSM_SetDebugGlobal"
 
 external set_debug_output : out_channel -> debug_info -> unit
-  = "gammu_caml_SetDebugFileDescriptor"
+  = "caml_gammu_GSM_SetDebugFileDescriptor"
 
 external set_debug_level : string -> debug_info -> unit
-  = "gammu_caml_SetDebugLevel"
+  = "caml_gammu_GSM_SetDebugLevel"
 
 (************************************************************************)
 (* INI files *)
@@ -130,20 +132,20 @@ struct
     unicode : bool;
   }
 
-  external _read : string -> bool -> section_node = "gammu_caml_INI_ReadFile"
+  external _read : string -> bool -> section_node = "caml_gammu_INI_ReadFile"
   let read ?(unicode=true) file_name =
     { head = _read file_name unicode;
       unicode = unicode; }
 
   external _get_value : section_node -> string -> string -> bool -> string
-    = "gammu_caml_INI_GetValue"
+    = "caml_gammu_INI_GetValue"
   let get_value file_info ~section ~key =
     _get_value file_info.head section key file_info.unicode
 
   (*let find_last_entry file_info ~section =
     _find_last_entry file_info.head file_info.unicode ~section
   external _find_last_entry : sections -> string -> bool -> entry
-    = "gammu_caml_FindLastEntry" *)
+    = "caml_gammu_GSM_FindLastEntry" *)
 
 end
 
@@ -200,19 +202,19 @@ type connection_type =
   | FBUS2USB
   | NONE
 
-external get_debug : t -> debug_info = "gammu_caml_GetDebug"
+external get_debug : t -> debug_info = "caml_gammu_GSM_GetDebug"
 
-external _init_locales : string -> unit = "gammu_caml_InitLocales"
-external _init_default_locales : unit -> unit = "gammu_caml_InitDefaultLocales"
+external _init_locales : string -> unit = "caml_gammu_GSM_InitLocales"
+external _init_default_locales : unit -> unit = "caml_gammu_GSM_InitDefaultLocales"
 let init_locales ?path () = match path with
   | None -> _init_default_locales ()
   | Some path -> _init_locales path
 
-external make : unit -> t = "gammu_caml_CreateStateMachine"
+external make : unit -> t = "caml_gammu_GSM_AllocStateMachine"
 
 external _find_gammurc_force : string -> INI.section_node
-  = "gammu_caml_FindGammuRC_force"
-external _find_gammurc : unit -> INI.section_node = "gammu_caml_FindGammuRC"
+  = "caml_gammu_GSM_FindGammuRC_force"
+external _find_gammurc : unit -> INI.section_node = "caml_gammu_GSM_FindGammuRC"
 let find_gammurc ?path () =
   let s_node = match path with
     | None -> _find_gammurc ()
@@ -222,20 +224,20 @@ let find_gammurc ?path () =
   { INI.head = s_node; unicode=false; }
 
 external _read_config : INI.section_node -> int -> config =
-  "gammu_caml_ReadConfig"
+  "caml_gammu_GSM_ReadConfig"
 
 let read_config cfg_info num =
   _read_config cfg_info.INI.head num
 
-external get_config : t -> int -> config = "gammu_caml_GetConfig"
+external get_config : t -> int -> config = "caml_gammu_GSM_GetConfig"
 
-external set_config : t -> config -> int -> unit = "gammu_caml_SetConfig"
+external set_config : t -> config -> int -> unit = "caml_gammu_GSM_set_config"
 
-external push_config : t -> config -> unit = "gammu_caml_PushConfig"
+external push_config : t -> config -> unit = "caml_gammu_GSM_push_config"
 
-external remove_config : t -> config = "gammu_caml_RemoveConfig"
+external remove_config : t -> config = "caml_gammu_GSM_remove_config"
 
-external length_config : t -> int = "gammu_caml_GetConfigNum"
+external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 
 let load_gammurc ?path s =
   let ini = find_gammurc ?path () in
@@ -244,22 +246,22 @@ let load_gammurc ?path s =
   let cfg = read_config ini 0 in
   push_config s cfg
 
-external _connect : t -> int -> unit= "gammu_caml_InitConnection"
+external _connect : t -> int -> unit= "caml_gammu_GSM_InitConnection"
 external _connect_log : t -> int -> (string -> unit) -> unit
-  = "gammu_caml_InitConnection_Log"
+  = "caml_gammu_GSM_InitConnection_Log"
 
 let connect ?log ?(reply_num=3) s = match log with
   | None -> _connect s reply_num
   | Some log_func -> _connect_log s reply_num log_func
 
-external disconnect : t -> unit = "gammu_caml_TerminateConnection"
+external disconnect : t -> unit = "caml_gammu_GSM_TerminateConnection"
 
-external is_connected : t -> bool = "gammu_caml_IsConnected"
+external is_connected : t -> bool = "caml_gammu_GSM_IsConnected"
 
 external get_used_connection : t -> connection_type =
-  "gammu_caml_GetUsedConnection"
+  "caml_gammu_GSM_GetUsedConnection"
 
-external _read_device : t -> bool -> int = "gammu_caml_ReadDevice"
+external _read_device : t -> bool -> int = "caml_gammu_GSM_ReadDevice"
 let read_device ?(wait_for_reply=true) s =
   _read_device s wait_for_reply
 
@@ -282,10 +284,10 @@ type security_code = {
 }
 
 external enter_security_code : t -> security_code -> unit =
-  "gammu_caml_EnterSecurityCode"
+  "caml_gammu_GSM_EnterSecurityCode"
 
 external get_security_status : t -> security_code_type =
-  "gammu_caml_GetSecurityStatus"
+  "caml_gammu_GSM_GetSecurityStatus"
 
 
 (************************************************************************)
@@ -358,27 +360,27 @@ type signal_quality = {
   bit_error_rate : int;
 }
 
-external battery_charge : t -> battery_charge = "gammu_caml_GetBatteryCharge"
+external battery_charge : t -> battery_charge = "caml_gammu_GSM_GetBatteryCharge"
 
-external firmware : t -> firmware = "gammu_caml_GetFirmWare"
+external firmware : t -> firmware = "caml_gammu_GSM_GetFirmWare"
 
-external hardware : t -> string = "gammu_caml_GetHardware"
+external hardware : t -> string = "caml_gammu_GSM_GetHardware"
 
-external imei : t -> string = "gammu_caml_GetIMEI"
+external imei : t -> string = "caml_gammu_GSM_GetIMEI"
 
-external manufacture_month : t -> string = "gammu_caml_GetManufactureMonth"
+external manufacture_month : t -> string = "caml_gammu_GSM_GetManufactureMonth"
 
-external manufacturer : t -> string = "gammu_caml_GetManufacturer"
+external manufacturer : t -> string = "caml_gammu_GSM_GetManufacturer"
 
-external model : t -> string = "gammu_caml_GetModel"
+external model : t -> string = "caml_gammu_GSM_GetModel"
 
-external model_info : t -> phone_model = "gammu_caml_GetModelInfo"
+external model_info : t -> phone_model = "caml_gammu_GSM_GetModelInfo"
 
-external network_info : t -> network = "gammu_caml_GetNetworkInfo"
+external network_info : t -> network = "caml_gammu_GSM_GetNetworkInfo"
 
-external product_code : t -> string = "gammu_caml_GetProductCode"
+external product_code : t -> string = "caml_gammu_GSM_GetProductCode"
 
-external signal_quality : t -> signal_quality = "gammu_caml_GetSignalQuality"
+external signal_quality : t -> signal_quality = "caml_gammu_GSM_GetSignalQuality"
 
 
 (************************************************************************)
@@ -394,13 +396,13 @@ type date_time = {
   year : int;
 }
 
-external check_date : date_time -> bool = "gammu_caml_CheckDate"
+external check_date : date_time -> bool = "caml_gammu_GSM_CheckDate"
 
-external check_time : date_time -> bool = "gammu_caml_CheckTime"
+external check_time : date_time -> bool = "caml_gammu_GSM_CheckTime"
 
-external os_date : date_time -> string = "gammu_caml_OSDate"
+external os_date : date_time -> string = "caml_gammu_GSM_OSDate"
 
-external _os_date_time : date_time -> bool -> string = "gammu_caml_OSDateTime"
+external _os_date_time : date_time -> bool -> string = "caml_gammu_GSM_OSDateTime"
 
 let os_date_time ?(timezone=false) dt =
   _os_date_time dt timezone
@@ -573,12 +575,12 @@ struct
   type multi_sms = message array
 
   external _get : t -> int -> int -> multi_sms =
-    "gammu_caml_GSM_GetSMS"
+    "caml_gammu_GSM_GSM_GetSMS"
   let get s ~location ~folder =
     _get s location folder
 
   external _get_next : t -> int -> int -> bool ->
-    multi_sms = "gammu_caml_GSM_GetNextSMS"
+    multi_sms = "caml_gammu_GSM_GSM_GetNextSMS"
   let get_next ?(start=false) ~location ~folder s =
     _get_next s location folder start
 
@@ -601,11 +603,11 @@ struct
     phone_size : int;
   }
 
-  external get_status :t -> memory_status = "gammu_caml_GetSMSStatus"
+  external get_status :t -> memory_status = "caml_gammu_GSM_GetSMSStatus"
 
-  external set_incoming_sms : t -> bool -> unit = "gammu_caml_SetIncomingSMS"
+  external set_incoming_sms : t -> bool -> unit = "caml_gammu_GSM_SetIncomingSMS"
 
-  external delete : t -> message -> unit = "gammu_caml_DeleteSMS"
+  external delete : t -> message -> unit = "caml_gammu_GSM_DeleteSMS"
 
   type multipart_info = {
     unicode_coding : bool;
@@ -691,7 +693,7 @@ struct
 
   external _decode_multipart :
     debug_info -> multi_sms -> bool -> multipart_info
-      = "gammu_caml_DecodeMultiPartSMS"
+      = "caml_gammu_GSM_DecodeMultiPartSMS"
 
   let decode_multipart ?di ?(ems=true) multp_mess =
     let di = match di with
@@ -706,4 +708,4 @@ end
 (* Events *)
 
 external incoming_sms : t -> (SMS.message -> unit) -> unit
-  = "gammu_caml_SetIncomingSMS"
+  = "caml_gammu_GSM_SetIncomingSMS"
