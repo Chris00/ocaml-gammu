@@ -166,7 +166,7 @@ type t
 (** Configuration of state machine.  *)
 type config = {
   model : string;              (** Model from config file  *)
-  debug_level : string;        (** Debug level  *)
+  debug_level : Debug.level;   (** Debug level  *)
   device : string;             (** Device name from config file  *)
   connection : string;         (** Connection type as string  *)
   sync_time : bool;            (** Synchronize time on startup?  *)
