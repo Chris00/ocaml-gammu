@@ -96,35 +96,38 @@ exception Error of error
 
 (************************************************************************)
 (** {2 Debuging handling} *)
-type debug_info
+module Debug :
+sig
+  type info
 
-val get_global_debug : unit -> debug_info
-(** @return global debug settings. *)
+  val global : unit -> info
+  (** @return global debug settings. *)
 
-val set_debug_global : bool -> debug_info -> unit
-(** Enables using of global debugging configuration. Makes no effect on
-    global debug configuration. *)
+  val set_global : bool -> info -> unit
+  (** Enables using of global debugging configuration. Makes no effect
+      on global debug configuration. *)
 
-val set_debug_output : out_channel -> debug_info -> unit
-(** [set_debug_output channel di] sets output channel of [di] to
-    [channel]. *)
+  val set_output : out_channel -> info -> unit
+  (** [set_debug_output channel di] sets output channel of [di] to
+      [channel]. *)
 
-(* TODO:?? if [level] is invalid, return a bool, raise an exception or
-   ignore ? *)
-val set_debug_level : string -> debug_info -> unit
-(** [set_debug_level level di] sets debug level on [di] according to
-    [level].
+  (* TODO:?? if [level] is invalid, return a bool, raise an exception or
+     ignore ? *)
 
-    [level] can be one of :
-    {ul
-    nothing
-    text
-    textall
-    binary
-    errors
-    textdate
-    textalldate
-    errorsdate} *)
+  type level =
+  | Nothing
+  | Text
+  | Textall
+  | Binary
+  | Errors
+  | Textdate
+  | Textalldate
+  | Errorsdate
+
+  val set_level : level -> info -> unit
+  (** [set_debug_level level di] sets debug level on [di] according to
+      [level]. *)
+end
 
 (************************************************************************)
 (** {2 INI files} *)
@@ -209,7 +212,7 @@ type connection_type =
   | FBUS2USB
   | NONE
 
-val get_debug : t -> debug_info
+val get_debug : t -> Debug.info
 (** Gets debug information for state machine. *)
 
 val init_locales : ?path:string -> unit -> unit
@@ -761,7 +764,7 @@ module SMS : sig
     | AlcatelSMSTemplateName
     | SiemensFile (** Siemens OTA  *)
 
-  val decode_multipart : ?di:debug_info -> ?ems:bool ->
+  val decode_multipart : ?di:Debug.info -> ?ems:bool ->
     multi_sms -> multipart_info
 (** [decode_multipart sms] Decodes multi part SMS to "readable"
     format. [sms] is modified, return a {!Gammu.multipart_info}

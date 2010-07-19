@@ -98,6 +98,8 @@ type error =
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
   | INVALID_CONFIG_NUM  (** Invalid config number. *)
 
+external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
+
 exception Error of error
 
 let () = Callback.register_exception "Gammu.Error" (Error NONE);
@@ -105,20 +107,43 @@ let () = Callback.register_exception "Gammu.Error" (Error NONE);
 (************************************************************************)
 (* Debuging handling *)
 
-type debug_info
+module Debug =
+struct
+  type info
 
-external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
+  external global : unit -> info = "caml_gammu_GSM_GetGlobalDebug"
 
-external get_global_debug : unit -> debug_info = "caml_gammu_GSM_GetGlobalDebug"
+  external set_global : bool -> info -> unit
+    = "caml_gammu_GSM_SetDebugGlobal"
 
-external set_debug_global : bool -> debug_info -> unit
-  = "caml_gammu_GSM_SetDebugGlobal"
+  external set_output : out_channel -> info -> unit
+    = "caml_gammu_GSM_SetDebugFileDescriptor"
 
-external set_debug_output : out_channel -> debug_info -> unit
-  = "caml_gammu_GSM_SetDebugFileDescriptor"
+  type level =
+  | Nothing
+  | Text
+  | Textall
+  | Binary
+  | Errors
+  | Textdate
+  | Textalldate
+  | Errorsdate
 
-external set_debug_level : string -> debug_info -> unit
-  = "caml_gammu_GSM_SetDebugLevel"
+  external set_level : string -> info -> unit
+    = "caml_gammu_GSM_SetDebugLevel"
+
+  let string_of_level = function
+  | Nothing     -> "nothing"
+  | Text        -> "text"
+  | Textall     -> "textall"
+  | Binary      -> "binary"
+  | Errors      -> "errors"
+  | Textdate    -> "textdate"
+  | Textalldate -> "textalldate"
+  | Errorsdate  -> "errorsdate"
+
+  let set_level l = set_level(string_of_level l)
+end
 
 (************************************************************************)
 (* INI files *)
@@ -156,7 +181,7 @@ end
 type state_machine
 type t = {
   s : state_machine;
-  di : debug_info;
+  di : Debug.info;
 (* Others ? *)
 }
 
@@ -202,7 +227,7 @@ type connection_type =
   | FBUS2USB
   | NONE
 
-external get_debug : t -> debug_info = "caml_gammu_GSM_GetDebug"
+external get_debug : t -> Debug.info = "caml_gammu_GSM_GetDebug"
 
 external _init_locales : string -> unit = "caml_gammu_GSM_InitLocales"
 external _init_default_locales : unit -> unit = "caml_gammu_GSM_InitDefaultLocales"
@@ -692,12 +717,12 @@ struct
     | SiemensFile
 
   external _decode_multipart :
-    debug_info -> multi_sms -> bool -> multipart_info
+    Debug.info -> multi_sms -> bool -> multipart_info
       = "caml_gammu_GSM_DecodeMultiPartSMS"
 
   let decode_multipart ?di ?(ems=true) multp_mess =
     let di = match di with
-      | None -> get_global_debug ()
+      | None -> Debug.global ()
       | Some s_di -> s_di
     in
     _decode_multipart di multp_mess ems
