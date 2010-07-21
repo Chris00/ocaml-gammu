@@ -908,7 +908,7 @@ value caml_gammu_GSM_CheckDate(value vdate)
   GSM_DateTime dt;
   gboolean date_ok;
 
-  date_ok = CheckDate(GSM_DateTime_val(vdate, &dt));
+  date_ok = CheckDate(GSM_DateTime_val(&dt, vdate));
 
   CAMLreturn(Val_bool(date_ok));
 }
@@ -919,7 +919,7 @@ value caml_gammu_GSM_CheckTime(value vdate)
   CAMLparam1(vdate);
   GSM_DateTime dt;
 
-  GSM_DateTime_val(vdate, &dt);
+  GSM_DateTime_val(&dt, vdate);
 
   CAMLreturn(Val_bool(CheckTime(&dt)));
 }
@@ -932,7 +932,7 @@ value caml_gammu_GSM_OSDate(value vdt)
   char *os_date;
 
   /* TODO: Ask why does OSDate takes value instead of pointer ? */
-  GSM_DateTime_val(vdt, &dt);
+  GSM_DateTime_val(&dt, vdt);
   os_date = OSDate(dt);
 
   CAMLreturn(CAML_COPY_SUSTRING(os_date));
@@ -945,7 +945,7 @@ value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone)
   GSM_DateTime dt;
   char *os_date_time;
 
-  GSM_DateTime_val(vdt, &dt);
+  GSM_DateTime_val(&dt, vdt);
   os_date_time = OSDateTime(dt, Bool_val(vtimezone));
 
   CAMLreturn(CAML_COPY_SUSTRING(os_date_time));
@@ -1098,7 +1098,7 @@ static GSM_SMSMessage *GSM_SMSMessage_val(GSM_SMSMessage *sms, value vsms)
 
   sms->ReplaceMessage = UCHAR_VAL(Field(vsms, 0));
   sms->RejectDuplicates = Bool_val(Field(vsms, 1));
-  GSM_UDHHeader_val(Field(vsms, 2), &sms->UDH);
+  GSM_UDHHeader_val(&sms->UDH, Field(vsms, 2));
   CPY_TRIM_STRING_VAL(sms->Number, Field(vsms, 3));
   if (length > sizeof(sms->OtherNumbers))
     length = sizeof(sms->OtherNumbers);
@@ -1116,8 +1116,8 @@ static GSM_SMSMessage *GSM_SMSMessage_val(GSM_SMSMessage *sms, value vsms)
   CPY_TRIM_STRING_VAL(sms->Text, String_val(vtext));
   sms->PDU = GSM_SMSMESSAGETYPE_VAL(Field(vsms, 13));
   sms->Coding = GSM_CODING_TYPE_VAL(Field(vsms, 14));
-  GSM_DateTime_val(Field(vsms, 15), &sms->DateTime);
-  GSM_DateTime_val(Field(vsms, 16), &sms->SMSCTime);
+  GSM_DateTime_val(&sms->DateTime, Field(vsms, 15));
+  GSM_DateTime_val(&sms->SMSCTime, Field(vsms, 16));
   sms->DeliveryStatus = UCHAR_VAL(Field(vsms, 17));
   sms->ReplyViaSameSMSC = Bool_val(Field(vsms, 18));
   sms->Class = CHAR_VAL(Field(vsms, 19));
@@ -1173,7 +1173,7 @@ static GSM_MultiSMSMessage *GSM_MultiSMSMessage_val(
   if (length > sizeof(multi_sms->SMS))
     length = sizeof(multi_sms->SMS);
   for (i=0; i < length; i++)
-    GSM_SMSMessage_val(Field(vmulti_sms, i), &(multi_sms->SMS[i]));
+    GSM_SMSMessage_val(&(multi_sms->SMS[i]), Field(vmulti_sms, i));
   multi_sms->Number = length;
 
   return multi_sms;
@@ -1470,7 +1470,7 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 /* Events */
 
 static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
-                           void *user_data)
+                                  void *user_data)
 {
   CAMLparam0();
   CAMLlocal1(f);
@@ -1487,6 +1487,7 @@ void caml_gammu_GSM_SetIncomingSMS(value s, value vf)
   CAMLparam2(s, vf);
   GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
 
+  
   GSM_SetIncomingSMSCallback(sm, incoming_sms_callback, (void *) &vf);
 
   CAMLreturn0;
