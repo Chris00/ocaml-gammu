@@ -83,7 +83,6 @@ type error =
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   (* Caml bindings own errors *)
-  | OUT_OF_MEMORY       (** Out of memory on Computer. *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
   | INVALID_CONFIG_NUM  (** Invalid config number. *)
@@ -111,22 +110,20 @@ sig
   (** [set_debug_output channel di] sets output channel of [di] to
       [channel]. *)
 
-  (* TODO:?? if [level] is invalid, return a bool, raise an exception or
-     ignore ? *)
-
-  type level =
-  | Nothing
-  | Text
-  | Textall
-  | Binary
-  | Errors
-  | Textdate
-  | Textalldate
-  | Errorsdate
-
-  val set_level : level -> info -> unit
+  val set_level : string -> info -> unit
   (** [set_debug_level level di] sets debug level on [di] according to
-      [level]. *)
+      [level].
+
+      [level] must be one of :
+      {ul
+      nothing
+      text
+      textall
+      binary
+      errors
+      textdate
+      textalldate
+      errorsdate} *)
 end
 
 (************************************************************************)
@@ -166,7 +163,7 @@ type t
 (** Configuration of state machine.  *)
 type config = {
   model : string;              (** Model from config file  *)
-  debug_level : Debug.level;   (** Debug level  *)
+  debug_level : string;        (** Debug level  *)
   device : string;             (** Device name from config file  *)
   connection : string;         (** Connection type as string  *)
   sync_time : bool;            (** Synchronize time on startup?  *)
@@ -783,5 +780,6 @@ end
 
 val incoming_sms : t -> (SMS.message -> unit) -> unit
 (** [incoming_sms s f] register [f] as callback function in the event of an
-   incoming SMS. *)
+    incoming SMS. *)
 
+val disable_incoming_sms : t -> unit

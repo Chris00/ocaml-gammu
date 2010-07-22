@@ -93,7 +93,6 @@ type error =
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   (* Caml bindings own errors *)
-  | OUT_OF_MEMORY       (** Out of memory on Computer. *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
   | INVALID_CONFIG_NUM  (** Invalid config number. *)
@@ -119,30 +118,9 @@ struct
   external set_output : out_channel -> info -> unit
     = "caml_gammu_GSM_SetDebugFileDescriptor"
 
-  type level =
-  | Nothing
-  | Text
-  | Textall
-  | Binary
-  | Errors
-  | Textdate
-  | Textalldate
-  | Errorsdate
-
   external set_level : string -> info -> unit
     = "caml_gammu_GSM_SetDebugLevel"
 
-  let string_of_level = function
-  | Nothing     -> "nothing"
-  | Text        -> "text"
-  | Textall     -> "textall"
-  | Binary      -> "binary"
-  | Errors      -> "errors"
-  | Textdate    -> "textdate"
-  | Textalldate -> "textalldate"
-  | Errorsdate  -> "errorsdate"
-
-  let set_level l = set_level(string_of_level l)
 end
 
 (************************************************************************)
@@ -177,13 +155,7 @@ end
 (************************************************************************)
 (* State machine *)
 
-(* Abstract type wrapping to expose abstracted dependencies to the GC. *)
-type state_machine
-type t = {
-  s : state_machine;
-  di : Debug.info;
-(* Others ? *)
-}
+type t
 
 type config = {
   model : string;
@@ -230,7 +202,8 @@ type connection_type =
 external get_debug : t -> Debug.info = "caml_gammu_GSM_GetDebug"
 
 external _init_locales : string -> unit = "caml_gammu_GSM_InitLocales"
-external _init_default_locales : unit -> unit = "caml_gammu_GSM_InitDefaultLocales"
+external _init_default_locales : unit -> unit
+  = "caml_gammu_GSM_InitDefaultLocales"
 let init_locales ?path () = match path with
   | None -> _init_default_locales ()
   | Some path -> _init_locales path
@@ -734,3 +707,5 @@ end
 
 external incoming_sms : t -> (SMS.message -> unit) -> unit
   = "caml_gammu_GSM_SetIncomingSMS"
+external disable_incoming_sms : t -> unit
+  = "caml_gammu_disable_incoming_sms"

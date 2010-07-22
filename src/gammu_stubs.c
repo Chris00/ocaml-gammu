@@ -115,8 +115,7 @@ static char *yesno_bool(gboolean b)
 /* Error codes added to our bindings implementation.
    TODO: ErrorString will fail with it. */
 typedef enum {
-  ERR_OUT_OF_MEMORY = 71,
-  ERR_INI_KEY_NOT_FOUND,
+  ERR_INI_KEY_NOT_FOUND = 71,
   ERR_COULD_NOT_DECODE,
   ERR_INVALID_CONFIG_NUM
 } CAML_GAMMU_Error;
@@ -293,16 +292,26 @@ value caml_gammu_INI_GetValue(value vfile_info, value vsection, value vkey,
 /************************************************************************/
 /* State machine */
 
-/* TODO: naming rule for state machines ? :
-   "value s" for caml type t
-   "value vsm" for caml type state_machine
-   "GSM_StateMachine *sm" for libGammu's (GSM_StateMachine *). */
-#define GSM_STATEMACHINE_VSM(v) (*((GSM_StateMachine **) Data_custom_val(v)))
-#define GSM_STATEMACHINE_VAL(v) GSM_STATEMACHINE_VSM(Field(v, 0))
+/* Define a struct to put, caml side, state machine related stuff in C heap in
+   order to deal with GC. */
+typedef struct {
+  GSM_StateMachine *sm;
+  value incoming_sms_callback;
+} State_Machine;
+
+#define STATE_MACHINE_VAL(v) (*((State_Machine **) Data_custom_val(v)))
+#define GSM_STATEMACHINE_VAL(v) (STATE_MACHINE_VAL(v)->sm)
 
 static void caml_gammu_state_machine_finalize(value s)
 {
-  GSM_FreeStateMachine(GSM_STATEMACHINE_VAL(s));
+  State_Machine *state_machine = STATE_MACHINE_VAL(s);
+
+  GSM_FreeStateMachine(state_machine->sm);
+  /* Allow GC to collect the callback closure value now. */
+  if (state_machine->incoming_sms_callback)
+    caml_remove_global_root(&state_machine->incoming_sms_callback);
+
+  free(state_machine);
 }
 
 static struct custom_operations caml_gammu_state_machine_ops = {
@@ -313,20 +322,6 @@ static struct custom_operations caml_gammu_state_machine_ops = {
   custom_serialize_default,
   custom_deserialize_default
 };
-
-static value Val_GSM_StateMachine(GSM_StateMachine *sm)
-{
-  CAMLparam0();
-  CAMLlocal2(res, vsm);
-
-  res = caml_alloc(2, 0);
-  vsm = alloc_custom(&caml_gammu_state_machine_ops, sizeof(GSM_StateMachine *), 1, 100);
-  GSM_STATEMACHINE_VSM(vsm) = sm;
-  Store_field(res, 0, vsm);
-  Store_field(res, 1, VAL_GSM_DEBUG_INFO(safe_GSM_GetDebug(sm)));
-
-  CAMLreturn(res);
-}
 
 static value Val_GSM_Config(const GSM_Config *config)
 {
@@ -423,12 +418,18 @@ CAMLexport
 value caml_gammu_GSM_AllocStateMachine(value vunit)
 {
   CAMLparam1(vunit);
-  GSM_StateMachine *res = GSM_AllocStateMachine();
+  CAMLlocal2(res, vsm);
+  State_Machine *state_machine = malloc(sizeof(State_Machine));
+  GSM_StateMachine *sm = GSM_AllocStateMachine();
 
-  if (res == NULL)
-    caml_gammu_raise_Error(ERR_OUT_OF_MEMORY);
+  if (sm == NULL || state_machine == NULL)
+    caml_raise_out_of_memory();
 
-  CAMLreturn(Val_GSM_StateMachine(res));
+  res = alloc_custom(&caml_gammu_state_machine_ops,
+                     sizeof(State_Machine *), 1, 100);
+  STATE_MACHINE_VAL(res) = state_machine;
+
+  CAMLreturn(res);
 }
 
 CAMLexport
@@ -1185,11 +1186,11 @@ static value Val_GSM_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
   CAMLlocal1(res);
   int length = multi_sms->Number;
   int i;
-  
+
   res = caml_alloc(length, 0);
   for (i=0; i < length; i++)
     Store_field(res, i, Val_GSM_SMSMessage(&multi_sms->SMS[i]));
-  
+
   CAMLreturn(res);
 }
 
@@ -1438,7 +1439,7 @@ static value Val_GSM_MultiPartSMSInfo(GSM_MultiPartSMSInfo *multipart_sms_info)
   for (i=0; i < length; i++) {
     ventry = Val_GSM_MultiPartSMSEntry(multipart_sms_info->Entries[i]);
     Store_field(ventries, i, ventry);
-  }  
+  }
   Store_field(res, 4, ventries);
 
   CAMLreturn(res);
@@ -1476,7 +1477,7 @@ static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
   CAMLlocal1(f);
 
   f = *((value *) user_data);
-  caml_callback2(f, Val_GSM_StateMachine(sm), Val_GSM_SMSMessage(&sms));
+  caml_callback(f, Val_GSM_SMSMessage(&sms));
 
   CAMLreturn0;
 }
@@ -1485,10 +1486,39 @@ CAMLexport
 void caml_gammu_GSM_SetIncomingSMS(value s, value vf)
 {
   CAMLparam2(s, vf);
-  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+  State_Machine *state_machine = STATE_MACHINE_VAL(s);
+  gboolean globroot_unregistered = (!state_machine->incoming_sms_callback);
 
-  
-  GSM_SetIncomingSMSCallback(sm, incoming_sms_callback, (void *) &vf);
+  /* TODO: Is it acceptable for a global root to be a pointer to NULL ? If
+     so, we would only need to register state_machine->val as global root
+     once at state machine allocation. */
+  state_machine->incoming_sms_callback = vf;
+  if (globroot_unregistered)
+    /* Callback closure value wasn't registered, keep the new one and
+       following safe. */
+    caml_register_global_root(&state_machine->incoming_sms_callback);
+
+  GSM_SetIncomingSMSCallback(state_machine->sm,
+                             incoming_sms_callback,
+                             (void *) &state_machine->incoming_sms_callback);
+
+  CAMLreturn0;
+}
+
+CAMLexport
+void caml_gammu_disable_incoming_sms(value s)
+{
+  CAMLparam1(s);
+  State_Machine *state_machine = STATE_MACHINE_VAL(s);
+
+  /* TODO: If it is acceptable for a global root to be a pointer to NULL,
+     remove the following statement. */
+  if (state_machine->incoming_sms_callback) {
+    caml_remove_global_root(&state_machine->incoming_sms_callback);
+    state_machine->incoming_sms_callback = 0;
+  }
+
+  GSM_SetIncomingSMSCallback(state_machine->sm, NULL, NULL);
 
   CAMLreturn0;
 }
