@@ -112,13 +112,13 @@ struct
 
   external global : unit -> info = "caml_gammu_GSM_GetGlobalDebug"
 
-  external set_global : bool -> info -> unit
+  external set_global : info -> bool -> unit
     = "caml_gammu_GSM_SetDebugGlobal"
 
-  external set_output : out_channel -> info -> unit
+  external set_output : info -> out_channel -> unit
     = "caml_gammu_GSM_SetDebugFileDescriptor"
 
-  external set_level : string -> info -> unit
+  external set_level : info -> string -> unit
     = "caml_gammu_GSM_SetDebugLevel"
 
 end
@@ -144,11 +144,6 @@ struct
     = "caml_gammu_INI_GetValue"
   let get_value file_info ~section ~key =
     _get_value file_info.head section key file_info.unicode
-
-  (*let find_last_entry file_info ~section =
-    _find_last_entry file_info.head file_info.unicode ~section
-  external _find_last_entry : sections -> string -> bool -> entry
-    = "caml_gammu_GSM_FindLastEntry" *)
 
 end
 
@@ -579,7 +574,7 @@ struct
 
   external _get_next : t -> int -> int -> bool ->
     multi_sms = "caml_gammu_GSM_GSM_GetNextSMS"
-  let get_next ?(start=false) ~location ~folder s =
+  let get_next s ?(start=false) ~location ~folder =
     _get_next s location folder start
 
   type folder = {

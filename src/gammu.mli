@@ -102,15 +102,15 @@ sig
   val global : unit -> info
   (** @return global debug settings. *)
 
-  val set_global : bool -> info -> unit
+  val set_global : info -> bool -> unit
   (** Enables using of global debugging configuration. Makes no effect
       on global debug configuration. *)
 
-  val set_output : out_channel -> info -> unit
+  val set_output : info -> out_channel -> unit
   (** [set_debug_output channel di] sets output channel of [di] to
       [channel]. *)
 
-  val set_level : string -> info -> unit
+  val set_level : info -> string -> unit
   (** [set_debug_level level di] sets debug level on [di] according to
       [level].
 
@@ -140,16 +140,12 @@ module INI : sig
   type sections
 
   val read : ?unicode:bool -> string -> sections
-  (** [read fname] reads INI data from the file [fname].  @param unicode
-      Whether file should be treated as unicode encoded.
+  (** [read fname] reads INI data from the file [fname].
 
-      FIXME: unicode must be stored in section *)
+      @param unicode Whether file should be treated as unicode encoded. *)
 
   val get_value : sections -> section:string -> key:string -> string
   (** @return value of the INI file entry. *)
-
-  (*val find_last_entry : sections -> section:string -> entry
-  (** @return the last INI entry of the given section. *) *)
 
 end
 
@@ -629,7 +625,7 @@ module SMS : sig
   val get : t -> location:int -> folder:int -> multi_sms
   (** Reads SMS message. *)
 
-  val get_next : ?start:bool -> location:int -> folder:int -> t
+  val get_next : t -> ?start:bool -> location:int -> folder:int
     -> multi_sms
   (** Reads next (or first if [start] is set to true) SMS message.
       This might be faster for some phones than using
