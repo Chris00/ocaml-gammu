@@ -124,30 +124,6 @@ struct
 end
 
 (************************************************************************)
-(* INI files *)
-
-module INI =
-struct
-  type entry
-  type section_node
-  type sections = {
-    head : section_node;
-    unicode : bool;
-  }
-
-  external _read : string -> bool -> section_node = "caml_gammu_INI_ReadFile"
-  let read ?(unicode=true) file_name =
-    { head = _read file_name unicode;
-      unicode = unicode; }
-
-  external _get_value : section_node -> string -> string -> bool -> string
-    = "caml_gammu_INI_GetValue"
-  let get_value file_info ~section ~key =
-    _get_value file_info.head section key file_info.unicode
-
-end
-
-(************************************************************************)
 (* State machine *)
 
 type t
@@ -168,6 +144,47 @@ type config = {
   text_birthday : string;
   text_memo : string;
 }
+
+(************************************************************************)
+(* INI files *)
+
+module INI =
+struct
+  type entry
+  type section_node
+  type sections = {
+    head : section_node;
+    unicode : bool;
+  }
+
+  external _read : string -> bool -> section_node = "caml_gammu_INI_ReadFile"
+  let read ?(unicode=true) file_name =
+    { head = _read file_name unicode;
+      unicode = unicode; }
+
+  external _find_gammurc_force : string -> section_node
+    = "caml_gammu_GSM_FindGammuRC_force"
+  external _find_gammurc : unit -> section_node = "caml_gammu_GSM_FindGammuRC"
+  let ini_of_gammurc ?path () =
+    let s_node = match path with
+      | None -> _find_gammurc ()
+      | Some path -> _find_gammurc_force path
+    in
+    (* TODO: Check if can set a better unicode flag. *)
+    { head = s_node; unicode=false; }
+
+  external _config_of_ini : section_node -> int -> config =
+        "caml_gammu_GSM_ReadConfig"
+
+  let config_of_ini cfg_info num =
+    _config_of_ini cfg_info.head num
+
+  external _get_value : section_node -> string -> string -> bool -> string
+    = "caml_gammu_INI_GetValue"
+  let get_value file_info ~section ~key =
+    _get_value file_info.head section key file_info.unicode
+
+end
 
 type connection_type =
   | BUS2
@@ -205,23 +222,6 @@ let init_locales ?path () = match path with
 
 external make : unit -> t = "caml_gammu_GSM_AllocStateMachine"
 
-external _find_gammurc_force : string -> INI.section_node
-  = "caml_gammu_GSM_FindGammuRC_force"
-external _find_gammurc : unit -> INI.section_node = "caml_gammu_GSM_FindGammuRC"
-let find_gammurc ?path () =
-  let s_node = match path with
-    | None -> _find_gammurc ()
-    | Some path -> _find_gammurc_force path
-  in
-  (* TODO: Check if can set a better unicode flag. *)
-  { INI.head = s_node; unicode=false; }
-
-external _read_config : INI.section_node -> int -> config =
-  "caml_gammu_GSM_ReadConfig"
-
-let read_config cfg_info num =
-  _read_config cfg_info.INI.head num
-
 external get_config : t -> int -> config = "caml_gammu_GSM_GetConfig"
 
 external set_config : t -> config -> int -> unit = "caml_gammu_GSM_set_config"
@@ -233,10 +233,10 @@ external remove_config : t -> config = "caml_gammu_GSM_remove_config"
 external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 
 let load_gammurc ?path s =
-  let ini = find_gammurc ?path () in
+  let ini = INI.ini_of_gammurc ?path () in
   (* Read first config from INI file.
      TODO: we should read all sections from * the INI file. *)
-  let cfg = read_config ini 0 in
+  let cfg = INI.config_of_ini ini 0 in
   push_config s cfg
 
 external _connect : t -> int -> unit= "caml_gammu_GSM_InitConnection"
@@ -271,13 +271,11 @@ type security_code_type =
   | SEC_Phone
   | SEC_Network
 
-type security_code = {
-  code_type : security_code_type;
-  code : string;
-}
-
-external enter_security_code : t -> security_code -> unit =
+external _enter_security_code : t -> security_code_type -> string -> unit =
   "caml_gammu_GSM_EnterSecurityCode"
+
+let enter_security_code s ~code_type ~code =
+  _enter_security_code s code_type code
 
 external get_security_status : t -> security_code_type =
   "caml_gammu_GSM_GetSecurityStatus"
@@ -568,18 +566,21 @@ struct
   type multi_sms = message array
 
   external _get : t -> int -> int -> multi_sms =
-    "caml_gammu_GSM_GSM_GetSMS"
-  let get s ~location ~folder =
-    _get s location folder
+    "caml_gammu_GSM_GetSMS"
+  let get s ~folder ~message_number =
+    _get s message_number folder
 
   external _get_next : t -> int -> int -> bool ->
-    multi_sms = "caml_gammu_GSM_GSM_GetNextSMS"
-  let get_next s ?(start=false) ~location ~folder =
-    _get_next s location folder start
+    multi_sms = "caml_gammu_GSM_GetNextSMS"
+  let get_next s ~folder ?message_number () =
+    match message_number with
+    | None -> _get_next s 0 folder true
+    | Some n -> _get_next s n folder false
+
+  type folder_box = Inbox | Outbox
 
   type folder = {
-    inbox_folder : bool;
-    outbox_folder : bool;
+    box : folder_box;
     memory : memory_type;
     name : string;
   }
@@ -600,7 +601,9 @@ struct
 
   external set_incoming_sms : t -> bool -> unit = "caml_gammu_GSM_SetIncomingSMS"
 
-  external delete : t -> message -> unit = "caml_gammu_GSM_DeleteSMS"
+  external _delete : t -> int -> int -> unit = "caml_gammu_GSM_DeleteSMS"
+  let delete s ~folder ~message_number =
+    _delete s message_number folder
 
   type multipart_info = {
     unicode_coding : bool;
@@ -688,8 +691,8 @@ struct
     Debug.info -> multi_sms -> bool -> multipart_info
       = "caml_gammu_GSM_DecodeMultiPartSMS"
 
-  let decode_multipart ?di ?(ems=true) multp_mess =
-    let di = match di with
+  let decode_multipart ?debug ?(ems=true) multp_mess =
+    let di = match debug with
       | None -> Debug.global ()
       | Some s_di -> s_di
     in

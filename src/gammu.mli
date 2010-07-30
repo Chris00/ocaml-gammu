@@ -127,29 +127,6 @@ sig
 end
 
 (************************************************************************)
-(** {2 INI files} *)
-
-(** These functions parse ini file and make them available in easily
-    accessable manner. *)
-module INI : sig
-  (*type entry (* Useless, never used and abstract *) *)
-  (* TODO:?? section is in fact a node of a doubly-linked list. Should
-     this be reflected on the interface ? Along with FIXME in [read],
-     store the unicode flag in the abstract [section] type or expose it to
-     public interface ? *)
-  type sections
-
-  val read : ?unicode:bool -> string -> sections
-  (** [read fname] reads INI data from the file [fname].
-
-      @param unicode Whether file should be treated as unicode encoded. *)
-
-  val get_value : sections -> section:string -> key:string -> string
-  (** @return value of the INI file entry. *)
-
-end
-
-(************************************************************************)
 (** {2 State machine} *)
 
 type t
@@ -158,26 +135,29 @@ type t
 
 (** Configuration of state machine.  *)
 type config = {
-  model : string;              (** Model from config file  *)
+  model : string;
+  (** Model from config file. Leave it empty for autodetection. Or define a
+      phone model to force the phone model and bypass automatic phone model
+      detection. *)
   debug_level : string;        (** Debug level  *)
-  device : string;             (** Device name from config file  *)
+  device : string;             (** Device name from config file such as "com2" or "/dev/ttyS1". *)
   connection : string;         (** Connection type as string  *)
   sync_time : bool;            (** Synchronize time on startup?  *)
-  lock_device : bool;          (** Lock device ? (Unix)  *)
+  lock_device : bool;          (** Lock device ? (Unix, ignored on Windows) *)
   debug_file : string;         (** Name of debug file  *)
   start_info : bool;           (** Display something during start ?  *)
   use_global_debug_file : bool; (** Should we use global debug file?  *)
   text_reminder : string;      (** Text for reminder calendar entry category
-                                  in local language  *)
+                                   in local language  *)
   text_meeting : string;       (** Text for meeting calendar entry category
-                                  in local language  *)
+                                   in local language  *)
   text_call : string;          (** Text for call calendar entry category
-                                  in local language  *)
+                                   in local language  *)
   text_birthday : string;      (** Text for birthday calendar entry category
-                                  in local language  *)
+                                   in local language  *)
   text_memo : string;          (** Text for memo calendar entry
-                                  category in local language *)
-  (* phone_features : feature list (** NYI Phone features override. *) *)
+                                   category in local language *)
+(* phone_features : feature list (** NYI Phone features override. *) *)
 }
 
 type connection_type =
@@ -219,20 +199,6 @@ val init_locales : ?path:string -> unit -> unit
 val make : unit -> t
 (** Make a new clean state machine. *)
 
-val find_gammurc : ?path:string -> unit -> INI.sections
-(** Finds and reads gammu configuration file.  The search order depends on
-    platform.  On POSIX systems it looks for ~/.gammurc and then for
-    /etc/gammurc, on Windows for gammurc in Application data folder, then
-    in home and last fallback is in current directory.
-
-    @param path force the use of a custom path instead of the autodetected
-    one (default: autodetection is performed). *)
-
-val read_config : INI.sections -> int -> config
-(** [read_config section num] processes and returns gammu configuration
-    represented by the [num]th section of the INI file representation
-    [section]. Beware that [num]th section is in facts the section named "gammu[num]" *)
-
 val get_config : t -> int -> config
 (** [get_config s num] gets gammu configuration from state machine [s],
     where [num] is the number of the section to read, [-1] for the
@@ -247,7 +213,8 @@ val push_config : t -> config -> unit
     configuration stack of [s]. *)
 
 val remove_config : t -> config
-(** [remove_config s] remove on the configuration stack of [s]. *)
+(** [remove_config s] remove the top configuration from the config stack of
+    [s]. *)
 
 val length_config : t -> int
 (** @return length of the configuration stack of the state machine. i.e
@@ -267,7 +234,9 @@ val connect : ?log:(string -> unit) -> ?reply_num:int -> t -> unit
 (** Initiates connection.
 
     @param log logging function.
-    @param reply_num number of replies to await (default 3). *)
+    @param reply_num number of replies to await (default 3).
+
+    @raise UNCONFIGURED if no configuration was set. *)
 
 val disconnect : t -> unit
 
@@ -287,6 +256,49 @@ val read_device : ?wait_for_reply:bool -> t -> int
     @param wait_for_reply whether to wait for some event (default true). *)
 
 (************************************************************************)
+(** {2 INI files} *)
+
+(** These functions parse ini file and make them available in easily
+    accessable manner. *)
+module INI : sig
+  (*type entry (* Useless, never used and abstract *) *)
+  (* TODO:?? section is in fact a node of a doubly-linked list. Should
+     this be reflected on the interface ? Along with FIXME in [read],
+     store the unicode flag in the abstract [section] type or expose it to
+     public interface ? *)
+  type sections
+
+  val read : ?unicode:bool -> string -> sections
+  (** [read fname] reads INI data from the file [fname].
+
+      @param unicode Whether file should be treated as unicode encoded. *)
+
+  val ini_of_gammurc : ?path:string -> unit -> sections
+  (** Finds and reads gammu configuration file.  The search order depends on
+      platform.  On POSIX systems it looks for ~/.gammurc and then for
+      /etc/gammurc, on Windows for gammurc in Application data folder, then in
+      home and last fallback is in current directory.
+
+      @param path force the use of a custom path instead of the autodetected
+      one (default: autodetection is performed).
+
+      @raise CANTOPENFILE if no gammu rc file can be found.
+
+      @raise FILENOTSUPPORTED if first found gammu rc file is not valid. *)
+
+  val config_of_ini : sections -> int -> config
+  (** [read_config section num] processes and returns gammu configuration
+      represented by the [num]th section of the INI file representation
+      [section]. Beware that [num]th section is in facts the section named
+      "gammu[num]" *)
+
+  val get_value : sections -> section:string -> key:string -> string
+(** @return value of the INI file entry. *)
+
+end
+
+(************************************************************************)
+(** {2 Security related operations with phone. } *)
 
 (** Definition of security codes. *)
 type security_code_type =
@@ -299,13 +311,7 @@ type security_code_type =
   | SEC_Phone   (** Phone code needed. *)
   | SEC_Network (** Network code needed. *)
 
-(** {2 Security related operations with phone. } *)
-type security_code = {
-  code_type : security_code_type;
-  code : string;
-}
-
-val enter_security_code : t -> security_code -> unit
+val enter_security_code : t -> code_type:security_code_type -> code:string -> unit
 (** Enters security code (PIN, PUK,...). *)
 
 val get_security_status : t -> security_code_type
@@ -622,23 +628,28 @@ module SMS : sig
   type multi_sms = message array
   (** Multiple SMS messages, used for Smart Messaging 3.0/EMS. *)
 
-  val get : t -> location:int -> folder:int -> multi_sms
+  val get : t -> folder:int -> message_number:int -> multi_sms
   (** Reads SMS message. *)
 
-  val get_next : t -> ?start:bool -> location:int -> folder:int
-    -> multi_sms
-  (** Reads next (or first if [start] is set to true) SMS message.
-      This might be faster for some phones than using
-      {!Gammu.SMS.get} for each message.
+  val get_next : t -> folder:int -> ?message_number:int -> unit -> multi_sms
+  (** Reads next SMS message (iterating trough SMS's *and* folders). This
+      might be faster for some phones than using {!Gammu.SMS.get} for each
+      message.
 
-      Please note that this command does not mark the message as
-      read in phone. To do so, you have to call {!Gammu.SMS.get}.
+      Please note that this command does not mark the message as read in
+      phone. To do so, you have to call {!Gammu.SMS.get}.
 
-      @param start if true, start reading from beginning (default false). *)
+      @param message_number if no defined, start reading from beginning.
+
+      @raise EMPTY if there's no next SMS.
+
+      @raise NOTIMPLEMENTED if GetNext function is not implemented in libGammu
+      for the the currently used phone.*)
+
+  type folder_box = Inbox | Outbox
 
   type folder = {
-    inbox_folder : bool;  (** Whether it is inbox. *)
-    outbox_folder : bool; (** Whether it is outbox. *)
+    box : folder_box;     (** Whether it is inbox or outbox. *)
     memory : memory_type; (** Where exactly it's saved. *)
     name : string;        (** Name of the folder. *)
   }
@@ -649,13 +660,13 @@ module SMS : sig
   (** Status of SMS memory. *)
   type memory_status = {
     sim_unread : int;     (** Number of unread messages on SIM. *)
-    sim_used : int;       (** Number of all saved messages
+    sim_used : int;       (** Number of saved messages
                              (including unread) on SIM. *)
-    sim_size : int;       (** Number of all possible messages on SIM. *)
+    sim_size : int;       (** Number of possible messages on SIM. *)
     templates_used : int; (** Number of used templates (62xx/63xx/7110/etc.). *)
     phone_unread : int;   (** Number of unread messages in phone. *)
-    phone_used : int;     (** Number of all saved messages in phone. *)
-    phone_size : int;     (** Number of all possible messages on phone. *)
+    phone_used : int;     (** Number of saved messages in phone. *)
+    phone_size : int;     (** Number of possible messages on phone. *)
   }
 
   val get_status : t -> memory_status
@@ -666,7 +677,7 @@ module SMS : sig
   val set_incoming_sms : t -> bool -> unit
   (** Enable/disable notification on incoming SMS. *)
 
-  val delete : t -> message -> unit
+  val delete : t -> folder:int -> message_number:int -> unit
   (** Deletes SMS (SMS location and folder must be set). *)
 
   (** Multipart SMS Information *)
@@ -757,7 +768,7 @@ module SMS : sig
     | AlcatelSMSTemplateName
     | SiemensFile (** Siemens OTA  *)
 
-  val decode_multipart : ?di:Debug.info -> ?ems:bool ->
+  val decode_multipart : ?debug:Debug.info -> ?ems:bool ->
     multi_sms -> multipart_info
 (** [decode_multipart sms] Decodes multi part SMS to "readable"
     format. [sms] is modified, return a {!Gammu.multipart_info}

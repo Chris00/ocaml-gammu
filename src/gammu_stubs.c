@@ -525,8 +525,10 @@ CAMLexport
 void caml_gammu_GSM_InitConnection(value s, value vreply_num)
 {
   CAMLparam2(s, vreply_num);
-
-  GSM_InitConnection(GSM_STATEMACHINE_VAL(s), Int_val(vreply_num));
+  GSM_Error error;
+  
+  error = GSM_InitConnection(GSM_STATEMACHINE_VAL(s), Int_val(vreply_num));
+  caml_gammu_raise_Error(error);
 
   CAMLreturn0;
 }
@@ -544,7 +546,8 @@ static void log_function_callback(const char *text, void *data)
 }
 
 CAMLexport
-void caml_gammu_GSM_InitConnection_Log(value s, value vreply_num, value vlog_func)
+void caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
+                                       value vlog_func)
 {
   CAMLparam3(s, vreply_num, vlog_func);
   GSM_Error error;
@@ -611,25 +614,18 @@ value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
 #define GSM_SECURITYCODETYPE_VAL(v) (Int_val(v) + 1)
 #define VAL_GSM_SECURITYCODETYPE(sct) Val_int(sct - 1)
 
-static GSM_SecurityCode GSM_SecurityCode_val(value vsecurity_code)
-{
-  GSM_SecurityCode security_code;
-
-  security_code.Type = GSM_SECURITYCODETYPE_VAL(Field(vsecurity_code, 0));
-  CPY_TRIM_STRING_VAL(security_code.Code,
-                      String_val(Field(vsecurity_code, 1)));
-
-  return security_code;
-}
-
 CAMLexport
-void caml_gammu_GSM_EnterSecurityCode(value s, value vcode)
+void caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
 {
   CAMLparam2(s, vcode);
   GSM_Error error;
+  GSM_SecurityCode security_code;
+  
+  security_code.Type = GSM_SECURITYCODETYPE_VAL(vcode_type);
+  CPY_TRIM_STRING_VAL(security_code.Code, vcode);
 
   error = GSM_EnterSecurityCode(GSM_STATEMACHINE_VAL(s),
-                                GSM_SecurityCode_val(vcode));
+                                security_code);
   caml_gammu_raise_Error(error);
 
   CAMLreturn0;
