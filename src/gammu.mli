@@ -93,6 +93,7 @@ exception Error of error
 (** May be raised by any of the functions of this module to indicate an
     error. *)
 
+
 (************************************************************************)
 (** {2 Debuging handling} *)
 module Debug :
@@ -125,6 +126,7 @@ sig
       textalldate
       errorsdate} *)
 end
+
 
 (************************************************************************)
 (** {2 State machine} *)

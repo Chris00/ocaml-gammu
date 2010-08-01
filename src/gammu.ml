@@ -124,7 +124,7 @@ struct
 end
 
 (************************************************************************)
-(* State machine *)
+(* State machine types *)
 
 type t
 
@@ -144,6 +144,32 @@ type config = {
   text_birthday : string;
   text_memo : string;
 }
+
+type connection_type =
+  | BUS2
+  | FBUS2
+  | FBUS2DLR3
+  | DKU2AT
+  | DKU2PHONET
+  | DKU5FBUS2
+  | ARK3116FBUS2
+  | FBUS2PL2303
+  | FBUS2BLUE
+  | FBUS2IRDA
+  | PHONETBLUE
+  | AT
+  | BLUEGNAPBUS
+  | IRDAOBEX
+  | IRDAGNAPBUS
+  | IRDAAT
+  | IRDAPHONET
+  | BLUEFBUS2
+  | BLUEAT
+  | BLUEPHONET
+  | BLUEOBEX
+  | FBUS2USB
+  | NONE
+
 
 (************************************************************************)
 (* INI files *)
@@ -186,30 +212,8 @@ struct
 
 end
 
-type connection_type =
-  | BUS2
-  | FBUS2
-  | FBUS2DLR3
-  | DKU2AT
-  | DKU2PHONET
-  | DKU5FBUS2
-  | ARK3116FBUS2
-  | FBUS2PL2303
-  | FBUS2BLUE
-  | FBUS2IRDA
-  | PHONETBLUE
-  | AT
-  | BLUEGNAPBUS
-  | IRDAOBEX
-  | IRDAGNAPBUS
-  | IRDAAT
-  | IRDAPHONET
-  | BLUEFBUS2
-  | BLUEAT
-  | BLUEPHONET
-  | BLUEOBEX
-  | FBUS2USB
-  | NONE
+(************************************************************************)
+(* State machine *)
 
 external get_debug : t -> Debug.info = "caml_gammu_GSM_GetDebug"
 

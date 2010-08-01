@@ -5,6 +5,7 @@
      Christophe Troestler <Christophe.Troestler@umons.ac.be>
      Noémie Meunier <Noemie.Meunier@student.umons.ac.be>
      Pierre Hauweele <Pierre.Hauweele@student.umons.ac.be>
+
      WWW: http://math.umons.ac.be/an/software/
 
    This library is free software; you can redistribute it and/or modify
@@ -33,65 +34,12 @@
 
 #include <gammu.h>
 
+#include "gammu_stubs.h"
 #include "io.h"
 
-#define BUFFER_LENGTH 255
 
-/* Check Gammu version. TODO: Check versions more precisely. */
-#if VERSION_NUM >= 12792
-  /* OK*/
-#elif VERSION_NUM <= 12400
-  /* OK */
-#else
-  #warning "Your version of libGammu was totally not tested\n"\
-    "If compilation fails, please report your version number\n"\
-    "and if possible attach the error log."
-#endif
-
-/* Assume that gammu-types.h deals with glib.
-// typedef int gboolean;
-But in some versions, it doesn't : */
-#if VERSION_NUM < 12792
-typedef int gboolean;
-#endif
-#ifndef FALSE
-  #define FALSE (0)
-#endif
-#ifndef TRUE
-  #define TRUE (!FALSE)
-#endif
-
+/************************************************************************/
 /* Utils functions and macros. */
-
-/* Similar to strncpy but doesn't pad with nulls and ensure that destination
-   string is null terminated. */
-/* TODO: should be removed, not used anymore. */
-/*
-static inline char *strncpy2(char *dst, const char *src, size_t n)
-{
-  size_t i;
-
-  for (i = 0; i < (n - 1) && src[i] != 0; i++)
-    dst[i] = src[i];
-  dst[i] = '\0';
-
-  return dst;
-}*/
-
-/* Copy string represented by the value v to dst, and trim if too long. */
-#define CPY_TRIM_STRING_VAL(dst, v)                        \
-  do {                                                     \
-    strncpy((char *) dst, String_val(v), sizeof(dst));     \
-    dst[sizeof(dst)] = '\0';                               \
-  } while (0)
-
-/* signed or unsigned type char definition is not constant across versions. */
-#define CAML_COPY_SUSTRING(str) caml_copy_string((char *) str)
-
-#define CHAR_VAL(v) ((char) Int_val(v))
-#define VAL_CHAR(c) (Val_int(c))
-#define UCHAR_VAL(v) ((unsigned char) Int_val(v))
-#define VAL_UCHAR(c) (Val_int(c))
 
 #if VERSION_NUM < 12792
 static gboolean is_true(const char *str)
@@ -111,17 +59,6 @@ static char *yesno_bool(gboolean b)
 
 /************************************************************************/
 /* Error handling */
-
-/* Error codes added to our bindings implementation.
-   TODO: ErrorString will fail with it. */
-typedef enum {
-  ERR_INI_KEY_NOT_FOUND = 71,
-  ERR_COULD_NOT_DECODE,
-  ERR_INVALID_CONFIG_NUM
-} CAML_GAMMU_Error;
-
-#define GSM_ERROR_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_ERROR(v) Val_int(v - 1)
 
 /* raise [Error] if the error code doesn't indicates no error. */
 static void caml_gammu_raise_Error(int err)
@@ -149,12 +86,6 @@ value caml_gammu_GSM_ErrorString(value verr)
 
 /************************************************************************/
 /* Debuging handling */
-
-/* The global Debug will never be freed and those from state machines are
-   freed through them and should not be freed before the associated state
-   machine. Thus, there's no need to wrap them in a finalized block. */
-#define GSM_DEBUG_INFO_VAL(v) ((GSM_Debug_Info *) v)
-#define VAL_GSM_DEBUG_INFO(di) ((value) di)
 
 static GSM_Debug_Info *safe_GSM_GetDebug(GSM_StateMachine *sm)
 {
@@ -224,21 +155,10 @@ void caml_gammu_GSM_SetDebugLevel(value vlevel, value vdi)
 /************************************************************************/
 /* INI files */
 
-#define INI_SECTION_VAL(v) (*(INI_Section **) (Data_custom_val(v)))
-
 static void caml_gammu_ini_section_finalize(value vini_section)
 {
   INI_Free(INI_SECTION_VAL(vini_section));
 }
-
-static struct custom_operations caml_gammu_ini_section_ops = {
-  "ml-gammu.Gammu.ini_section",
-  caml_gammu_ini_section_finalize,
-  custom_compare_default,
-  custom_hash_default,
-  custom_serialize_default,
-  custom_deserialize_default
-};
 
 static value alloc_INI_Section()
 {
@@ -292,16 +212,6 @@ value caml_gammu_INI_GetValue(value vfile_info, value vsection, value vkey,
 /************************************************************************/
 /* State machine */
 
-/* Define a struct to put, caml side, state machine related stuff in C heap in
-   order to deal with GC. */
-typedef struct {
-  GSM_StateMachine *sm;
-  value incoming_sms_callback;
-} State_Machine;
-
-#define STATE_MACHINE_VAL(v) (*((State_Machine **) Data_custom_val(v)))
-#define GSM_STATEMACHINE_VAL(v) (STATE_MACHINE_VAL(v)->sm)
-
 static void caml_gammu_state_machine_finalize(value s)
 {
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
@@ -313,15 +223,6 @@ static void caml_gammu_state_machine_finalize(value s)
 
   free(state_machine);
 }
-
-static struct custom_operations caml_gammu_state_machine_ops = {
-  "ml-gammu.Gammu.state_machine",
-  caml_gammu_state_machine_finalize,
-  custom_compare_default,
-  custom_hash_default,
-  custom_serialize_default,
-  custom_deserialize_default
-};
 
 static value Val_GSM_Config(const GSM_Config *config)
 {
@@ -381,10 +282,6 @@ static void GSM_Config_val(GSM_Config *config, value vconfig)
   CPY_TRIM_STRING_VAL(config->TextBirthday, String_val(Field(vconfig, 12)));
   CPY_TRIM_STRING_VAL(config->TextMemo, String_val(Field(vconfig, 13)));
 }
-
-/* Unused
-#define GSM_CONNECTIONTYPE_VAL(v) (Int_val(v) + 1) */
-#define VAL_GSM_CONNECTIONTYPE(ct) Val_int(ct - 1)
 
 CAMLexport
 value caml_gammu_GSM_GetDebug(value s)
@@ -611,9 +508,6 @@ value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
 /************************************************************************/
 /* Security related operations with phone */
 
-#define GSM_SECURITYCODETYPE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_SECURITYCODETYPE(sct) Val_int(sct - 1)
-
 CAMLexport
 void caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
 {
@@ -646,15 +540,6 @@ value caml_gammu_GSM_GetSecurityStatus(value s)
 
 /************************************************************************/
 /* Informations on the phone */
-
-#define CHARGESTATE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_CHARGESTATE(cs) Val_int(cs - 1)
-#define GSM_BATTERYTYPE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_BATTERYTYPE(bt) Val_int(bt - 1)
-#define GSM_GPRS_STATE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_GPRS_STATE(gprss) Val_int(gprss - 1)
-#define GSM_NETWORKINFO_STATE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_NETWORKINFO_STATE(nis) Val_int(nis - 1)
 
 /* Unused
 static GSM_BatteryCharge *GSM_BatteryCharge_val(value vbattery_charge)
@@ -793,28 +678,6 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality)
   CAMLreturn(res);
 }
 
-#define GSM_STR_GET(name, buf_length)                                   \
-  CAMLexport                                                            \
-  value caml_gammu_GSM_Get##name(value s)                               \
-  {                                                                     \
-    CAMLparam1(s);                                                      \
-    GSM_Error error;                                                    \
-    char val[buf_length];                                               \
-    error = GSM_Get##name(GSM_STATEMACHINE_VAL(s), val);                \
-    caml_gammu_raise_Error(error);                                      \
-    CAMLreturn(CAML_COPY_SUSTRING(val));                                \
-  }
-
-#define GSM_TYPE_GET(name)                                              \
-  CAMLexport                                                            \
-  value caml_gammu_GSM_Get##name(value s)                               \
-  {                                                                     \
-    CAMLparam1(s);                                                      \
-    GSM_##name res;                                                     \
-    GSM_Get##name(GSM_STATEMACHINE_VAL(s), &res);                       \
-    CAMLreturn(Val_GSM_##name(&res));                                   \
-  }
-
 GSM_TYPE_GET(BatteryCharge)
 
 CAMLexport
@@ -951,12 +814,6 @@ value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone)
 /************************************************************************/
 /* Memory */
 
-#define GSM_MEMORYTYPE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_MEMORYTYPE(mt) Int_val(mt - 1)
-/* unused
-#define GSM_ENTRYTYPE_VAL(v) (Int_val(v) + 1)*/
-#define VAL_GSM_ENTRYTYPE(et) Val_int(et - 1)
-
 /* Unused
 static GSM_SubMemoryEntry *GSM_SubMemoryEntry_val(value vsub_mem_entry)
 {
@@ -1042,16 +899,6 @@ static value Val_GSM_MemoryEntry(GSM_MemoryEntry *mem_entry)
 /************************************************************************/
 /* Messages */
 
-/* unused
-#define GSM_SMSFORMAT_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_SMSFORMAT(smsf) Val_int(smsf - 1)
-#define GSM_VALIDITYPERIOD_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_VALIDITYPERIOD(vp) Val_int(vp - 1) */
-#define GSM_SMS_STATE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_SMS_STATE(sms_state) Val_int(sms_state - 1)
-#define GSM_UDH_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_UDH(udh) Val_int(udh - 1)
-
 static GSM_UDHHeader *GSM_UDHHeader_val(GSM_UDHHeader *udh_header,
                                         value vudh_header)
 {
@@ -1080,11 +927,6 @@ static value VAL_GSM_UDHHeader(GSM_UDHHeader *udh_header)
 
   CAMLreturn(res);
 }
-
-#define GSM_SMSMESSAGETYPE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_SMSMESSAGETYPE(mt) Val_int(mt - 1)
-#define GSM_CODING_TYPE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_CODING_TYPE(ct) Val_int(ct - 1)
 
 static GSM_SMSMessage *GSM_SMSMessage_val(GSM_SMSMessage *sms, value vsms)
 {
@@ -1319,32 +1161,6 @@ void caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
 
   CAMLreturn0;
 }
-
-/* unused
-#define GSM_ENCODEMULTIPARTSMSID_VAL(v) (Int_val(v) + 1) */
-#define VAL_GSM_ENCODEMULTIPARTSMSID(v) Val_int(v - 1)
-
-/* caml Buffer is
-  type t =
-  {mutable buffer : string;
-  mutable position : int;
-  mutable length : int;
-  initial_buffer : string}
-*/
-/* Not used anymore */
-/*
-#define GSM_Buffer_val(v) GSM_Bp_val(Field(v, 0))
-static value Val_GSM_buffer(char *buf)
-{
-  CAMLparam0();
-  CAMLlocal1(res);
-  res = caml_alloc(4, 0);
-  Store_field(res, 0, Val_GSM_Bp(buf));
-  Store_field(res, 1, Val_int(0));
-  Store_field(res, 2, Val_int());
-  Store_field(res, 3, caml_copy_string(""));
-  CAMLreturn(res);
-} */
 
 /* Unused
 static GSM_MultiPartSMSEntry GSM_MultiPartSMSEntry_val(value vmult_part_sms)
