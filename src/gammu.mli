@@ -235,6 +235,11 @@ val load_gammurc : ?path:string -> t -> unit
 val connect : ?log:(string -> unit) -> ?reply_num:int -> t -> unit
 (** Initiates connection.
 
+    IMPORTANT: do not forget to call disconnect when done as otherwise the
+    connection may be prematurely terminated. In fact, the problem is that if
+    you have no reference to the state machine left, the GC will free it and
+    by the same time terminate your connection.
+
     @param log logging function.
     @param reply_num number of replies to await (default 3).
 

@@ -163,6 +163,7 @@ value caml_gammu_INI_GetValue(value vfile_info, value vsection, value vkey,
    order to deal with GC. */
 typedef struct {
   GSM_StateMachine *sm;
+  value log_function;
   value incoming_sms_callback;
 } State_Machine;
 
@@ -179,6 +180,26 @@ static struct custom_operations caml_gammu_state_machine_ops = {
   custom_serialize_default,
   custom_deserialize_default
 };
+
+/* TODO: Is it acceptable for a global root to be a pointer to NULL ? If so,
+   we would only need to register state_machine->val as global root once at
+   state machine allocation. */
+#define REGISTER_SM_GLOBAL_ROOT(state_machine, field, v)        \
+  do {                                                          \
+    state_machine->field = v;                                   \
+    if (!state_machine->field)                                  \
+      caml_register_global_root(&state_machine->field);         \
+  } while (0)
+
+/* TODO: If it is acceptable for a global root to be a pointer to NULL, remove
+   the caml_remove_global_root statement. */
+#define UNREGISTER_SM_GLOBAL_ROOT(state_machine, field) \
+  do {                                                  \
+    if (state_machine->field) {                         \
+      caml_remove_global_root(&state_machine->field);   \
+      state_machine->field = 0;                         \
+    }                                                   \
+  } while(0)
 
 static value Val_GSM_Config(const GSM_Config *config);
 

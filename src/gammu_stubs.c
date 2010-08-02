@@ -462,10 +462,10 @@ void caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
 {
   CAMLparam3(s, vreply_num, vlog_func);
   GSM_Error error;
+  State_Machine *state_machine = STATE_MACHINE_VAL(s);
 
-  /* TODO:?? vlog_func should not be freed until TerminateConnection. But
-     the GC could forget about her through the side effect and free it. */
-  error = GSM_InitConnection_Log(GSM_STATEMACHINE_VAL(s),
+  REGISTER_SM_GLOBAL_ROOT(state_machine, log_function, vlog_func);
+  error = GSM_InitConnection_Log(state_machine->sm,
                                  Int_val(vreply_num),
                                  log_function_callback, (void *) &vlog_func);
   caml_gammu_raise_Error(error);
@@ -477,8 +477,13 @@ CAMLexport
 void caml_gammu_GSM_TerminateConnection(value s)
 {
   CAMLparam1(s);
+  State_Machine *state_machine = STATE_MACHINE_VAL(s);
 
-  caml_gammu_raise_Error(GSM_TerminateConnection(GSM_STATEMACHINE_VAL(s)));
+  /* Allow the GC to free the log function callback. And we don't unregister
+   * the incomings callbacks since the user might re-init the connection
+   * later (with the same callbacks). */
+  UNREGISTER_SM_GLOBAL_ROOT(state_machine, log_function);
+  caml_gammu_raise_Error(GSM_TerminateConnection(state_machine->sm));
 
   CAMLreturn0;
 }
@@ -1313,17 +1318,8 @@ void caml_gammu_GSM_SetIncomingSMS(value s, value vf)
 {
   CAMLparam2(s, vf);
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
-  gboolean globroot_unregistered = (!state_machine->incoming_sms_callback);
 
-  /* TODO: Is it acceptable for a global root to be a pointer to NULL ? If
-     so, we would only need to register state_machine->val as global root
-     once at state machine allocation. */
-  state_machine->incoming_sms_callback = vf;
-  if (globroot_unregistered)
-    /* Callback closure value wasn't registered, keep the new one and
-       following safe. */
-    caml_register_global_root(&state_machine->incoming_sms_callback);
-
+  REGISTER_SM_GLOBAL_ROOT(state_machine, incoming_sms_callback, vf);
   GSM_SetIncomingSMSCallback(state_machine->sm,
                              incoming_sms_callback,
                              (void *) &state_machine->incoming_sms_callback);
@@ -1337,13 +1333,7 @@ void caml_gammu_disable_incoming_sms(value s)
   CAMLparam1(s);
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
 
-  /* TODO: If it is acceptable for a global root to be a pointer to NULL,
-     remove the following statement. */
-  if (state_machine->incoming_sms_callback) {
-    caml_remove_global_root(&state_machine->incoming_sms_callback);
-    state_machine->incoming_sms_callback = 0;
-  }
-
+  UNREGISTER_SM_GLOBAL_ROOT(state_machine, incoming_sms_callback);
   GSM_SetIncomingSMSCallback(state_machine->sm, NULL, NULL);
 
   CAMLreturn0;
