@@ -195,6 +195,8 @@ val init_locales : ?path:string -> unit -> unit
     conversion from local charset as well as initializes gettext based
     translation.
 
+    The module is initialized the same way as "init_locales ()" would do.
+
     @param path Path to gettext translation. If not set, compiled in
     default is used. *)
 
@@ -646,12 +648,18 @@ module SMS : sig
       Please note that this command does not mark the message as read in
       phone. To do so, you have to call {!Gammu.SMS.get}.
 
-      @param message_number if no defined, start reading from beginning.
+      NOTE: Only use that function if you know what you're doing.
+
+      @param message_number if not defined, start reading from beginning. Note
+      that for some phone drivers, that number may be ignored and the function
+      behaves as an iterator.
 
       @raise EMPTY if there's no next SMS.
 
       @raise NOTIMPLEMENTED if GetNext function is not implemented in libGammu
-      for the the currently used phone.*)
+      for the the currently used phone.
+
+      @raise NOTSUPPORTED if the mechanism is not supported by the phone. *)
 
   type folder_box = Inbox | Outbox
 
