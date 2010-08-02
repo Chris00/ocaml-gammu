@@ -39,6 +39,15 @@
 
 
 /************************************************************************/
+/* Init */
+
+void gammu_caml_init()
+{
+  global_debug = GSM_GetGlobalDebug();
+  GSM_InitLocales(NULL);
+}
+
+/************************************************************************/
 /* Utils functions and macros. */
 
 #if VERSION_NUM < 12792
@@ -87,27 +96,32 @@ value caml_gammu_GSM_ErrorString(value verr)
 /************************************************************************/
 /* Debuging handling */
 
-static GSM_Debug_Info *safe_GSM_GetDebug(GSM_StateMachine *sm)
+/* A Debug.info is either the global_debug pointer or the associated state
+   machine.
+
+   So, to convert a value to a GSM_Debug_Info we first have to determine if it
+   the global_debug or the state machine associated. And for the later, access
+   the debug info through the underlying state machine. */
+static GSM_Debug_Info *GSM_Debug_Info_val(value vdi)
 {
-  GSM_Debug_Info *res;
-  res = GSM_GetDebug(sm);
-  if (res  == NULL)
-    res = GSM_GetGlobalDebug();
-  return res;
+  if ((GSM_Debug_Info *) vdi == global_debug)
+    return global_debug;
+
+  return GSM_GetDebug(GSM_STATEMACHINE_VAL(vdi));
 }
 
 CAMLexport
 value caml_gammu_GSM_GetGlobalDebug(value vunit)
 {
   CAMLparam1(vunit);
-  CAMLreturn(VAL_GSM_DEBUG_INFO(GSM_GetGlobalDebug()));
+  CAMLreturn(VAL_GSM_DEBUG_INFO(global_debug));
 }
 
 CAMLexport
 void caml_gammu_GSM_SetDebugGlobal(value vinfo, value vdi)
 {
   CAMLparam2(vinfo, vdi);
-  GSM_SetDebugGlobal(Bool_val(vinfo), GSM_DEBUG_INFO_VAL(vdi));
+  GSM_SetDebugGlobal(Bool_val(vinfo), GSM_Debug_Info_val(vdi));
   CAMLreturn0;
 }
 
@@ -137,7 +151,7 @@ void caml_gammu_GSM_SetDebugFileDescriptor(value vchannel, value vdi)
   GSM_Error error;
   error = GSM_SetDebugFileDescriptor(FILE_val(vchannel, "a"),
                                      TRUE, // file descr is closable
-                                     GSM_DEBUG_INFO_VAL(vdi));
+                                     GSM_Debug_Info_val(vdi));
   caml_gammu_raise_Error(error);
   CAMLreturn0;
 }
@@ -146,7 +160,7 @@ CAMLexport
 void caml_gammu_GSM_SetDebugLevel(value vlevel, value vdi)
 {
   CAMLparam2(vlevel, vdi);
-  if (!GSM_SetDebugLevel(String_val(vlevel), GSM_DEBUG_INFO_VAL(vdi)))
+  if (!GSM_SetDebugLevel(String_val(vlevel), GSM_Debug_Info_val(vdi)))
     caml_invalid_argument("Gammu.set_debug_level: "             \
                           "invalid debug level identifier.");
   CAMLreturn0;
@@ -288,7 +302,7 @@ value caml_gammu_GSM_GetDebug(value s)
 {
   CAMLparam1(s);
 
-  CAMLreturn(VAL_GSM_DEBUG_INFO(safe_GSM_GetDebug(GSM_STATEMACHINE_VAL(s))));
+  CAMLreturn(VAL_GSM_DEBUG_INFO(s));
 }
 
 CAMLexport
@@ -423,7 +437,7 @@ void caml_gammu_GSM_InitConnection(value s, value vreply_num)
 {
   CAMLparam2(s, vreply_num);
   GSM_Error error;
-  
+
   error = GSM_InitConnection(GSM_STATEMACHINE_VAL(s), Int_val(vreply_num));
   caml_gammu_raise_Error(error);
 
@@ -514,7 +528,7 @@ void caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
   CAMLparam2(s, vcode);
   GSM_Error error;
   GSM_SecurityCode security_code;
-  
+
   security_code.Type = GSM_SECURITYCODETYPE_VAL(vcode_type);
   CPY_TRIM_STRING_VAL(security_code.Code, vcode);
 
@@ -1265,7 +1279,7 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
   CAMLlocal1(vmulti_sms);
   GSM_MultiSMSMessage sms;
   GSM_MultiPartSMSInfo info;
-  GSM_Debug_Info *di = GSM_DEBUG_INFO_VAL(vdi);
+  GSM_Debug_Info *di = GSM_Debug_Info_val(vdi);
 
   GSM_MultiSMSMessage_val(vsms, &sms);
   if (!GSM_DecodeMultiPartSMS(di, &info, &sms, Bool_val(vems))) {

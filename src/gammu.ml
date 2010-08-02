@@ -17,6 +17,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+(* Initialize the C library *)
+external c_init : unit -> unit = "gammu_caml_init"
+let () = c_init ()
 
 (************************************************************************)
 (* Error handling *)
@@ -97,17 +100,24 @@ type error =
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
   | INVALID_CONFIG_NUM  (** Invalid config number. *)
 
+(* TODO: It will fail with caml bindings own errors. *)
 external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
 
 exception Error of error
 
 let () = Callback.register_exception "Gammu.Error" (Error NONE);
 
+
 (************************************************************************)
 (* Debuging handling *)
 
 module Debug =
 struct
+  (* GSM_Debug_Info is not directly represented; a Debug.info can either be
+     global or attached to a state machine. So we use a parametrized variant
+     type so that the dependency (for the GC) of a Debug.info to a state
+     machine or nothing is declared. And the actual GSM_Debug_Info is accessed
+     trough the state machine or trough the global debug. *)
   type info
 
   external global : unit -> info = "caml_gammu_GSM_GetGlobalDebug"

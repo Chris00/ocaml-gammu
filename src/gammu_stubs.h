@@ -21,6 +21,7 @@
 #ifndef __GAMMU_STUBS_H__
 #define __GAMMU_STUBS_H__
 
+
 #include <caml/mlvalues.h>
 
 #include <gammu.h>
@@ -50,6 +51,13 @@ typedef int gboolean;
 #ifndef TRUE
 # define TRUE (!FALSE)
 #endif
+
+
+/************************************************************************/
+/* Init */
+GSM_Debug_Info *global_debug;
+
+void gammu_caml_init();
 
 
 /************************************************************************/
@@ -99,11 +107,10 @@ value caml_gammu_GSM_ErrorString(value verr);
 /************************************************************************/
 /* Debuging handling */
 
-
-/* The global Debug will never be freed and those from state machines are
-   freed through them and should not be freed before the associated state
-   machine. Thus, there's no need to wrap them in a finalized block. */
-#define GSM_DEBUG_INFO_VAL(v) ((GSM_Debug_Info *) v)
+/* A Debug.info is either the global_debug pointer or the associated state
+   machine. */
+static GSM_Debug_Info *GSM_Debug_Info_val(value vdi);
+/* di can be global_debug or a state machine value. */
 #define VAL_GSM_DEBUG_INFO(di) ((value) di)
 
 CAMLexport
