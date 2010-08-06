@@ -208,9 +208,9 @@ val get_config : t -> int -> config
     where [num] is the number of the section to read, [-1] for the
     currently used one. *)
 
-val set_config : t -> config -> int -> unit
+(*val set_config : t -> config -> int -> unit
 (** [set_config s config num] sets [num]th state machine configuration [s] to
-    [config]. *)
+    [config]. *)*)
 
 val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the

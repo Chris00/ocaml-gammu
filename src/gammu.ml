@@ -238,11 +238,11 @@ external make : unit -> t = "caml_gammu_GSM_AllocStateMachine"
 
 external get_config : t -> int -> config = "caml_gammu_GSM_GetConfig"
 
-external set_config : t -> config -> int -> unit = "caml_gammu_GSM_set_config"
+(*external set_config : t -> config -> int -> unit = "caml_gammu_GSM_set_config" *)
 
-external push_config : t -> config -> unit = "caml_gammu_GSM_push_config"
+external push_config : t -> config -> unit = "caml_gammu_push_config"
 
-external remove_config : t -> config = "caml_gammu_GSM_remove_config"
+external remove_config : t -> config = "caml_gammu_remove_config"
 
 external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 
