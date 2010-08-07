@@ -55,20 +55,14 @@ typedef int gboolean;
 #endif
 
 #ifdef CAML_GAMMU_DEBUG
-# define PRINTLOCATION()                                                \
+# define LOCATION_STR "%s:%d In function '%s':\n"
+# define LOCATION_ARGS __FILE__, __LINE__, __func__
+# define DEBUG(fmt, ...)                                                \
   do {                                                                  \
-    fprintf(stderr, "%s:%d: In function '%s'\n",                        \
-            __FILE__, __LINE__, __func__);                              \
+    fprintf(stderr, LOCATION_STR fmt "\n", LOCATION_ARGS, ## __VA_ARGS__ ); \
     fflush(stderr);                                                     \
   } while (0)
-# define DEBUG(...)                             \
-  do {                                          \
-    PRINTLOCATION();                            \
-    fprintf(stderr, __VA_ARGS__);               \
-    fflush(stderr);                             \
-  } while (0)
 #else
-# define PRINTLOCATION()
 # define DEBUG(...)
 #endif
 

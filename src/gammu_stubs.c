@@ -104,9 +104,11 @@ value caml_gammu_GSM_ErrorString(value verr)
    access the debug info through the underlying state machine. */
 static GSM_Debug_Info *GSM_Debug_Info_val(value vdi)
 {
+  DEBUG("Entering function...\n");
   if ((GSM_Debug_Info *) vdi == global_debug)
     return global_debug;
-
+  
+  DEBUG("Take debug info from state machine\n"); 
   return GSM_GetDebug(GSM_STATEMACHINE_VAL(vdi));
 }
 
@@ -160,6 +162,7 @@ CAMLexport
 void caml_gammu_GSM_SetDebugLevel(value vlevel, value vdi)
 {
   CAMLparam2(vlevel, vdi);
+  DEBUG("Entering function...\n");
   if (!GSM_SetDebugLevel(String_val(vlevel), GSM_Debug_Info_val(vdi)))
     caml_invalid_argument("Gammu.set_debug_level: "             \
                           "invalid debug level identifier.");
@@ -330,6 +333,7 @@ value caml_gammu_GSM_AllocStateMachine(value vunit)
 {
   CAMLparam1(vunit);
   CAMLlocal2(res, vsm);
+  DEBUG("Entering function...\n");
   State_Machine *state_machine = malloc(sizeof(State_Machine));
   GSM_StateMachine *sm = GSM_AllocStateMachine();
 
