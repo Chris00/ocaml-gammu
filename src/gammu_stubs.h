@@ -26,6 +26,8 @@
 
 #include <gammu.h>
 
+#include "config.h"
+
 #define BUFFER_LENGTH 255
 
 /* Check Gammu version. TODO: Check versions more precisely. */
@@ -50,6 +52,24 @@ typedef int gboolean;
 #endif
 #ifndef TRUE
 # define TRUE (!FALSE)
+#endif
+
+#ifdef CAML_GAMMU_DEBUG
+# define PRINTLOCATION()                                                \
+  do {                                                                  \
+    fprintf(stderr, "%s:%d: In function '%s'\n",                        \
+            __FILE__, __LINE__, __func__);                              \
+    fflush(stderr);                                                     \
+  } while (0)
+# define DEBUG(...)                             \
+  do {                                          \
+    PRINTLOCATION();                            \
+    fprintf(stderr, __VA_ARGS__);               \
+    fflush(stderr);                             \
+  } while (0)
+#else
+# define PRINTLOCATION()
+# define DEBUG(...)
 #endif
 
 
