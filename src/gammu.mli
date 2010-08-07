@@ -9,7 +9,7 @@
     NOTE: this library is not thread safe. *)
 
 (************************************************************************)
-(** {2 Error handling} **)
+(** {2 Error handling} *)
 
 type error =
   | NONE                (** No error *)
@@ -95,9 +95,11 @@ exception Error of error
 
 
 (************************************************************************)
-(** {2 Debuging handling} *)
+(** {2 Debugging handling} *)
+
 module Debug :
 sig
+
   type info
 
   val global : unit -> info
@@ -117,14 +119,15 @@ sig
 
       [level] must be one of :
       {ul
-      nothing
-      text
-      textall
-      binary
-      errors
-      textdate
-      textalldate
-      errorsdate} *)
+      {li nothing}
+      {li text}
+      {li textall}
+      {li binary}
+      {li errors}
+      {li textdate}
+      {li textalldate}
+      {li errorsdate}} *)
+
 end
 
 
@@ -141,8 +144,10 @@ type config = {
   (** Model from config file. Leave it empty for autodetection. Or define a
       phone model to force the phone model and bypass automatic phone model
       detection. *)
-  debug_level : string;        (** Debug level  *)
-  device : string;             (** Device name from config file such as "com2" or "/dev/ttyS1". *)
+  debug_level : string;        (** Debug level. See {!Gammu.Debug.set_level}
+                                   for acceptable level strings. *)
+  device : string;             (** Device name from config file such as "com2"
+                                   or "/dev/ttyS1". *)
   connection : string;         (** Connection type as string  *)
   sync_time : bool;            (** Synchronize time on startup?  *)
   lock_device : bool;          (** Lock device ? (Unix, ignored on Windows) *)
@@ -225,8 +230,9 @@ val length_config : t -> int
     the number of active configurations. *)
 
 val load_gammurc : ?path:string -> t -> unit
-(** (* NYI *) Automaticaly find the gammurc file (see {!Gammu.find_gammurc}),
-    read it and push the configs in the state machine.
+(** (* NYI *) Automaticaly find the gammurc file (see
+    {!Gammu.INI.ini_of_gammurc}), read it and push the configs in the state
+    machine.
 
     @param path force the use of a custom path instead of the autodetected
     one (default: autodetection is performed). *)
@@ -259,7 +265,7 @@ val read_device : ?wait_for_reply:bool -> t -> int
     device.
 
     @return the number of read bytes. Beware if the value is 32, it could
-    be that the device is not connected, error {!Gammu.NOTCONNECTED}
+    be that the device is not connected, error [NOTCONNECTED]
     (libGammu's fault).
 
     @param wait_for_reply whether to wait for some event (default true). *)
@@ -270,6 +276,7 @@ val read_device : ?wait_for_reply:bool -> t -> int
 (** These functions parse ini file and make them available in easily
     accessable manner. *)
 module INI : sig
+
   (*type entry (* Useless, never used and abstract *) *)
   (* TODO:?? section is in fact a node of a doubly-linked list. Should
      this be reflected on the interface ? Along with FIXME in [read],
@@ -330,136 +337,148 @@ val get_security_status : t -> security_code_type
 (************************************************************************)
 (** {2 Informations on the phone} *)
 
-type battery_charge = {
-  battery_type : battery_type; (** Battery type. *)
-  battery_capacity : int;      (** Remaining battery capacity (in mAh). *)
+(** Informations on the phone. *)
+module Info :
+sig
 
-  battery_percent : int;       (** Remaining battery capacity in
-                                   percent, -1 = unknown. *)
-  charge_state : charge_state; (** Charge state. *)
-  battery_voltage : int;       (** Current battery voltage (in mV). *)
-  charge_voltage : int;        (** Voltage from charger (in mV). *)
-  charge_current : int;        (** Current from charger (in mA). *)
-  phone_current : int;         (** Phone current consumption (in mA). *)
-  battery_temperature : int;   (** Battery temperature
-                                   (in degrees Celsius). *)
-  phone_temperature : int;     (** Phone temperature (in degrees Celsius). *)
-}
-and charge_state =
-  | BatteryPowered      (** Powered from battery *)
-  | BatteryConnected    (** Powered from AC, battery connected *)
-  | BatteryCharging     (** Powered from AC, battery is charging *)
-  | BatteryNotConnected (** Powered from AC, no battery *)
-  | BatteryFull         (** Powered from AC, battery is fully charged *)
-  | PowerFault          (** Power failure  *)
-and battery_type =
-  | Unknown     (** Unknown battery *)
-  | NiMH        (** NiMH battery *)
-  | LiIon       (** Lithium Ion battery *)
-  | LiPol       (** Lithium Polymer battery *)
+  type battery_charge = {
+    battery_type : battery_type; (** Battery type. *)
+    battery_capacity : int;      (** Remaining battery capacity (in mAh). *)
+    battery_percent : int;       (** Remaining battery capacity in
+                                     percent, -1 = unknown. *)
+    charge_state : charge_state; (** Charge state. *)
+    battery_voltage : int;       (** Current battery voltage (in mV). *)
+    charge_voltage : int;        (** Voltage from charger (in mV). *)
+    charge_current : int;        (** Current from charger (in mA). *)
+    phone_current : int;         (** Phone current consumption (in mA). *)
+    battery_temperature : int;   (** Battery temperature
+                                     (in degrees Celsius). *)
+    phone_temperature : int;     (** Phone temperature (in degrees Celsius). *)
+  }
+  and charge_state =
+    | BatteryPowered      (** Powered from battery *)
+    | BatteryConnected    (** Powered from AC, battery connected *)
+    | BatteryCharging     (** Powered from AC, battery is charging *)
+    | BatteryNotConnected (** Powered from AC, no battery *)
+    | BatteryFull         (** Powered from AC, battery is fully charged *)
+    | PowerFault          (** Power failure  *)
+  and battery_type =
+    | Unknown     (** Unknown battery *)
+    | NiMH        (** NiMH battery *)
+    | LiIon       (** Lithium Ion battery *)
+    | LiPol       (** Lithium Polymer battery *)
 
-type firmware = {
-  version : string;
-  ver_date : string;
-  ver_num : int;
-}
+  type firmware = {
+    version : string;
+    ver_date : string;
+    ver_num : int;
+  }
 
-(** Model identification, used for finding phone features. *)
-type phone_model = {
-  model : string;          (** Model as returned by phone *)
-  number : string;         (** Identification by Gammu *)
-  irda : string;           (** Model as used over IrDA *)
+  (** Model identification, used for finding phone features. *)
+  type phone_model = {
+    model : string;          (** Model as returned by phone *)
+    number : string;         (** Identification by Gammu *)
+    irda : string;           (** Model as used over IrDA *)
   (* features : feature list; (** NYI List of supported features *)*)
-}
+  }
 
-(** Current network informations *)
-type network = {
-  cid : string;                 (** Cell ID (CID) *)
-  code : string;                (** GSM network code *)
-  state : network_state;        (** Status of network logging. *)
-  lac : string;                 (** LAC (Local Area Code) *)
-  name : string;                (** Name of current netwrok as returned
-                                   from phone (or empty) *)
-  gprs : gprs_state;            (** GRPS state *)
-  packet_cid : string;          (** Cell ID (CID) for packet network *)
-  packet_state : network_state; (** Status of network logging
-                                   for packet data. *)
-  packet_lac : string;          (** LAC (Local Area Code)
-                                   for packet network *)
-}
-and gprs_state =
-  | Detached
-  | Attached
-  | Unknown
-and network_state =
-  | HomeNetwork          (** Home network for used SIM card. *)
-  | NoNetwork            (** No network available for used SIM card. *)
-  | RoamingNetwork       (** SIM card uses roaming. *)
-  | RegistrationDenied   (** Network registration denied
-                             - card blocked or expired or disabled. *)
-  | Unknown              (** Unknown network status. *)
-  | RequestingNetwork    (** Network explicitely requested by user. *)
+  (** Current network informations *)
+  type network = {
+    cid : string;                 (** Cell ID (CID) *)
+    code : string;                (** GSM network code *)
+    state : network_state;        (** Status of network logging. *)
+    lac : string;                 (** LAC (Local Area Code) *)
+    name : string;                (** Name of current netwrok as returned
+                                      from phone (or empty) *)
+    gprs : gprs_state;            (** GRPS state *)
+    packet_cid : string;          (** Cell ID (CID) for packet network *)
+    packet_state : network_state; (** Status of network logging
+                                      for packet data. *)
+    packet_lac : string;          (** LAC (Local Area Code)
+                                      for packet network *)
+  }
+  and gprs_state =
+    | Detached
+    | Attached
+    | Unknown
+  and network_state =
+    | HomeNetwork          (** Home network for used SIM card. *)
+    | NoNetwork            (** No network available for used SIM card. *)
+    | RoamingNetwork       (** SIM card uses roaming. *)
+    | RegistrationDenied   (** Network registration denied
+                               - card blocked or expired or disabled. *)
+    | Unknown              (** Unknown network status. *)
+    | RequestingNetwork    (** Network explicitely requested by user. *)
 
-(** Information about signal quality, all these should be -1 when
-    unknown. *)
-type signal_quality = {
-  signal_strength : int;
-  signal_percent : int;  (* Signal strength in percent. *)
-  bit_error_rate : int;  (* Bit error rate in percent.  *)
-}
+  (** Information about signal quality, all these should be -1 when
+      unknown. *)
+  type signal_quality = {
+    signal_strength : int;
+    signal_percent : int;  (* Signal strength in percent. *)
+    bit_error_rate : int;  (* Bit error rate in percent.  *)
+  }
 
-val battery_charge : t -> battery_charge
+  val battery_charge : t -> battery_charge
   (** @return information about battery charge and phone charging state. *)
 
-val firmware : t -> firmware
+  val firmware : t -> firmware
 
-val hardware : t -> string
+  val hardware : t -> string
 
-val imei : t -> string
-  (** @return IMEI (International Mobile Equipment Identity) / Serial Number *)
+  val imei : t -> string
+  (** @return IMEI (International Mobile Equipment Identity) / Serial
+      Number *)
 
-val manufacture_month : t -> string
+  val manufacture_month : t -> string
 
-val manufacturer : t -> string
+  val manufacturer : t -> string
 
-val model : t -> string
+  val model : t -> string
 
-val model_info : t -> phone_model
+  val model_info : t -> phone_model
 
-val network_info : t -> network
+  val network_info : t -> network
 
-val product_code : t -> string
+  val product_code : t -> string
 
-val signal_quality : t -> signal_quality
+  val signal_quality : t -> signal_quality
+
+end
 
 (************************************************************************)
 (** {2 Date and time} *)
 
-type date_time = {
-  timezone : int; (* The difference between local time and GMT in seconds *)
-  second : int;
-  minute : int;
-  hour : int;
-  day : int;
-  month : int;    (* January = 1, February = 2, etc. *)
-  year : int;     (* Complete year number. Not 03, but 2003. *)
-}
+(** Date and time handling. *)
+module DateTime :
+sig
 
-val check_date : date_time -> bool
-(** Checks whether date is valid. This does not check time, see
-    [check_time] for this. *)
+  type date_time = {
+    timezone : int; (* The difference between local time and GMT in seconds *)
+    second : int;
+    minute : int;
+    hour : int;
+    day : int;
+    month : int;    (* January = 1, February = 2, etc. *)
+    year : int;     (* Complete year number. Not 03, but 2003. *)
+  }
 
-val check_time : date_time -> bool
-(** Checks whether time is valid. This does not check date, see
-    [check_date] for this. *)
+  val check_date : date_time -> bool
+  (** Checks whether date is valid. This does not check time, see [check_time]
+      for this. *)
 
-val os_date : date_time -> string
-(** Converts date from timestamp to string according to OS settings. *)
+  val check_time : date_time -> bool
+  (** Checks whether time is valid. This does not check date, see [check_date]
+      for this. *)
 
-val os_date_time : ?timezone:bool -> date_time -> string
+  val os_date : date_time -> string
+  (** Converts date from timestamp to string according to OS settings. *)
+
+  val os_date_time : ?timezone:bool -> date_time -> string
 (** Converts timestamp to string according to OS settings.
 
     @param timezone Whether to include time zone (default false). *)
+
+end
 
 (************************************************************************)
 (** {2 Memory} *)
@@ -480,15 +499,18 @@ type memory_type =
   | SL (** Sent SMS logs *)
   | QD (** Quick dialing choices *)
 
-(** Value for saving phonebook entries. *)
+(* TODO: Merge number and text in sub_memory_entry as field a
+ * "data : entry_type" and entry_type parametrized :
+ * <entry_type> of "<string|int>" *)
 type memory_entry = {
   memory_type : memory_type; (** Used memory for phonebook entry. *)
   location : int; (** Used location for phonebook entry. *)
   entries : sub_memory_entry array; (** Values of SubEntries. *)
-} (** One value of phonebook memory entry. *)
+} (** Value for saving phonebook entries. *)
 and sub_memory_entry = {
   entry_type : entry_type; (** Type of entry. *)
-  date : date_time; (** Text of entry (if applicable, see {!entry_type}). *)
+  date : DateTime.date_time; (** Text of entry
+                                 (if applicable, see {!entry_type}). *)
   number : int; (** Number of entry (if applicable, see {!entry_type}). *)
   voice_tag : int; (** Voice dialling tag. *)
   sms_list : int array;
@@ -497,8 +519,7 @@ and sub_memory_entry = {
                          if it was done OK. *)
   text : string; (** Text of entry (if applicable, see GSM_EntryType). *)
   (* picture : binary_picture (* NYI Picture data. *) *)
-} (** Type of specific phonebook entry. In parenthesis is specified in
-      which member of {!sub_memory_entry} value is stored. *)
+} (** One value of phonebook memory entry. *)
 and entry_type =
   | Number_General (** General number. (Text) *)
   | Number_Mobile (** Mobile number. (Text) *)
@@ -550,6 +571,9 @@ and entry_type =
   | Photo (** Photo (Picture). *)
   | Number_Mobile_Home (** Home mobile number. (Text) *)
   | Number_Mobile_Work (** Work mobile number. (Text) *)
+(** Type of specific phonebook entry. In parenthesis is specified in which
+    member of {!sub_memory_entry} value is stored. *)
+
 
 (************************************************************************)
 (** {2 Messages} *)
@@ -625,8 +649,8 @@ module SMS : sig
     text : string;   (** Text for SMS. *)
     pdu : message_type; (** Type of message. *)
     coding : coding; (** Type of coding. *)
-    date_time : date_time;
-    smsc_time : date_time;
+    date_time : DateTime.date_time;
+    smsc_time : DateTime.date_time;
     delivery_status : char; (** In delivery reports: status. *)
     reply_via_same_smsc : bool; (** Indicates whether "Reply via same
                                     center" is set. *)
@@ -786,11 +810,11 @@ module SMS : sig
   val decode_multipart : ?debug:Debug.info -> ?ems:bool ->
     multi_sms -> multipart_info
 (** [decode_multipart sms] Decodes multi part SMS to "readable"
-    format. [sms] is modified, return a {!Gammu.multipart_info}
+    format. [sms] is modified, return a {!Gammu.SMS.multipart_info}
     associated.
 
     @param di log according to debug settings from [di]. If not specified,
-    use the one returned by {!Gammu.get_global_debug}.
+    use the one returned by {!Gammu.Debug.global}.
 
     @param ems whether to use EMS (Enhanced Messaging Service)
     (default true). *)
@@ -798,7 +822,7 @@ module SMS : sig
 end
 
 (************************************************************************)
-(* Events *)
+(** {2 Events} *)
 
 val incoming_sms : t -> (SMS.message -> unit) -> unit
 (** [incoming_sms s f] register [f] as callback function in the event of an

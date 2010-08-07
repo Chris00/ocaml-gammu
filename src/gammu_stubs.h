@@ -88,7 +88,7 @@ static char *yesno_bool(gboolean b)
 /************************************************************************/
 /* Error handling */
 
-/* Error codes added to our bindings implementation. */
+/* Error codes added by our bindings implementation. */
 typedef enum {
   ERR_INI_KEY_NOT_FOUND = 71,
   ERR_COULD_NOT_DECODE,
@@ -105,7 +105,7 @@ value caml_gammu_GSM_ErrorString(value verr);
 
 
 /************************************************************************/
-/* Debuging handling */
+/* Debugging handling */
 
 /* A Debug.info is either the global_debug pointer or the associated state
    machine. */

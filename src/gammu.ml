@@ -109,7 +109,7 @@ let () = Callback.register_exception "Gammu.Error" (Error NONE);
 
 
 (************************************************************************)
-(* Debuging handling *)
+(* Debugging handling *)
 
 module Debug =
 struct
@@ -297,120 +297,128 @@ external get_security_status : t -> security_code_type =
 
 (************************************************************************)
 (* Informations on the phone *)
+module Info =
+struct
+  type battery_charge = {
+    battery_type : battery_type;
+    battery_capacity : int;
+    battery_percent : int;
+    charge_state : charge_state;
+    battery_voltage : int;
+    charge_voltage : int;
+    charge_current : int;
+    phone_current : int;
+    battery_temperature : int;
+    phone_temperature : int;
+  }
+  and charge_state =
+    | BatteryPowered
+    | BatteryConnected
+    | BatteryCharging
+    | BatteryNotConnected
+    | BatteryFull
+    | PowerFault
+  and battery_type =
+    | Unknown
+    | NiMH
+    | LiIon
+    | LiPol
 
-type battery_charge = {
-  battery_type : battery_type;
-  battery_capacity : int;
-  battery_percent : int;
-  charge_state : charge_state;
-  battery_voltage : int;
-  charge_voltage : int;
-  charge_current : int;
-  phone_current : int;
-  battery_temperature : int;
-  phone_temperature : int;
-}
-and charge_state =
-  | BatteryPowered
-  | BatteryConnected
-  | BatteryCharging
-  | BatteryNotConnected
-  | BatteryFull
-  | PowerFault
-and battery_type =
-  | Unknown
-  | NiMH
-  | LiIon
-  | LiPol
+  type firmware = {
+    version : string;
+    ver_date : string;
+    ver_num : int;
+  }
 
-type firmware = {
-  version : string;
-  ver_date : string;
-  ver_num : int;
-}
-
-type phone_model = {
-  model : string;
-  number : string;
-  irda : string;
+  type phone_model = {
+    model : string;
+    number : string;
+    irda : string;
   (* features : feature list; *)
-}
+  }
 
-type network = {
-  cid : string;
-  code : string;
-  state : network_state;
-  lac : string;
-  name : string;
-  gprs : gprs_state;
-  packet_cid : string;
-  packet_state : network_state;
-  packet_lac : string;
-}
-and gprs_state =
-  | Detached
-  | Attached
-  | Unknown
-and network_state =
-  | HomeNetwork
-  | NoNetwork
-  | RoamingNetwork
-  | RegistrationDenied
-  | Unknown
-  | RequestingNetwork
+  type network = {
+    cid : string;
+    code : string;
+    state : network_state;
+    lac : string;
+    name : string;
+    gprs : gprs_state;
+    packet_cid : string;
+    packet_state : network_state;
+    packet_lac : string;
+  }
+  and gprs_state =
+    | Detached
+    | Attached
+    | Unknown
+  and network_state =
+    | HomeNetwork
+    | NoNetwork
+    | RoamingNetwork
+    | RegistrationDenied
+    | Unknown
+    | RequestingNetwork
 
-type signal_quality = {
-  signal_strength : int;
-  signal_percent : int;
-  bit_error_rate : int;
-}
+  type signal_quality = {
+    signal_strength : int;
+    signal_percent : int;
+    bit_error_rate : int;
+  }
 
-external battery_charge : t -> battery_charge = "caml_gammu_GSM_GetBatteryCharge"
+  external battery_charge : t -> battery_charge = "caml_gammu_GSM_GetBatteryCharge"
 
-external firmware : t -> firmware = "caml_gammu_GSM_GetFirmWare"
+  external firmware : t -> firmware = "caml_gammu_GSM_GetFirmWare"
 
-external hardware : t -> string = "caml_gammu_GSM_GetHardware"
+  external hardware : t -> string = "caml_gammu_GSM_GetHardware"
 
-external imei : t -> string = "caml_gammu_GSM_GetIMEI"
+  external imei : t -> string = "caml_gammu_GSM_GetIMEI"
 
-external manufacture_month : t -> string = "caml_gammu_GSM_GetManufactureMonth"
+  external manufacture_month : t -> string = "caml_gammu_GSM_GetManufactureMonth"
 
-external manufacturer : t -> string = "caml_gammu_GSM_GetManufacturer"
+  external manufacturer : t -> string = "caml_gammu_GSM_GetManufacturer"
 
-external model : t -> string = "caml_gammu_GSM_GetModel"
+  external model : t -> string = "caml_gammu_GSM_GetModel"
 
-external model_info : t -> phone_model = "caml_gammu_GSM_GetModelInfo"
+  external model_info : t -> phone_model = "caml_gammu_GSM_GetModelInfo"
 
-external network_info : t -> network = "caml_gammu_GSM_GetNetworkInfo"
+  external network_info : t -> network = "caml_gammu_GSM_GetNetworkInfo"
 
-external product_code : t -> string = "caml_gammu_GSM_GetProductCode"
+  external product_code : t -> string = "caml_gammu_GSM_GetProductCode"
 
-external signal_quality : t -> signal_quality = "caml_gammu_GSM_GetSignalQuality"
+  external signal_quality : t -> signal_quality = "caml_gammu_GSM_GetSignalQuality"
 
+end
 
 (************************************************************************)
 (* Date and time *)
 
-type date_time = {
-  timezone : int;
-  second : int;
-  minute : int;
-  hour : int;
-  day : int;
-  month : int;
-  year : int;
-}
+module DateTime =
+struct
 
-external check_date : date_time -> bool = "caml_gammu_GSM_CheckDate"
+  type date_time = {
+    timezone : int;
+    second : int;
+    minute : int;
+    hour : int;
+    day : int;
+    month : int;
+    year : int;
+  }
 
-external check_time : date_time -> bool = "caml_gammu_GSM_CheckTime"
+  external check_date : date_time -> bool = "caml_gammu_GSM_CheckDate"
 
-external os_date : date_time -> string = "caml_gammu_GSM_OSDate"
+  external check_time : date_time -> bool = "caml_gammu_GSM_CheckTime"
 
-external _os_date_time : date_time -> bool -> string = "caml_gammu_GSM_OSDateTime"
+  external os_date : date_time -> string = "caml_gammu_GSM_OSDate"
 
-let os_date_time ?(timezone=false) dt =
-  _os_date_time dt timezone
+  external _os_date_time : date_time -> bool -> string
+    = "caml_gammu_GSM_OSDateTime"
+
+  let os_date_time ?(timezone=false) dt =
+    _os_date_time dt timezone
+
+end
 
 (************************************************************************)
 (* Memory *)
@@ -435,7 +443,8 @@ type memory_entry = {
 }
 and sub_memory_entry = {
   entry_type : entry_type; (** Type of entry. *)
-  date : date_time; (** Text of entry (if applicable, see {!entry_type}). *)
+  date : DateTime.date_time; (** Text of entry
+                                 (if applicable, see {!entry_type}). *)
   number : int; (** Number of entry (if applicable, see {!entry_type}). *)
   voice_tag : int; (** Voice dialling tag. *)
   sms_list : int array;
@@ -569,8 +578,8 @@ struct
     text : string;
     pdu : message_type;
     coding : coding;
-    date_time : date_time;
-    smsc_time : date_time;
+    date_time : DateTime.date_time;
+    smsc_time : DateTime.date_time;
     delivery_status : char;
     reply_via_same_smsc : bool;
     sms_class : char;

@@ -94,7 +94,7 @@ value caml_gammu_GSM_ErrorString(value verr)
 
 
 /************************************************************************/
-/* Debuging handling */
+/* Debugging handling */
 
 /* A Debug.info is either the global_debug pointer or the associated state
    machine.
