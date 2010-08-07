@@ -120,7 +120,9 @@ struct
      trough the state machine or trough the global debug. *)
   type info
 
-  external global : unit -> info = "caml_gammu_GSM_GetGlobalDebug"
+  external get_global : unit -> info = "caml_gammu_GSM_GetGlobalDebug"
+
+  let global = get_global ()
 
   external set_global : info -> bool -> unit
     = "caml_gammu_GSM_SetDebugGlobal"
@@ -716,7 +718,7 @@ struct
 
   let decode_multipart ?debug ?(ems=true) multp_mess =
     let di = match debug with
-      | None -> Debug.global ()
+      | None -> Debug.global
       | Some s_di -> s_di
     in
     _decode_multipart di multp_mess ems

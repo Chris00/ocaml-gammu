@@ -100,8 +100,8 @@ value caml_gammu_GSM_ErrorString(value verr)
    machine.
 
    So, to convert a value to a GSM_Debug_Info we first have to determine if it
-   the global_debug or the state machine associated. And for the later, access
-   the debug info through the underlying state machine. */
+   is the global_debug or the state machine associated. And for the later,
+   access the debug info through the underlying state machine. */
 static GSM_Debug_Info *GSM_Debug_Info_val(value vdi)
 {
   if ((GSM_Debug_Info *) vdi == global_debug)

@@ -102,19 +102,19 @@ sig
 
   type info
 
-  val global : unit -> info
-  (** @return global debug settings. *)
+  val global : info
+  (** global debug settings. *)
 
   val set_global : info -> bool -> unit
   (** Enables using of global debugging configuration. Makes no effect
       on global debug configuration. *)
 
   val set_output : info -> out_channel -> unit
-  (** [set_debug_output channel di] sets output channel of [di] to
+  (** [set_debug_output di channel] sets output channel of [di] to
       [channel]. *)
 
   val set_level : info -> string -> unit
-  (** [set_debug_level level di] sets debug level on [di] according to
+  (** [set_debug_level di level] sets debug level on [di] according to
       [level].
 
       [level] must be one of :
