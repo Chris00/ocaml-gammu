@@ -287,9 +287,7 @@ val read_device : ?wait_for_reply:bool -> t -> int
     of incoming events, which would not be found out without polling
     device.
 
-    @return the number of read bytes. Beware if the value is 32, it could
-    be that the device is not connected, error [NOTCONNECTED]
-    (libGammu's fault).
+    @return the number of read bytes.
 
     @param wait_for_reply whether to wait for some event (default true). *)
 

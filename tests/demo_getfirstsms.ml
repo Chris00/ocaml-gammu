@@ -50,6 +50,7 @@ let prepare_phone s =
   (* Unlock the phone asking user for codes. *)
   let rec ask_user_code s code_type code_type_name =
     print_string ("Enter " ^ code_type_name ^ " code : ");
+    flush stdout;
     let code = read_line () in
     try
       enter_security_code s ~code_type ~code;
@@ -57,6 +58,7 @@ let prepare_phone s =
       unlock_phone s;
     with Error SECURITYERROR ->
       print_string "Wrong code, retry.\n";
+      flush stdout;
       ask_user_code s code_type code_type_name;
   and unlock_phone s =
     let sec_status = get_security_status s in
@@ -71,9 +73,11 @@ let prepare_phone s =
     | SEC_Network as c -> ask_user_code s c "Network")
   in
   print_string "Trying to connect.\n";
+  flush stdout;
   connect s;
   print_string ("Phone model : " ^ Info.model s ^ "\n");
-  print_string "Unlock SIM/Phone.\n";
+  print_string "Unlock SIM/Phone:\n";
+  flush stdout;
   unlock_phone s;;
 
 let () =
