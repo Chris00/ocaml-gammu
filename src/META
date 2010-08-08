@@ -1,0 +1,6 @@
+# Specifications for the Gnuplot module                   -*-conf-unix-*-
+name="gammu"
+description="OCaml libGammu Interface"
+requires = ""
+archive(byte) = "gammu.cma"
+archive(native) = "gammu.cmxa"
