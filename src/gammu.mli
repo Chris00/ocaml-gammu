@@ -1,3 +1,23 @@
+(* File: gammu.mli
+
+   Copyright (C) 2010
+
+     Christophe Troestler <Christophe.Troestler@umons.ac.be>
+     Noémie Meunier <Noemie.Meunier@student.umons.ac.be>
+     Pierre Hauweele <Pierre.Hauweele@student.umons.ac.be>
+
+     WWW: http://math.umons.ac.be/an/software/
+
+   This library is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details. *)
+
 (** Interface to the gammu library (libGammu) to manage data in your
     cell phone such as contacts, calendar or messages.
 
