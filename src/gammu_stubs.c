@@ -37,11 +37,18 @@
 #include "gammu_stubs.h"
 #include "io.h"
 
+CAMLexport
+value caml_gammu_pointer_value(value v)
+{
+  CAMLparam1(v);
+  CAMLreturn(Val_int((int) v));
+}
 
 /************************************************************************/
 /* Init */
 
-void gammu_caml_init()
+CAMLexport
+void caml_gammu_init()
 {
   global_debug = GSM_GetGlobalDebug();
   GSM_InitLocales(NULL);
@@ -104,11 +111,9 @@ value caml_gammu_GSM_ErrorString(value verr)
    access the debug info through the underlying state machine. */
 static GSM_Debug_Info *GSM_Debug_Info_val(value vdi)
 {
-  DEBUG("Entering function...\n");
   if ((GSM_Debug_Info *) vdi == global_debug)
     return global_debug;
-  
-  DEBUG("Take debug info from state machine\n"); 
+
   return GSM_GetDebug(GSM_STATEMACHINE_VAL(vdi));
 }
 
@@ -120,11 +125,11 @@ value caml_gammu_GSM_GetGlobalDebug(value vunit)
 }
 
 CAMLexport
-void caml_gammu_GSM_SetDebugGlobal(value vinfo, value vdi)
+value caml_gammu_GSM_SetDebugGlobal(value vdi, value vglobal)
 {
-  CAMLparam2(vinfo, vdi);
-  GSM_SetDebugGlobal(Bool_val(vinfo), GSM_Debug_Info_val(vdi));
-  CAMLreturn0;
+  CAMLparam2(vdi, vglobal);
+  GSM_SetDebugGlobal(Bool_val(vglobal), GSM_Debug_Info_val(vdi));
+  CAMLreturn(Val_unit);
 }
 
 /* TODO: It should work on Windows, but have to check. */
@@ -147,26 +152,26 @@ static FILE *FILE_val(value vchannel, const char *mode)
 }
 
 CAMLexport
-void caml_gammu_GSM_SetDebugFileDescriptor(value vchannel, value vdi)
+value caml_gammu_GSM_SetDebugFileDescriptor(value vdi, value vchannel)
 {
-  CAMLparam2(vchannel, vdi);
+  CAMLparam2(vdi, vchannel);
   GSM_Error error;
   error = GSM_SetDebugFileDescriptor(FILE_val(vchannel, "a"),
                                      TRUE, // file descr is closable
                                      GSM_Debug_Info_val(vdi));
   caml_gammu_raise_Error(error);
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
-void caml_gammu_GSM_SetDebugLevel(value vlevel, value vdi)
+value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel)
 {
-  CAMLparam2(vlevel, vdi);
-  DEBUG("Entering function...\n");
+  CAMLparam2(vdi, vlevel);
+
   if (!GSM_SetDebugLevel(String_val(vlevel), GSM_Debug_Info_val(vdi)))
     caml_invalid_argument("Gammu.set_debug_level: "             \
                           "invalid debug level identifier.");
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 /************************************************************************/
@@ -251,16 +256,16 @@ static value Val_GSM_Config(const GSM_Config *config)
   Store_field(res, 1, CAML_COPY_SUSTRING(config->DebugLevel));
   Store_field(res, 2, CAML_COPY_SUSTRING(config->Device));
   Store_field(res, 3, CAML_COPY_SUSTRING(config->Connection));
-  #if VERSION_NUM >= 12792
+#if VERSION_NUM >= 12792
   Store_field(res, 4, Val_bool(config->SyncTime));
   Store_field(res, 5, Val_bool(config->LockDevice));
   Store_field(res, 7, Val_bool(config->StartInfo));
-  #else
+#else
   /* for VERSION_NUM <= 12400, those are strings. */
   Store_field(res, 4, Val_bool(is_true(config->SyncTime)));
   Store_field(res, 5, Val_bool(is_true(config->LockDevice)));
   Store_field(res, 7, Val_bool(is_true(config->StartInfo)));
-  #endif
+#endif
   Store_field(res, 6, CAML_COPY_SUSTRING(config->DebugFile));
   Store_field(res, 8, Val_bool(config->UseGlobalDebugFile));
   Store_field(res, 9, CAML_COPY_SUSTRING(config->TextReminder));
@@ -309,23 +314,23 @@ value caml_gammu_GSM_GetDebug(value s)
 }
 
 CAMLexport
-void caml_gammu_GSM_InitLocales(value vpath)
+value caml_gammu_GSM_InitLocales(value vpath)
 {
   CAMLparam1(vpath);
 
   GSM_InitLocales(String_val(vpath));
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
-void caml_gammu_GSM_InitDefaultLocales()
+value caml_gammu_GSM_InitDefaultLocales()
 {
   CAMLparam0();
 
   GSM_InitLocales(NULL);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
@@ -333,12 +338,16 @@ value caml_gammu_GSM_AllocStateMachine(value vunit)
 {
   CAMLparam1(vunit);
   CAMLlocal2(res, vsm);
-  DEBUG("Entering function...\n");
+
   State_Machine *state_machine = malloc(sizeof(State_Machine));
   GSM_StateMachine *sm = GSM_AllocStateMachine();
 
   if (sm == NULL || state_machine == NULL)
     caml_raise_out_of_memory();
+
+  state_machine->sm = sm;
+  state_machine->log_function = 0;
+  state_machine->incoming_sms_callback = 0;
 
   res = alloc_custom(&caml_gammu_state_machine_ops,
                      sizeof(State_Machine *), 1, 100);
@@ -385,9 +394,14 @@ CAMLexport
 value caml_gammu_GSM_GetConfig(value s, value vnum)
 {
   CAMLparam2(s, vnum);
-  GSM_Config *cfg = GSM_GetConfig(GSM_STATEMACHINE_VAL(s), Int_val(vnum));
+  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+  /* number of the configuration to get. */
+  int num = Int_val(vnum);
+  /* number of active configurations. */
+  int cfg_num = GSM_GetConfigNum(sm);
+  GSM_Config *cfg = GSM_GetConfig(sm, num);
 
-  if (cfg == NULL)
+  if (cfg == NULL || num >= cfg_num)
     caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
 
   CAMLreturn(Val_GSM_Config(cfg));
@@ -396,7 +410,7 @@ value caml_gammu_GSM_GetConfig(value s, value vnum)
 /* set_config */
 
 CAMLexport
-void caml_gammu_push_config(value s, value vcfg)
+value caml_gammu_push_config(value s, value vcfg)
 {
   CAMLparam2(s, vcfg);
   GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
@@ -404,17 +418,20 @@ void caml_gammu_push_config(value s, value vcfg)
   GSM_Config *dest_cfg = GSM_GetConfig(sm, cfg_num);
 
   if (dest_cfg != NULL)
-    GSM_Config_val(dest_cfg, vcfg);
+    {
+      GSM_Config_val(dest_cfg, vcfg);
+      GSM_SetConfigNum(sm, cfg_num + 1);
+    }
   else
     /* To many configs (more than MAX_CONFIG_NUM+1 (=6),
        unfortunately this const is not exported) */
     caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
-void caml_gammu_remove_config(value s)
+value caml_gammu_remove_config(value s)
 {
   CAMLparam1(s);
   GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
@@ -426,7 +443,7 @@ void caml_gammu_remove_config(value s)
     /* Empty stack, can't remove */
     caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
@@ -437,7 +454,7 @@ value caml_gammu_GSM_GetConfigNum(value s)
 }
 
 CAMLexport
-void caml_gammu_GSM_InitConnection(value s, value vreply_num)
+value caml_gammu_GSM_InitConnection(value s, value vreply_num)
 {
   CAMLparam2(s, vreply_num);
   GSM_Error error;
@@ -445,7 +462,7 @@ void caml_gammu_GSM_InitConnection(value s, value vreply_num)
   error = GSM_InitConnection(GSM_STATEMACHINE_VAL(s), Int_val(vreply_num));
   caml_gammu_raise_Error(error);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 static void log_function_callback(const char *text, void *data)
@@ -461,7 +478,7 @@ static void log_function_callback(const char *text, void *data)
 }
 
 CAMLexport
-void caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
+value caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
                                        value vlog_func)
 {
   CAMLparam3(s, vreply_num, vlog_func);
@@ -474,11 +491,11 @@ void caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
                                  log_function_callback, (void *) &vlog_func);
   caml_gammu_raise_Error(error);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
-void caml_gammu_GSM_TerminateConnection(value s)
+value caml_gammu_GSM_TerminateConnection(value s)
 {
   CAMLparam1(s);
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
@@ -489,7 +506,7 @@ void caml_gammu_GSM_TerminateConnection(value s)
   UNREGISTER_SM_GLOBAL_ROOT(state_machine, log_function);
   caml_gammu_raise_Error(GSM_TerminateConnection(state_machine->sm));
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
@@ -532,7 +549,7 @@ value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
 /* Security related operations with phone */
 
 CAMLexport
-void caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
+value caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
 {
   CAMLparam2(s, vcode);
   GSM_Error error;
@@ -545,7 +562,7 @@ void caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
                                 security_code);
   caml_gammu_raise_Error(error);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
@@ -558,7 +575,7 @@ value caml_gammu_GSM_GetSecurityStatus(value s)
   error = GSM_GetSecurityStatus(GSM_STATEMACHINE_VAL(s), &status);
   caml_gammu_raise_Error(error);
 
-  CAMLreturn(VAL_GSM_SECURITYCODETYPE(&status));
+  CAMLreturn(VAL_GSM_SECURITYCODETYPE(status));
 }
 
 /************************************************************************/
@@ -1048,9 +1065,13 @@ static value Val_GSM_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
   int length = multi_sms->Number;
   int i;
 
+  DEBUG("allocating length %d", length);
   res = caml_alloc(length, 0);
-  for (i=0; i < length; i++)
+  for (i=0; i < length; i++) {
+    DEBUG("fill message n°%d", i);
     Store_field(res, i, Val_GSM_SMSMessage(&multi_sms->SMS[i]));
+  }
+  DEBUG("finished");
 
   CAMLreturn(res);
 }
@@ -1072,9 +1093,13 @@ value caml_gammu_GSM_GetSMS(value s, value vlocation, value vfolder)
   /* TODO: Is that necessary ? */
   sms.Number = 0;
 
+  DEBUG("Call GSM_GetSMS");
   caml_gammu_raise_Error(GSM_GetSMS(GSM_STATEMACHINE_VAL(s), &sms));
 
-  CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
+  DEBUG("convert GSM_MultiSMSMessage to value");
+  vsms = Val_GSM_MultiSMSMessage(&sms);
+  DEBUG("return %u", (uint) vsms);
+  CAMLreturn(vsms);
 }
 
 CAMLexport
@@ -1171,7 +1196,7 @@ value caml_gammu_GSM_GetSMSStatus(value s)
 }
 
 CAMLexport
-void caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
+value caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
 {
   CAMLparam3(s, vlocation, vfolder);
   GSM_SMSMessage sms;
@@ -1182,7 +1207,7 @@ void caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
   sms.Folder = Int_val(vfolder);
   GSM_DeleteSMS(GSM_STATEMACHINE_VAL(s), &sms);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 /* Unused
@@ -1318,7 +1343,7 @@ static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
 }
 
 CAMLexport
-void caml_gammu_GSM_SetIncomingSMS(value s, value vf)
+value caml_gammu_GSM_SetIncomingSMS(value s, value vf)
 {
   CAMLparam2(s, vf);
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
@@ -1328,11 +1353,11 @@ void caml_gammu_GSM_SetIncomingSMS(value s, value vf)
                              incoming_sms_callback,
                              (void *) &state_machine->incoming_sms_callback);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 
 CAMLexport
-void caml_gammu_disable_incoming_sms(value s)
+value caml_gammu_disable_incoming_sms(value s)
 {
   CAMLparam1(s);
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
@@ -1340,5 +1365,5 @@ void caml_gammu_disable_incoming_sms(value s)
   UNREGISTER_SM_GLOBAL_ROOT(state_machine, incoming_sms_callback);
   GSM_SetIncomingSMSCallback(state_machine->sm, NULL, NULL);
 
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }

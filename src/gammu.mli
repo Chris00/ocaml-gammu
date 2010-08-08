@@ -8,6 +8,8 @@
 
     NOTE: this library is not thread safe. *)
 
+val pointer_value : 'a -> int
+
 (************************************************************************)
 (** {2 Error handling} *)
 
@@ -82,6 +84,7 @@ type error =
   | BUSY                (** Command failed. Try again. *)
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
+  | GETTING_SMSC        (** Failed to get SMSC number from phone. *)
   (* Caml bindings own errors *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
@@ -209,13 +212,13 @@ val make : unit -> t
 (** Make a new clean state machine. *)
 
 val get_config : t -> int -> config
-(** [get_config s num] gets gammu configuration from state machine [s],
-    where [num] is the number of the section to read, [-1] for the
-    currently used one. *)
+(** [get_config s num] gets gammu configuration from state machine [s], where
+    [num] is the number of the section to read starting from zero, [-1] for
+    the currently used one. *)
 
 (*val set_config : t -> config -> int -> unit
 (** [set_config s config num] sets [num]th state machine configuration [s] to
-    [config]. *)*)
+  [config]. *)*)
 
 val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the

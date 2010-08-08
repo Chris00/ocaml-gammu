@@ -71,7 +71,8 @@ typedef int gboolean;
 /* Init */
 GSM_Debug_Info *global_debug;
 
-void gammu_caml_init();
+CAMLexport
+void caml_gammu_init();
 
 
 /************************************************************************/
@@ -104,7 +105,7 @@ static char *yesno_bool(gboolean b)
 
 /* Error codes added by our bindings implementation. */
 typedef enum {
-  ERR_INI_KEY_NOT_FOUND = 71,
+  ERR_INI_KEY_NOT_FOUND = 70,
   ERR_COULD_NOT_DECODE,
   ERR_INVALID_CONFIG_NUM
 } CAML_GAMMU_Error;
@@ -131,15 +132,15 @@ CAMLexport
 value caml_gammu_GSM_GetGlobalDebug(value vunit);
 
 CAMLexport
-void caml_gammu_GSM_SetDebugGlobal(value vinfo, value vdi);
+value caml_gammu_GSM_SetDebugGlobal(value vdi, value vglobal);
 
 static FILE *FILE_val(value vchannel, const char *mode);
 
 CAMLexport
-void caml_gammu_GSM_SetDebugFileDescriptor(value vchannel, value vdi);
+value caml_gammu_GSM_SetDebugFileDescriptor(value vdi, value vchannel);
 
 CAMLexport
-void caml_gammu_GSM_SetDebugLevel(value vlevel, value vdi);
+value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel);
 
 
 /************************************************************************/
@@ -225,10 +226,10 @@ CAMLexport
 value caml_gammu_GSM_GetDebug(value s);
 
 CAMLexport
-void caml_gammu_GSM_InitLocales(value vpath);
+value caml_gammu_GSM_InitLocales(value vpath);
 
 CAMLexport
-void caml_gammu_GSM_InitDefaultLocales();
+value caml_gammu_GSM_InitDefaultLocales();
 
 CAMLexport
 value caml_gammu_GSM_AllocStateMachine(value vunit);
@@ -246,25 +247,25 @@ CAMLexport
 value caml_gammu_GSM_GetConfig(value s, value vnum);
 
 CAMLexport
-void caml_gammu_push_config(value s, value vcfg);
+value caml_gammu_push_config(value s, value vcfg);
 
 CAMLexport
-void caml_gammu_remove_config(value s);
+value caml_gammu_remove_config(value s);
 
 CAMLexport
 value caml_gammu_GSM_GetConfigNum(value s);
 
 CAMLexport
-void caml_gammu_GSM_InitConnection(value s, value vreply_num);
+value caml_gammu_GSM_InitConnection(value s, value vreply_num);
 
 static void log_function_callback(const char *text, void *data);
 
 CAMLexport
-void caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
+value caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
                                        value vlog_func);
 
 CAMLexport
-void caml_gammu_GSM_TerminateConnection(value s);
+value caml_gammu_GSM_TerminateConnection(value s);
 
 CAMLexport
 value caml_gammu_GSM_IsConnected(value s);
@@ -283,7 +284,7 @@ value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply);
 #define VAL_GSM_SECURITYCODETYPE(sct) Val_int(sct - 1)
 
 CAMLexport
-void caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode);
+value caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode);
 
 CAMLexport
 value caml_gammu_GSM_GetSecurityStatus(value s);
@@ -432,7 +433,7 @@ CAMLexport
 value caml_gammu_GSM_GetSMSStatus(value s);
 
 CAMLexport
-void caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder);
+value caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder);
 
 #define VAL_GSM_ENCODEMULTIPARTSMSID(v) Val_int(v - 1)
 
@@ -453,9 +454,9 @@ static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
                                   void *user_data);
 
 CAMLexport
-void caml_gammu_GSM_SetIncomingSMS(value s, value vf);
+value caml_gammu_GSM_SetIncomingSMS(value s, value vf);
 
 CAMLexport
-void caml_gammu_disable_incoming_sms(value s);
+value caml_gammu_disable_incoming_sms(value s);
 
 #endif /* __GAMMU_STUBS_H__ */

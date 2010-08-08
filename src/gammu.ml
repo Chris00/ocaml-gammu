@@ -17,9 +17,12 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+external pointer_value : 'a -> int = "caml_gammu_pointer_value"
+
 (* Initialize the C library *)
-external c_init : unit -> unit = "gammu_caml_init"
+external c_init : unit -> unit = "caml_gammu_init"
 let () = c_init ()
+
 
 (************************************************************************)
 (* Error handling *)
@@ -95,6 +98,7 @@ type error =
   | BUSY                (** Command failed. Try again. *)
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
+  | GETTING_SMSC        (** Failed to get SMSC number from phone. *)
   (* Caml bindings own errors *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
@@ -105,7 +109,7 @@ external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
 
 exception Error of error
 
-let () = Callback.register_exception "Gammu.Error" (Error NONE);
+let () = Callback.register_exception "Gammu.GSM_Error" (Error NONE);
 
 
 (************************************************************************)
@@ -622,7 +626,7 @@ struct
     phone_size : int;
   }
 
-  external get_status :t -> memory_status = "caml_gammu_GSM_GetSMSStatus"
+  external get_status : t -> memory_status = "caml_gammu_GSM_GetSMSStatus"
 
   external set_incoming_sms : t -> bool -> unit = "caml_gammu_GSM_SetIncomingSMS"
 
