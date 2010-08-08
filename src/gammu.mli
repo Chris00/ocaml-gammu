@@ -838,7 +838,7 @@ module SMS : sig
     format. [sms] is modified, return a {!Gammu.SMS.multipart_info}
     associated.
 
-    @param di log according to debug settings from [di]. If not specified,
+    @param debug log according to debug settings from [di]. If not specified,
     use the one returned by {!Gammu.Debug.global}.
 
     @param ems whether to use EMS (Enhanced Messaging Service)
