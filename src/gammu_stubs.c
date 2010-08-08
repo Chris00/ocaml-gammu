@@ -44,6 +44,7 @@ value caml_gammu_pointer_value(value v)
   CAMLreturn(Val_int((int) v));
 }
 
+
 /************************************************************************/
 /* Init */
 
@@ -53,6 +54,7 @@ void caml_gammu_init()
   global_debug = GSM_GetGlobalDebug();
   GSM_InitLocales(NULL);
 }
+
 
 /************************************************************************/
 /* Utils functions and macros. */
@@ -72,6 +74,7 @@ static char *yesno_bool(gboolean b)
   return "no";
 }
 #endif
+
 
 /************************************************************************/
 /* Error handling */
@@ -173,6 +176,7 @@ value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel)
                           "invalid debug level identifier.");
   CAMLreturn(Val_unit);
 }
+
 
 /************************************************************************/
 /* INI files */
@@ -545,6 +549,7 @@ value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
   CAMLreturn(Val_int(read_bytes));
 }
 
+
 /************************************************************************/
 /* Security related operations with phone */
 
@@ -577,6 +582,7 @@ value caml_gammu_GSM_GetSecurityStatus(value s)
 
   CAMLreturn(VAL_GSM_SECURITYCODETYPE(status));
 }
+
 
 /************************************************************************/
 /* Informations on the phone */
@@ -851,6 +857,7 @@ value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone)
   CAMLreturn(CAML_COPY_SUSTRING(os_date_time));
 }
 
+
 /************************************************************************/
 /* Memory */
 
@@ -935,6 +942,7 @@ static value Val_GSM_MemoryEntry(GSM_MemoryEntry *mem_entry)
 
   CAMLreturn(res);
 }
+
 
 /************************************************************************/
 /* Messages */
@@ -1326,6 +1334,7 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 
   CAMLreturn(vmulti_sms);
 }
+
 
 /************************************************************************/
 /* Events */

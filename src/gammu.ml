@@ -139,6 +139,7 @@ struct
 
 end
 
+
 (************************************************************************)
 (* State machine types *)
 
@@ -228,6 +229,7 @@ struct
 
 end
 
+
 (************************************************************************)
 (* State machine *)
 
@@ -277,6 +279,7 @@ external get_used_connection : t -> connection_type =
 external _read_device : t -> bool -> int = "caml_gammu_GSM_ReadDevice"
 let read_device ?(wait_for_reply=true) s =
   _read_device s wait_for_reply
+
 
 (************************************************************************)
 (* Security related operations with phone *)
@@ -396,6 +399,7 @@ struct
 
 end
 
+
 (************************************************************************)
 (* Date and time *)
 
@@ -425,6 +429,7 @@ struct
     _os_date_time dt timezone
 
 end
+
 
 (************************************************************************)
 (* Memory *)
@@ -511,6 +516,7 @@ and entry_type =
   | Photo (** Photo (Picture). *)
   | Number_Mobile_Home (** Home mobile number. (Text) *)
   | Number_Mobile_Work (** Work mobile number. (Text) *)
+
 
 (************************************************************************)
 (* Messages *)
@@ -728,6 +734,7 @@ struct
     _decode_multipart di multp_mess ems
 
 end
+
 
 (************************************************************************)
 (* Events *)

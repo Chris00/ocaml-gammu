@@ -55,7 +55,7 @@ typedef int gboolean;
 #endif
 
 #ifdef CAML_GAMMU_DEBUG
-# define LOCATION_STR "%s:%d In function '%s':\n"
+# define LOCATION_STR "DEBUG: %s:%d In function '%s':\n"
 # define LOCATION_ARGS __FILE__, __LINE__, __func__
 # define DEBUG(fmt, ...)                                                \
   do {                                                                  \

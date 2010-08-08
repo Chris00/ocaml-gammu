@@ -1,4 +1,3 @@
-(* TODO:?? Split the modules in mutiple files as C Gammu does ? *)
 (** Interface to the gammu library (libGammu) to manage data in your
     cell phone such as contacts, calendar or messages.
 
@@ -9,6 +8,7 @@
     NOTE: this library is not thread safe. *)
 
 val pointer_value : 'a -> int
+
 
 (************************************************************************)
 (** {2 Error handling} *)
@@ -273,6 +273,7 @@ val read_device : ?wait_for_reply:bool -> t -> int
 
     @param wait_for_reply whether to wait for some event (default true). *)
 
+
 (************************************************************************)
 (** {2 INI files} *)
 
@@ -315,6 +316,7 @@ module INI : sig
 (** @return value of the INI file entry. *)
 
 end
+
 
 (************************************************************************)
 (** {2 Security related operations with phone. } *)
@@ -448,6 +450,7 @@ sig
 
 end
 
+
 (************************************************************************)
 (** {2 Date and time} *)
 
@@ -482,6 +485,7 @@ sig
     @param timezone Whether to include time zone (default false). *)
 
 end
+
 
 (************************************************************************)
 (** {2 Memory} *)
@@ -823,6 +827,7 @@ module SMS : sig
     (default true). *)
 
 end
+
 
 (************************************************************************)
 (** {2 Events} *)
