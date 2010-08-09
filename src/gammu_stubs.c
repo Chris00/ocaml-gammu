@@ -982,6 +982,7 @@ static GSM_SMSMessage *GSM_SMSMessage_val(GSM_SMSMessage *sms, value vsms)
   value vtext = Field(vsms, 12);
   int length = Wosize_val(vother_numbers);
   int i;
+  DEBUG("Entering function. sms = %u", (int) sms);
 
   sms->ReplaceMessage = UCHAR_VAL(Field(vsms, 0));
   sms->RejectDuplicates = Bool_val(Field(vsms, 1));
@@ -1055,12 +1056,15 @@ static GSM_MultiSMSMessage *GSM_MultiSMSMessage_val(
 {
   int length = Wosize_val(vmulti_sms);;
   int i;
+  DEBUG("Entering function... multi_sms length = %d", length);
 
   /* We truncate the array if it's too big. TODO: issue a warning ? */
-  if (length > sizeof(multi_sms->SMS))
+  if (length > sizeof(multi_sms->SMS)) {
+    DEBUG("multi_sms too big, array truncated.");
     length = sizeof(multi_sms->SMS);
+  }
   for (i=0; i < length; i++)
-    GSM_SMSMessage_val(&(multi_sms->SMS[i]), Field(vmulti_sms, i));
+    GSM_SMSMessage_val(multi_sms->SMS + i, Field(vmulti_sms, i));
   multi_sms->Number = length;
 
   return multi_sms;
@@ -1319,19 +1323,26 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 {
   CAMLparam3(vdi, vsms, vems);
   CAMLlocal1(vmulti_sms);
+  DEBUG("Entering function...");
   GSM_MultiSMSMessage sms;
   GSM_MultiPartSMSInfo info;
   GSM_Debug_Info *di = GSM_Debug_Info_val(vdi);
 
+  DEBUG("Converting SMS.multi_sms from caml to C GSM_MultiSMSMessage");
   GSM_MultiSMSMessage_val(vsms, &sms);
+  
   if (!GSM_DecodeMultiPartSMS(di, &info, &sms, Bool_val(vems))) {
+    DEBUG("Decoding multi part SMS failed...");
     GSM_FreeMultiPartSMSInfo(&info);
     caml_gammu_raise_Error(ERR_COULD_NOT_DECODE);
   }
+  DEBUG("Decoding multi part SMS succeed. Convert info from C to caml value.");
   vmulti_sms = Val_GSM_MultiPartSMSInfo(&info);
 
+  DEBUG("Free GSM_MultiPartSMSInfo structure.");
   GSM_FreeMultiPartSMSInfo(&info);
 
+  DEBUG("Leaving function...");
   CAMLreturn(vmulti_sms);
 }
 

@@ -1,6 +1,6 @@
 (* Simple demo/test file that prints some informations and the first sms. *)
 (*#use "topfind";;
-  #load "../src/gammu.cma";;*)
+  #require "gammu";;*)
 open Gammu;;
 
 let debug_level = ref "nothing";;
@@ -85,5 +85,6 @@ let () =
   let s = make () in
   configure s;
   prepare_phone s;
-  let first_sms = SMS.get s ~folder:1 ~message_number:1 in
-  ignore(first_sms);;
+  let first_multi_sms = SMS.get s ~folder:1 ~message_number:1 in
+  let first_message = SMS.decode_multipart first_multi_sms in
+  ignore(first_message);;
