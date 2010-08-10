@@ -82,7 +82,7 @@ void caml_gammu_init();
 #define CPY_TRIM_STRING_VAL(dst, v)                        \
   do {                                                     \
     strncpy((char *) dst, String_val(v), sizeof(dst));     \
-    dst[sizeof(dst)] = '\0';                               \
+    dst[sizeof(dst) - 1] = '\0';                           \
   } while (0)
 
 /* signed or unsigned type char definition is not constant across versions.
@@ -385,7 +385,7 @@ value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone);
 /* Memory */
 
 #define GSM_MEMORYTYPE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_MEMORYTYPE(mt) Int_val(mt - 1)
+#define VAL_GSM_MEMORYTYPE(mt) Val_int(mt - 1)
 #define VAL_GSM_ENTRYTYPE(et) Val_int(et - 1)
 
 static value Val_GSM_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry);
