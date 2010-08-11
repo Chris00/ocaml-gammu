@@ -63,7 +63,7 @@ let prepare_phone s =
   and unlock_phone s =
     let sec_status = get_security_status s in
     (match sec_status with
-    | SEC_None -> print_string "SIM/Phone unlocked.\n"
+      SEC_None -> print_string "SIM/Phone unlocked.\n"
     | SEC_SecurityCode as c -> ask_user_code s c "Security"
     | SEC_Pin as c -> ask_user_code s c "PIN"
     | SEC_Pin2 as c -> ask_user_code s c "PIN2"
@@ -85,6 +85,27 @@ let () =
   let s = make () in
   configure s;
   prepare_phone s;
-  let first_multi_sms = SMS.get s ~folder:1 ~message_number:1 in
-  let first_message = SMS.decode_multipart first_multi_sms in
-  ignore(first_message);;
+  let multi_sms = SMS.get s ~folder:0 ~message_number:0 in
+  let sms = multi_sms.(0) in
+  print_string "==SMS==\n";
+  Printf.printf "Number: %s\n" sms.SMS.number;
+  Printf.printf "Date and time: %s\n"
+    (DateTime.os_date_time sms.SMS.date_time);
+  Printf.printf "Status : %s\n"
+    (match sms.SMS.state with
+      SMS.Sent -> "sent";
+    | SMS.Unsent -> "unsent";
+    | SMS.Read -> "read";
+    | SMS.Unread -> "unread");
+  print_string "Text : ";
+  if (sms.SMS.udh_header.SMS.udh = SMS.No_udh) then
+    (* There's no udh so text is raw in the sms message. *)
+    print_string sms.SMS.text
+  else begin
+    (* There's an udh so we have to decode the sms. *)
+    let multi_info = SMS.decode_multipart multi_sms in
+    Array.iter (fun info -> print_string info.SMS.buffer) multi_info.SMS.entries
+  end;
+  print_newline ();
+  disconnect s;;
+
