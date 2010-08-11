@@ -29,7 +29,6 @@
 
 val pointer_value : 'a -> int
 
-
 (************************************************************************)
 (** {2 Error handling} *)
 
@@ -636,7 +635,7 @@ module SMS : sig
     | MMSIndicatorLong
   and udh_header = {
     udh : udh;          (** UDH type. *)
-    text : string;      (** UDH text. *)
+    udh_text : string;  (** UDH text. *)
     id8bit : int;       (** 8-bit ID, when required (-1 otherwise). *)
     id16bit : int;      (** 16-bit ID, when required (-1 otherwise). *)
     part_number : int;  (** Number of current part. *)
@@ -656,9 +655,9 @@ module SMS : sig
     | Eight_bit                  (** 8-bit.  *)
 
   type message = {
-    replace_message : char;
+    replace : char; (* replace_message *)
     reject_duplicates : bool;
-    udh : udh_header;
+    udh_header : udh_header;
     number : string;
     other_numbers : string array;
     (* smsc : smsc;     (** NYI SMS Center *) *)
@@ -714,7 +713,7 @@ module SMS : sig
 
   type folder = {
     box : folder_box;     (** Whether it is inbox or outbox. *)
-    memory : memory_type; (** Where exactly it's saved. *)
+    folder_memory : memory_type; (** Where exactly it's saved. *)
     name : string;        (** Name of the folder. *)
   }
 
@@ -744,23 +743,23 @@ module SMS : sig
   val delete : t -> folder:int -> message_number:int -> unit
   (** Deletes SMS (SMS location and folder must be set). *)
 
-  (** Multipart SMS Information *)
+
   type multipart_info = {
     unicode_coding : bool;
     info_class : int;
     replace_message : char;
     unknown : bool;
     entries : info array;
-  } (** SMS information, like type, text, text properties, etc... *)
+  } (** Multipart SMS Information *)
   and info = {
-    id : part_type_id;
-    number : int;
+    id : encode_part_type_id;
+    nbr : int;
     (* ringtone : ringtone; (* NYI *)
        bitmap : multi_bitmap; (* NYI *)
        bookmark : wap_bookmark; (* NYI *)
        settings : wap_settings; (* NYI *)
-       mms_indicator : mms_indicator; (* NYI *) *)
-    phonebook : memory_entry;
+       mms_indicator : mms_indicator; (* NYI *)
+       phonebook : memory_entry; *)
     (* calendar : calendar_entry; (* NYI *)
        todo : todo_entry; (* NYI *)
        file : file; (* NYI *) *)
@@ -777,8 +776,8 @@ module SMS : sig
     underlined : bool;
     strikethrough : bool;
     ringtone_notes : int;
-  } (** ID during packing SMS for Smart Messaging 3.0, EMS and other *)
-  and part_type_id =
+  } (** SMS information, like type, text, text properties, etc... *)
+  and encode_part_type_id =
     | Text (** 1 text SMS. *)
     | ConcatenatedTextLong (** Contacenated SMS, when longer than 1 SMS. *)
     | ConcatenatedAutoTextLong (** Contacenated SMS, auto Default/Unicode
@@ -831,6 +830,7 @@ module SMS : sig
                                    colors *)
     | AlcatelSMSTemplateName
     | SiemensFile (** Siemens OTA  *)
+  (** ID during packing SMS for Smart Messaging 3.0, EMS and other *)
 
   val decode_multipart : ?debug:Debug.info -> ?ems:bool ->
     multi_sms -> multipart_info

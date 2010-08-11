@@ -79,15 +79,23 @@ void caml_gammu_init();
 /* Utils functions and macros. */
 
 /* Copy string represented by the value v to dst, and trim if too long. */
-#define CPY_TRIM_STRING_VAL(dst, v)                        \
-  do {                                                     \
-    strncpy((char *) dst, String_val(v), sizeof(dst));     \
-    dst[sizeof(dst) - 1] = '\0';                           \
+#define CPY_TRIM_STRING_VAL(dst, v)                       \
+  do {                                                    \
+    strncpy(dst, String_val(v), sizeof(dst));             \
+    dst[sizeof(dst) - 1] = '\0';                          \
   } while (0)
 
-/* signed or unsigned type char definition is not constant across versions.
-   TODO: use version checking instead of that bruteforce way. */
-#define CAML_COPY_SUSTRING(str) caml_copy_string((char *) str)
+/* Copy string represented by the value v, unicode encoded, to dst, and trim
+ * if too long. */
+#define CPY_TRIM_USTRING_VAL(dst, v)                            \
+  do {                                                          \
+    EncodeUnicode(dst, String_val(v), (sizeof(dst) - 1) / 2);   \
+    dst[sizeof(dst) - 1] = '\0';                                \
+  } while (0)
+
+/* Consider every gammu strings as unicode encoded.  Decode unicode string
+   (unsigned char *) */
+#define CAML_COPY_USTRING(str) caml_copy_string(DecodeUnicodeString(str))
 
 #define CHAR_VAL(v) ((char) Int_val(v))
 #define VAL_CHAR(c) (Val_int(c))
@@ -321,7 +329,7 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
     char val[buf_length];                                               \
     error = GSM_Get##name(GSM_STATEMACHINE_VAL(s), val);                \
     caml_gammu_raise_Error(error);                                      \
-    CAMLreturn(CAML_COPY_SUSTRING(val));                                \
+    CAMLreturn(caml_copy_string(val));                                  \
   }
 
 #define GSM_TYPE_GET_PROTOTYPE(name)                                    \

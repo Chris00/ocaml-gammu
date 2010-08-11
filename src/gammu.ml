@@ -556,7 +556,7 @@ struct
     | MMSIndicatorLong
   and udh_header = {
     udh : udh;
-    text : string;
+    udh_text : string;
     id8bit : int;
     id16bit : int;
     part_number : int;
@@ -576,9 +576,9 @@ struct
     | Eight_bit
 
   type message = {
-    replace_message : char;
+    replace : char;
     reject_duplicates : bool;
-    udh : udh_header;
+    udh_header : udh_header;
     number : string;
     other_numbers : string array;
     (* smsc : smsc; (* NYI *) *)
@@ -617,7 +617,7 @@ struct
 
   type folder = {
     box : folder_box;
-    memory : memory_type;
+    folder_memory : memory_type;
     name : string;
   }
 
@@ -649,14 +649,16 @@ struct
     entries : info array;
   }
   and info = {
-    id : part_type_id;
-    number : int;
+    id : encode_part_type_id;
+    nbr : int;
+    (* TODO: use <encode_part_type_id> of ... as [id] and handle the following
+       fields used by the [id] type. *)
     (* ringtone : ringtone; (* NYI *)
        bitmap : multi_bitmap; (* NYI *)
        bookmark : wap_bookmark; (* NYI *)
        settings : wap_settings; (* NYI *)
-       mms_indicator : mms_indicator; (* NYI *) *)
-    phonebook : memory_entry;
+       mms_indicator : mms_indicator; (* NYI *)
+       phonebook : memory_entry; *)
     (* calendar : calendar_entry; (* NYI *)
        todo : todo_entry; (* NYI *)
        file : file; (* NYI *) *)
@@ -674,13 +676,13 @@ struct
     strikethrough : bool;
     ringtone_notes : int;
   }
-  and part_type_id =
-    | Text
-    | ConcatenatedTextLong
-    | ConcatenatedAutoTextLong
-    | ConcatenatedTextLong16bit
-    | ConcatenatedAutoTextLong16bit
-    | NokiaProfileLong
+  and encode_part_type_id =
+    | Text (* of Nothing *)
+    | ConcatenatedTextLong (* of Nothing *)
+    | ConcatenatedAutoTextLong (* of Nothing *)
+    | ConcatenatedTextLong16bit (* of Nothing *)
+    | ConcatenatedAutoTextLong16bit (* of Nothing *)
+    | NokiaProfileLong (* of multi_bitmap *)
     | NokiaPictureImageLong
     | NokiaScreenSaverLong
     | NokiaRingtone
@@ -691,7 +693,7 @@ struct
     | NokiaWAPBookmarkLong
     | NokiaWAPSettingsLong
     | NokiaMMSSettingsLong
-    | NokiaVCARD10Long
+    | NokiaVCARD10Long (* of mem_entry (* Phonebook *) *)
     | NokiaVCARD21Long
     | NokiaVCALENDAR10Long
     | NokiaVTODOLong
