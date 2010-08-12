@@ -1,6 +1,4 @@
 (* Simple demo/test file that prints some informations and the first sms. *)
-(*#use "topfind";;
-  #require "gammu";;*)
 open Gammu;;
 
 let debug_level = ref "nothing";;

@@ -491,7 +491,10 @@ static value Val_GSM_Call(GSM_Call *call);
   value caml_gammu_GSM_SetIncoming##name(value s, value venable)        \
   {                                                                     \
     CAMLparam2(s, venable);                                             \
-    GSM_SetIncoming##name(GSM_STATEMACHINE_VAL(s), Bool_val(venable));  \
+    GSM_Error error;                                                    \
+    error = GSM_SetIncoming##name(GSM_STATEMACHINE_VAL(s),              \
+                                  Bool_val(venable));                   \
+    caml_gammu_raise_Error(error);                                      \
     CAMLreturn(Val_unit);                                               \
   }                                                                     \
   static void incoming_##name##_callback(GSM_StateMachine *sm,          \
