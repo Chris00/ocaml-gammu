@@ -40,8 +40,8 @@ CAMLexport
 value caml_gammu_pointer_value(value v)
 {
   CAMLparam1(v);
-  DEBUG("value = %u", (uint) v);
-  CAMLreturn(Val_int((int) v));
+  DEBUG("value = %ld", (long) v);
+  CAMLreturn(Val_long((long) v));
 }
 
 
@@ -52,12 +52,40 @@ CAMLexport
 void caml_gammu_init()
 {
   global_debug = GSM_GetGlobalDebug();
+  /* Pre-compute hashs for variant types with arguments. */
+  caml_hash_Some = caml_hash_variant("Some");;
+  caml_hash_RemoteEnded = caml_hash_variant("RemoteEnded");;
+  /* Initialize gettext. */
   GSM_InitLocales(NULL);
 }
 
 
 /************************************************************************/
 /* Utils functions and macros. */
+
+static value option_val(value voption, gboolean *some)
+{
+  CAMLparam1(voption);
+  if (Is_long(voption)) {
+    *some = FALSE;
+    return 0;
+  }
+
+  *some = TRUE;
+  CAMLreturn(Field(voption, 1));
+}
+
+static value val_some(value vsome)
+{
+  CAMLparam1(vsome);
+  CAMLlocal1(res);
+
+  res = caml_alloc(2, 0);
+  Store_field(res, 0, caml_hash_Some);
+  Store_field(res, 1, vsome);
+
+  CAMLreturn(res);
+}
 
 #if VERSION_NUM < 12792
 static gboolean is_true(const char *str)
@@ -116,7 +144,6 @@ static GSM_Debug_Info *GSM_Debug_Info_val(value vdi)
 {
   if ((GSM_Debug_Info *) vdi == global_debug)
     return global_debug;
-
   return GSM_GetDebug(GSM_STATEMACHINE_VAL(vdi));
 }
 
@@ -244,9 +271,11 @@ static void caml_gammu_state_machine_finalize(value s)
 
   GSM_FreeStateMachine(state_machine->sm);
   /* Allow GC to collect the callback closure value now. */
-  if (state_machine->incoming_sms_callback)
-    caml_remove_global_root(&(state_machine->incoming_sms_callback));
-
+  if (state_machine->incoming_SMS_callback)
+    caml_remove_global_root(&(state_machine->incoming_SMS_callback));
+  if (state_machine->incoming_Call_callback)
+    caml_remove_global_root(&(state_machine->incoming_Call_callback));
+  
   free(state_machine);
 }
 
@@ -285,8 +314,8 @@ static value Val_GSM_Config(const GSM_Config *config)
 /* Set values of config according to those from vconfig. */
 static void GSM_Config_val(GSM_Config *config, value vconfig)
 {
-  CPY_TRIM_STRING_VAL(config->Model, String_val(Field(vconfig, 0)));
-  CPY_TRIM_STRING_VAL(config->DebugLevel, String_val(Field(vconfig, 1)));
+  CPY_TRIM_STRING_VAL(config->Model, Field(vconfig, 0));
+  CPY_TRIM_STRING_VAL(config->DebugLevel, Field(vconfig, 1));
   config->Device = String_val(Field(vconfig, 2));
   config->Connection = String_val(Field(vconfig, 3));
   #if VERSION_NUM >= 12792
@@ -302,11 +331,11 @@ static void GSM_Config_val(GSM_Config *config, value vconfig)
   #endif
   config->DebugFile = String_val(Field(vconfig, 6));
   config->UseGlobalDebugFile = Bool_val(Field(vconfig, 8));
-  CPY_TRIM_STRING_VAL(config->TextReminder, String_val(Field(vconfig, 9)));
-  CPY_TRIM_STRING_VAL(config->TextMeeting, String_val(Field(vconfig, 10)));
-  CPY_TRIM_STRING_VAL(config->TextCall, String_val(Field(vconfig, 11)));
-  CPY_TRIM_STRING_VAL(config->TextBirthday, String_val(Field(vconfig, 12)));
-  CPY_TRIM_STRING_VAL(config->TextMemo, String_val(Field(vconfig, 13)));
+  CPY_TRIM_STRING_VAL(config->TextReminder, Field(vconfig, 9));
+  CPY_TRIM_STRING_VAL(config->TextMeeting, Field(vconfig, 10));
+  CPY_TRIM_STRING_VAL(config->TextCall, Field(vconfig, 11));
+  CPY_TRIM_STRING_VAL(config->TextBirthday, Field(vconfig, 12));
+  CPY_TRIM_STRING_VAL(config->TextMemo, Field(vconfig, 13));
 }
 
 CAMLexport
@@ -351,7 +380,8 @@ value caml_gammu_GSM_AllocStateMachine(value vunit)
 
   state_machine->sm = sm;
   state_machine->log_function = 0;
-  state_machine->incoming_sms_callback = 0;
+  state_machine->incoming_SMS_callback = 0;
+  state_machine->incoming_Call_callback = 0;
 
   res = alloc_custom(&caml_gammu_state_machine_ops,
                      sizeof(State_Machine *), 1, 100);
@@ -421,15 +451,14 @@ value caml_gammu_push_config(value s, value vcfg)
   int cfg_num = GSM_GetConfigNum(sm);
   GSM_Config *dest_cfg = GSM_GetConfig(sm, cfg_num);
 
-  if (dest_cfg != NULL)
-    {
+  if (dest_cfg != NULL) {
       GSM_Config_val(dest_cfg, vcfg);
       GSM_SetConfigNum(sm, cfg_num + 1);
-    }
-  else
+  } else {
     /* To many configs (more than MAX_CONFIG_NUM+1 (=6),
        unfortunately this const is not exported) */
     caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
+  }
 
   CAMLreturn(Val_unit);
 }
@@ -727,7 +756,7 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality)
   CAMLreturn(res);
 }
 
-GSM_TYPE_GET(BatteryCharge)
+CAML_GAMMU_GSM_TYPE_GET(BatteryCharge)
 
 CAMLexport
 value caml_gammu_GSM_GetFirmWare(value s)
@@ -750,15 +779,15 @@ value caml_gammu_GSM_GetFirmWare(value s)
   CAMLreturn(res);
 }
 
-GSM_STR_GET(Hardware, BUFFER_LENGTH)
+CAML_GAMMU_GSM_STR_GET(Hardware, BUFFER_LENGTH)
 
-GSM_STR_GET(IMEI, GSM_MAX_IMEI_LENGTH + 1)
+CAML_GAMMU_GSM_STR_GET(IMEI, GSM_MAX_IMEI_LENGTH + 1)
 
-GSM_STR_GET(ManufactureMonth, BUFFER_LENGTH)
+CAML_GAMMU_GSM_STR_GET(ManufactureMonth, BUFFER_LENGTH)
 
-GSM_STR_GET(Manufacturer, GSM_MAX_MANUFACTURER_LENGTH + 1)
+CAML_GAMMU_GSM_STR_GET(Manufacturer, GSM_MAX_MANUFACTURER_LENGTH + 1)
 
-GSM_STR_GET(Model, GSM_MAX_MODEL_LENGTH + 1)
+CAML_GAMMU_GSM_STR_GET(Model, GSM_MAX_MODEL_LENGTH + 1)
 
 CAMLexport
 value caml_gammu_GSM_GetModelInfo(value s)
@@ -770,11 +799,11 @@ value caml_gammu_GSM_GetModelInfo(value s)
   CAMLreturn(Val_GSM_PhoneModel(phone_model));
 }
 
-GSM_TYPE_GET(NetworkInfo)
+CAML_GAMMU_GSM_TYPE_GET(NetworkInfo)
 
-GSM_STR_GET(ProductCode, BUFFER_LENGTH)
+CAML_GAMMU_GSM_STR_GET(ProductCode, BUFFER_LENGTH)
 
-GSM_TYPE_GET(SignalQuality)
+CAML_GAMMU_GSM_TYPE_GET(SignalQuality)
 
 
 /************************************************************************/
@@ -1003,8 +1032,8 @@ static GSM_SMSMessage *GSM_SMSMessage_val(GSM_SMSMessage *sms, value vsms)
   sms->InboxFolder = Bool_val(Field(vsms, 8));
   sms->Length = caml_string_length(vtext);
   sms->State = GSM_SMS_STATE_VAL(Field(vsms, 9));
-  CPY_TRIM_USTRING_VAL(sms->Name, String_val(Field(vsms, 10)));
-  CPY_TRIM_USTRING_VAL(sms->Text, String_val(vtext));
+  CPY_TRIM_USTRING_VAL(sms->Name, Field(vsms, 10));
+  CPY_TRIM_USTRING_VAL(sms->Text, vtext);
   sms->PDU = GSM_SMSMESSAGETYPE_VAL(Field(vsms, 12));
   sms->Coding = GSM_CODING_TYPE_VAL(Field(vsms, 13));
   GSM_DateTime_val(&(sms->DateTime), Field(vsms, 14));
@@ -1144,7 +1173,7 @@ static GSM_OneSMSFolder *GSM_OneSMSFolder_val(value vfolder)
   folder->InboxFolder = Bool_val(Field(vfolder, 0));
   folder->OutboxFolder = Bool_val(Field(vfolder, 1));
   folder->Memory = GSM_MEMORYTYPE_VAL(Field(vfolder, 2));
-  CPY_TRIM_STRING_VAL(folder->Name, String_val(Field(vfolder, 3)));
+  CPY_TRIM_STRING_VAL(folder->Name, Field(vfolder, 3));
   return folder;
 } */
 
@@ -1346,42 +1375,86 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 
 
 /************************************************************************/
-/* Events */
+/* Calls */
 
-static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
-                                  void *user_data)
+static GSM_CallStatus GSM_CallStatus_val(value vcall_status, int *arg_int1)
+{
+  int ret = 0;
+  value hash;
+
+  /* vcall_status is a variant type maybe parameterized. It is constant if it
+   * is an immediate integer. */
+  if (Is_long(vcall_status)) {
+    arg_int1 = 0;
+    ret = Int_val(vcall_status);
+    if (ret > 3)
+      ret += 2;
+    else
+      ret++;
+  } else {
+    hash = Field(vcall_status, 0);
+    if (hash == caml_hash_RemoteEnded) {
+      *arg_int1 = Int_val(Field(vcall_status, 1));
+      ret = 5;
+    }
+  }
+
+  return ret;
+}
+
+static value Val_GSM_CallStatus(GSM_CallStatus call_status, int *arg_int1)
 {
   CAMLparam0();
-  CAMLlocal1(f);
+  CAMLlocal1(res);
 
-  f = *((value *) user_data);
-  caml_callback(f, Val_GSM_SMSMessage(&sms));
+  if (call_status < 5) {
+    res = Val_int(call_status - 1);
+  } else if (call_status == 5) {
+    /* Construct variant type with argument. */
+    res = caml_alloc(2, 0);
+    Store_field(res, 0, caml_hash_RemoteEnded);
+    Store_field(res, 1, Val_int(arg_int1));
+  } else {
+    res = Val_int(call_status - 2);
+  }
 
-  CAMLreturn0;
+  CAMLreturn(res);
 }
 
-CAMLexport
-value caml_gammu_GSM_SetIncomingSMS(value s, value vf)
+
+ /*type call = {
+    status : status;
+    call_id : int option;
+    phone_number : string;
+  }*/
+
+static GSM_Call *GSM_Call_val(GSM_Call *call, value vcall)
 {
-  CAMLparam2(s, vf);
-  State_Machine *state_machine = STATE_MACHINE_VAL(s);
 
-  REGISTER_SM_GLOBAL_ROOT(state_machine, incoming_sms_callback, vf);
-  GSM_SetIncomingSMSCallback(state_machine->sm,
-                             incoming_sms_callback,
-                             (void *) &(state_machine->incoming_sms_callback));
+  call->Status = GSM_CallStatus_val(Field(vcall, 0), &(call->StatusCode));
+  call->CallID = option_val(Field(vcall, 1), &(call->CallIDAvailable));
+  CPY_TRIM_USTRING_VAL(call->PhoneNumber, Field(vcall, 3));
 
-  CAMLreturn(Val_unit);
+  return call;
 }
 
-CAMLexport
-value caml_gammu_disable_incoming_sms(value s)
+static value Val_GSM_Call(GSM_Call *call)
 {
-  CAMLparam1(s);
-  State_Machine *state_machine = STATE_MACHINE_VAL(s);
+  CAMLparam0();
+  CAMLlocal1(res);
 
-  UNREGISTER_SM_GLOBAL_ROOT(state_machine, incoming_sms_callback);
-  GSM_SetIncomingSMSCallback(state_machine->sm, NULL, NULL);
+  res = caml_alloc(4, 0);
+  Store_field(res, 0, Val_GSM_CallStatus(call->Status, &(call->StatusCode)));
+  Store_field(res, 1, call->CallIDAvailable ? val_some(call->CallID) : VAL_NONE);
+  Store_field(res, 2, CAML_COPY_USTRING(call->PhoneNumber));
 
-  CAMLreturn(Val_unit);
+  CAMLreturn(res);
 }
+
+
+/************************************************************************/
+/* Events */
+
+CAML_GAMMU_GSM_SETINCOMING(SMS, GSM_SMSMessage)
+
+CAML_GAMMU_GSM_SETINCOMING(Call, GSM_Call)

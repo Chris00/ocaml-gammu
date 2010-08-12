@@ -846,12 +846,53 @@ module SMS : sig
 
 end
 
+(************************************************************************)
+(** {2 Calls} *)
+
+(** Call entries manipulation. *)
+module Call : sig
+
+  type call = {
+    status : status;       (** Call status. *)
+    call_id : int option;  (** Call ID, None when not available. *)
+    number : string; (** Remote phone number. *)
+  } (** Call information. *)
+  and status =
+    | Incoming    (** Somebody calls to us. *)
+    | Outgoing    (** We call somewhere. *)
+    | Started     (** Call started. *)
+    | Ended       (** End of call from unknown side. *)
+    | RemoteEnded of int (** End of call from remote side.
+                             Parameter is status code. *)
+    | LocalEnded  (** End of call from our side. *)
+    | Established (** Call established. Waiting for answer or dropping. *)
+    | Held        (** Call held. *)
+    | Resumed     (** Call resumed. *)
+    | Switched    (** We switch to call. *)
+  (** Status of call. *)
+
+end
 
 (************************************************************************)
 (** {2 Events} *)
 
-val incoming_sms : t -> (SMS.message -> unit) -> unit
+val incoming_sms : t -> ?enable:bool -> (SMS.message -> unit) -> unit
 (** [incoming_sms s f] register [f] as callback function in the event of an
-    incoming SMS. *)
+    incoming SMS.
 
-val disable_incoming_sms : t -> unit
+    @param enable whether to enable notifications or not. (default = true) *)
+
+val enable_incoming_sms : t -> bool -> unit
+(** [enable_incoming_sms t enable] enable incoming sms events or not,
+    according to [enable]. *)
+
+val incoming_call : t -> ?enable:bool -> (Call.call -> unit) -> unit
+(** [incoming_call s f] register [f] as callback function in the event of
+    incoming call.
+
+    @param enable whether to enable notifications or not. (default = true) *)
+
+val enable_incoming_call : t -> bool -> unit
+(** [enable_incoming_call t enable] enable incoming call events or not,
+    according to [enable]. *)
+

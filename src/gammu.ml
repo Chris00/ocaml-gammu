@@ -740,9 +740,51 @@ end
 
 
 (************************************************************************)
+(* Calls *)
+
+module Call =
+struct
+
+  type call = {
+    status : status;
+    call_id : int option;
+    number : string;
+  }
+  and status =
+    | Incoming
+    | Outgoing
+    | Started
+    | Ended
+    | RemoteEnded of int
+    | LocalEnded
+    | Established
+    | Held
+    | Resumed
+    | Switched
+
+end
+
+
+(************************************************************************)
 (* Events *)
 
-external incoming_sms : t -> (SMS.message -> unit) -> unit
+external enable_incoming_sms : t -> bool -> unit
   = "caml_gammu_GSM_SetIncomingSMS"
-external disable_incoming_sms : t -> unit
-  = "caml_gammu_disable_incoming_sms"
+
+external _incoming_sms : t -> (SMS.message -> unit) -> unit
+  = "caml_gammu_GSM_SetIncomingSMSCallback"
+
+let incoming_sms s ?(enable=true) f =
+  _incoming_sms s f;
+  enable_incoming_sms s enable
+
+external enable_incoming_call : t -> bool -> unit
+  = "caml_gammu_GSM_SetIncomingCall"
+
+external _incoming_call : t -> (Call.call -> unit) -> unit
+  = "caml_gammu_GSM_SetIncomingCallCallback"
+
+let incoming_call s ?(enable=true) f =
+  _incoming_call s f;
+  enable_incoming_call s enable
+

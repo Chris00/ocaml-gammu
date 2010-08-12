@@ -71,6 +71,9 @@ typedef int gboolean;
 /* Init */
 GSM_Debug_Info *global_debug;
 
+value caml_hash_Some;
+value caml_hash_RemoteEnded;
+
 CAMLexport
 void caml_gammu_init();
 
@@ -93,14 +96,17 @@ void caml_gammu_init();
     dst[sizeof(dst) - 1] = '\0';                                \
   } while (0)
 
-/* Consider every gammu strings as unicode encoded.  Decode unicode string
-   (unsigned char *) */
+/* Decode unicode strings ((unsigned char *) in gammu) to (char *). */
 #define CAML_COPY_USTRING(str) caml_copy_string(DecodeUnicodeString(str))
 
 #define CHAR_VAL(v) ((char) Int_val(v))
 #define VAL_CHAR(c) (Val_int(c))
 #define UCHAR_VAL(v) ((unsigned char) Int_val(v))
 #define VAL_UCHAR(c) (Val_int(c))
+
+static value option_val(value voption, gboolean *some);
+#define VAL_NONE (Val_int(0))
+static value val_some(value vsome);
 
 #if VERSION_NUM < 12792
 static gboolean is_true(const char *str)
@@ -187,7 +193,8 @@ value caml_gammu_INI_GetValue(value vfile_info, value vsection, value vkey,
 typedef struct {
   GSM_StateMachine *sm;
   value log_function;
-  value incoming_sms_callback;
+  value incoming_SMS_callback;
+  value incoming_Call_callback;
 } State_Machine;
 
 #define STATE_MACHINE_VAL(v) (*((State_Machine **) Data_custom_val(v)))
@@ -318,11 +325,11 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network);
 
 static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
 
-#define GSM_STR_GET_PROTOTYPE(name, buf_length)                         \
+#define CAML_GAMMU_GSM_STR_GET_PROTOTYPE(name, buf_length)              \
   CAMLexport                                                            \
   value caml_gammu_GSM_Get##name(value s)
-#define GSM_STR_GET(name, buf_length)                                   \
-  GSM_STR_GET_PROTOTYPE(name, buf_length)                               \
+#define CAML_GAMMU_GSM_STR_GET(name, buf_length)                        \
+  CAML_GAMMU_GSM_STR_GET_PROTOTYPE(name, buf_length)                    \
   {                                                                     \
     CAMLparam1(s);                                                      \
     GSM_Error error;                                                    \
@@ -332,11 +339,11 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
     CAMLreturn(caml_copy_string(val));                                  \
   }
 
-#define GSM_TYPE_GET_PROTOTYPE(name)                                    \
+#define CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(name)                         \
   CAMLexport                                                            \
   value caml_gammu_GSM_Get##name(value s)
-#define GSM_TYPE_GET(name)                                              \
-  GSM_TYPE_GET_PROTOTYPE(name)                                          \
+#define CAML_GAMMU_GSM_TYPE_GET(name)                                   \
+  CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(name)                               \
   {                                                                     \
     CAMLparam1(s);                                                      \
     GSM_##name res;                                                     \
@@ -344,29 +351,29 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
     CAMLreturn(Val_GSM_##name(&res));                                   \
   }
 
-GSM_TYPE_GET_PROTOTYPE(BatteryCharge);
+CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(BatteryCharge);
 
 CAMLexport
 value caml_gammu_GSM_GetFirmWare(value s);
 
-GSM_STR_GET_PROTOTYPE(Hardware, BUFFER_LENGTH);
+CAML_GAMMU_GSM_STR_GET_PROTOTYPE(Hardware, BUFFER_LENGTH);
 
-GSM_STR_GET_PROTOTYPE(IMEI, GSM_MAX_IMEI_LENGTH + 1);
+CAML_GAMMU_GSM_STR_GET_PROTOTYPE(IMEI, GSM_MAX_IMEI_LENGTH + 1);
 
-GSM_STR_GET_PROTOTYPE(ManufactureMonth, BUFFER_LENGTH);
+CAML_GAMMU_GSM_STR_GET_PROTOTYPE(ManufactureMonth, BUFFER_LENGTH);
 
-GSM_STR_GET_PROTOTYPE(Manufacturer, GSM_MAX_MANUFACTURER_LENGTH + 1);
+CAML_GAMMU_GSM_STR_GET_PROTOTYPE(Manufacturer, GSM_MAX_MANUFACTURER_LENGTH + 1);
 
-GSM_STR_GET_PROTOTYPE(Model, GSM_MAX_MODEL_LENGTH + 1);
+CAML_GAMMU_GSM_STR_GET_PROTOTYPE(Model, GSM_MAX_MODEL_LENGTH + 1);
 
 CAMLexport
 value caml_gammu_GSM_GetModelInfo(value s);
 
-GSM_TYPE_GET_PROTOTYPE(NetworkInfo);
+CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(NetworkInfo);
 
-GSM_STR_GET_PROTOTYPE(ProductCode, BUFFER_LENGTH);
+CAML_GAMMU_GSM_STR_GET_PROTOTYPE(ProductCode, BUFFER_LENGTH);
 
-GSM_TYPE_GET_PROTOTYPE(SignalQuality);
+CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(SignalQuality);
 
 
 /************************************************************************/
@@ -456,15 +463,63 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 
 
 /************************************************************************/
+/* Calls */
+
+static GSM_CallStatus GSM_CallStatus_val(value vcall_status, int *param_int1);
+
+static value Val_GSM_CallStatus(GSM_CallStatus call_status, int *param_int1);
+
+static GSM_Call *GSM_Call_val(GSM_Call *call, value vcall);
+
+static value Val_GSM_Call(GSM_Call *call);
+
+
+/************************************************************************/
 /* Events */
 
-static void incoming_sms_callback(GSM_StateMachine *sm, GSM_SMSMessage sms,
-                                  void *user_data);
+#define CAML_GAMMU_GSM_SETINCOMING_PROTOTYPES(name, type)               \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_SetIncoming##name(value s, value venable);       \
+  static void incoming_##name##_callback(GSM_StateMachine *sm,          \
+                                         type t,                        \
+                                         void *user_data);              \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_SetIncoming##name##Callback(value s, value vf)
 
-CAMLexport
-value caml_gammu_GSM_SetIncomingSMS(value s, value vf);
+#define CAML_GAMMU_GSM_SETINCOMING(name, type)                          \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_SetIncoming##name(value s, value venable)        \
+  {                                                                     \
+    CAMLparam2(s, venable);                                             \
+    GSM_SetIncoming##name(GSM_STATEMACHINE_VAL(s), Bool_val(venable));  \
+    CAMLreturn(Val_unit);                                               \
+  }                                                                     \
+  static void incoming_##name##_callback(GSM_StateMachine *sm,          \
+                                         type t,                        \
+                                         void *user_data)               \
+  {                                                                     \
+    CAMLparam0();                                                       \
+    CAMLlocal1(f);                                                      \
+    f = *((value *) user_data);                                         \
+    caml_callback(f, Val_##type(&t));                                   \
+    CAMLreturn0;                                                        \
+  }                                                                     \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_SetIncoming##name##Callback(value s, value vf)   \
+  {                                                                     \
+    CAMLparam2(s, vf);                                                  \
+    State_Machine *state_machine = STATE_MACHINE_VAL(s);                \
+    void *user_data = (void *) &(state_machine->incoming_##name##_callback); \
+    REGISTER_SM_GLOBAL_ROOT(state_machine, incoming_##name##_callback, vf); \
+    GSM_SetIncoming##name##Callback(state_machine->sm,                  \
+                                    incoming_##name##_callback,         \
+                                    user_data);                         \
+    CAMLreturn(Val_unit);                                               \
+  }
 
-CAMLexport
-value caml_gammu_disable_incoming_sms(value s);
+CAML_GAMMU_GSM_SETINCOMING_PROTOTYPES(SMS, GSM_SMSMessage);
+
+CAML_GAMMU_GSM_SETINCOMING_PROTOTYPES(Call, GSM_Call);
+
 
 #endif /* __GAMMU_STUBS_H__ */
