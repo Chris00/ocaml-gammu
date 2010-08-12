@@ -1,4 +1,4 @@
-OCAMLPACKS = gammu
+OCAMLPACKS = gammu unix
 OCAMLC_FLAGS = -dtypes -g
 OCAMLOPT_FLAGS = 
 
