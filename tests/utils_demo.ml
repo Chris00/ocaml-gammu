@@ -3,8 +3,8 @@ open Gammu
 let debug_level = ref "nothing";;
 let connection = ref "at";;
 let device = ref "/dev/ttyUSB0";;
-let folder = ref 0;;
-let message_number = ref 0;;
+let folder = ref 1;;
+let message_number = ref 1;;
 
 let parse_args () =
   let args = [
