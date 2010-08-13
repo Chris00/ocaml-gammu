@@ -707,10 +707,15 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
   CAMLlocal1(res);
 
   res = caml_alloc(9, 0);
+#if VERSION_NUM < 12792
+  Store_field(res, 0, CAML_COPY_USTRING(network->CID));
+  Store_field(res, 3, CAML_COPY_USTRING(network->LAC));
+#else
   Store_field(res, 0, caml_copy_string(network->CID));
+  Store_field(res, 3, caml_copy_string(network->LAC));
+#endif
   Store_field(res, 1, caml_copy_string(network->NetworkCode));
   Store_field(res, 2, VAL_GSM_NETWORKINFO_STATE(network->State));
-  Store_field(res, 3, caml_copy_string(network->LAC));
   Store_field(res, 4, CAML_COPY_USTRING(network->NetworkName));
   /* Some fields weren't present yet in older versions, give them unknown
      values */
@@ -724,9 +729,9 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
   Store_field(res, 7, VAL_GSM_NETWORKINFO_STATE(network->PacketState));
   Store_field(res, 8, caml_copy_string(network->PacketLAC));
   #else
-  Store_field(res, 6, CAML_COPY_USTRING("Unknown"));
+  Store_field(res, 6, caml_copy_string("Unknown"));
   Store_field(res, 7, Val_int(4) /* network_state = Unknown */);
-  Store_field(res, 8, CAML_COPY_USTRING("Unknown"));
+  Store_field(res, 8, caml_copy_string("Unknown"));
   #endif
 
   CAMLreturn(res);

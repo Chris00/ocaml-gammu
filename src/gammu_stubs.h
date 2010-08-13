@@ -109,8 +109,8 @@ static value option_val(value voption, gboolean *some);
 static value val_some(value vsome);
 
 #if VERSION_NUM < 12792
-static gboolean is_true(const char *str)
-static char *yesno_bool(gboolean b)
+static gboolean is_true(const char *str);
+static char *yesno_bool(gboolean b);
 #endif
 
 
