@@ -3,6 +3,8 @@ open Gammu
 let debug_level = ref "nothing";;
 let connection = ref "at";;
 let device = ref "/dev/ttyUSB0";;
+let folder = ref 0;;
+let message_number = ref 0;;
 
 let parse_args () =
   let args = [
@@ -12,7 +14,11 @@ let parse_args () =
     ("--connection", Arg.Set_string connection,
      "<connection_type> Set connection/protocol type (defaults to \"at\").");
     ("--device", Arg.Set_string device,
-     "<device> Set device file (defaults to \"/dev/ttyUSB0\").");
+     "<device> Set device file (defaults to \"/dev/ttyUSB0\")."); 
+    ("--folder", Arg.Set_int folder,
+     "<connection_type> Set folder location (default = 1).");
+    ("--message-number", Arg.Set_int message_number,
+     "<connection_type> Set message number (default = 1).");
   ] in
   let anon _ = raise (Arg.Bad "No anonymous arguments.") in
   Arg.parse args anon "Usage:";;
@@ -58,7 +64,11 @@ let prepare_phone s =
       flush stdout;
       ask_user_code s code_type code_type_name;
   and unlock_phone s =
-    let sec_status = get_security_status s in
+    let sec_status =
+      try
+        get_security_status s
+      with Error UNKNOWNRESPONSE -> SEC_None
+    in
     (match sec_status with
       SEC_None -> print_string "SIM/Phone unlocked.\n"
     | SEC_SecurityCode as c -> ask_user_code s c "Security"

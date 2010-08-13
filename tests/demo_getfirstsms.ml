@@ -7,7 +7,8 @@ let () =
   let s = make () in
   configure s;
   prepare_phone s;
-  let multi_sms = SMS.get s ~folder:0 ~message_number:0 in
+  let multi_sms = SMS.get s
+    ~folder:!folder ~message_number:!message_number in
   let sms = multi_sms.(0) in
   print_string "==SMS==\n";
   Printf.printf "Number: %s\n" sms.SMS.number;
