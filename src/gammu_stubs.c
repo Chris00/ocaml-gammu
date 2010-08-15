@@ -653,7 +653,7 @@ static value Val_GSM_BatteryCharge(GSM_BatteryCharge *battery_charge)
   Store_field(res, 7, Val_int(battery_charge->PhoneCurrent));
   Store_field(res, 8, Val_int(battery_charge->BatteryTemperature));
   Store_field(res, 9, Val_int(battery_charge->PhoneTemperature));
-
+  
   CAMLreturn(res);
 }
 
@@ -1234,8 +1234,10 @@ value caml_gammu_GSM_GetSMSStatus(value s)
 {
   CAMLparam1(s);
   GSM_SMSMemoryStatus status;
-
-  GSM_GetSMSStatus(GSM_STATEMACHINE_VAL(s), &status);
+  GSM_Error error;
+  
+  error = GSM_GetSMSStatus(GSM_STATEMACHINE_VAL(s), &status);
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_GSM_SMSMemoryStatus(&status));
 }

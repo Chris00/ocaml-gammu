@@ -311,7 +311,7 @@ value caml_gammu_GSM_GetSecurityStatus(value s);
 #define CHARGESTATE_VAL(v) (Int_val(v) + 1)
 #define VAL_GSM_CHARGESTATE(cs) Val_int(cs - 1)
 #define GSM_BATTERYTYPE_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_BATTERYTYPE(bt) Val_int(bt - 1)
+#define VAL_GSM_BATTERYTYPE(bt) Val_int(bt)
 #define GSM_GPRS_STATE_VAL(v) (Int_val(v) + 1)
 #define VAL_GSM_GPRS_STATE(gprss) Val_int(gprss - 1)
 #define GSM_NETWORKINFO_STATE_VAL(v) (Int_val(v) + 1)
@@ -333,9 +333,10 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
   {                                                                     \
     CAMLparam1(s);                                                      \
     GSM_Error error;                                                    \
-    char val[buf_length];                                               \
+    char val[buf_length] = "";                                          \
     error = GSM_Get##name(GSM_STATEMACHINE_VAL(s), val);                \
-    caml_gammu_raise_Error(error);                                      \
+    if (error != ERR_NOTSUPPORTED)                                      \
+      caml_gammu_raise_Error(error);                                    \
     CAMLreturn(caml_copy_string(val));                                  \
   }
 
@@ -347,7 +348,9 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
   {                                                                     \
     CAMLparam1(s);                                                      \
     GSM_##name res;                                                     \
-    GSM_Get##name(GSM_STATEMACHINE_VAL(s), &res);                       \
+    GSM_Error error;                                                    \
+    error = GSM_Get##name(GSM_STATEMACHINE_VAL(s), &res);               \
+    caml_gammu_raise_Error(error);                                      \
     CAMLreturn(Val_GSM_##name(&res));                                   \
   }
 

@@ -17,5 +17,7 @@ demo_incoming.exe: $(DEMO_LIBS)
 demo_incoming.com: $(DEMO_LIBS:.cma=.cmxa)
 demo_getfirstsms.exe: $(DEMO_LIBS)
 demo_getfirstsms.com: $(DEMO_LIBS:.cma=.cmxa)
+demo_infos.exe: $(DEMO_LIBS)
+demo_infos.com: $(DEMO_LIBS:.cma=.cmxa)
 
 include ../Makefile.ocaml

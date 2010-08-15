@@ -385,7 +385,7 @@ sig
     | BatteryFull         (** Powered from AC, battery is fully charged *)
     | PowerFault          (** Power failure  *)
   and battery_type =
-    | Unknown     (** Unknown battery *)
+    | Unknown_battery     (** Unknown battery *)
     | NiMH        (** NiMH battery *)
     | LiIon       (** Lithium Ion battery *)
     | LiPol       (** Lithium Polymer battery *)
@@ -422,14 +422,14 @@ sig
   and gprs_state =
     | Detached
     | Attached
-    | Unknown
+    | Unknown_gprs
   and network_state =
     | HomeNetwork          (** Home network for used SIM card. *)
     | NoNetwork            (** No network available for used SIM card. *)
     | RoamingNetwork       (** SIM card uses roaming. *)
     | RegistrationDenied   (** Network registration denied
                                - card blocked or expired or disabled. *)
-    | Unknown              (** Unknown network status. *)
+    | Unknown_network      (** Unknown network status. *)
     | RequestingNetwork    (** Network explicitely requested by user. *)
 
   (** Information about signal quality, all these should be -1 when

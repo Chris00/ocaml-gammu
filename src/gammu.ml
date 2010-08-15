@@ -329,7 +329,7 @@ struct
     | BatteryFull
     | PowerFault
   and battery_type =
-    | Unknown
+    | Unknown_battery
     | NiMH
     | LiIon
     | LiPol
@@ -361,13 +361,13 @@ struct
   and gprs_state =
     | Detached
     | Attached
-    | Unknown
+    | Unknown_gprs
   and network_state =
     | HomeNetwork
     | NoNetwork
     | RoamingNetwork
     | RegistrationDenied
-    | Unknown
+    | Unknown_network
     | RequestingNetwork
 
   type signal_quality = {
