@@ -500,9 +500,12 @@ static value Val_GSM_Call(GSM_Call *call);
   {                                                                     \
     CAMLparam2(s, venable);                                             \
     GSM_Error error;                                                    \
+    DEBUG("entering");                                                  \
     error = GSM_SetIncoming##name(GSM_STATEMACHINE_VAL(s),              \
                                   Bool_val(venable));                   \
+    DEBUG("");                                                          \
     caml_gammu_raise_Error(error);                                      \
+    DEBUG("leaving");                                                   \
     CAMLreturn(Val_unit);                                               \
   }                                                                     \
   static void incoming_##name##_callback(GSM_StateMachine *sm,          \
@@ -511,20 +514,26 @@ static value Val_GSM_Call(GSM_Call *call);
   {                                                                     \
     CAMLparam0();                                                       \
     CAMLlocal1(f);                                                      \
+    DEBUG("entering");                                                  \
+    DEBUG("f = *%ld", (long) user_data);                                \
     f = *((value *) user_data);                                         \
     caml_callback(f, Val_##type(&t));                                   \
+    DEBUG("leaving");                                                   \
     CAMLreturn0;                                                        \
   }                                                                     \
   CAMLexport                                                            \
   value caml_gammu_GSM_SetIncoming##name##Callback(value s, value vf)   \
   {                                                                     \
     CAMLparam2(s, vf);                                                  \
+    DEBUG("entering");                                                  \
     State_Machine *state_machine = STATE_MACHINE_VAL(s);                \
     void *user_data = (void *) &(state_machine->incoming_##name##_callback); \
+    DEBUG("*user_data = %ld", (long) user_data);                        \
     REGISTER_SM_GLOBAL_ROOT(state_machine, incoming_##name##_callback, vf); \
     GSM_SetIncoming##name##Callback(state_machine->sm,                  \
                                     incoming_##name##_callback,         \
                                     user_data);                         \
+    DEBUG("leaving");                                                   \
     CAMLreturn(Val_unit);                                               \
   }
 

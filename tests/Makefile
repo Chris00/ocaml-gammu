@@ -17,8 +17,8 @@ utils_tests.cmxa: utils_tests.cmx
 
 demo_incoming.exe: $(DEMO_LIBS)
 demo_incoming.com: $(DEMO_LIBS:.cma=.cmxa)
-demo_getfirstsms.exe: $(DEMO_LIBS)
-demo_getfirstsms.com: $(DEMO_LIBS:.cma=.cmxa)
+demo_readsms.exe: $(DEMO_LIBS)
+demo_readsms.com: $(DEMO_LIBS:.cma=.cmxa)
 demo_infos.exe: $(DEMO_LIBS)
 demo_infos.com: $(DEMO_LIBS:.cma=.cmxa)
 

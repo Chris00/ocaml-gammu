@@ -1052,35 +1052,58 @@ static value Val_GSM_SMSMessage(GSM_SMSMessage *sms)
 {
   CAMLparam0();
   CAMLlocal2(res, vother_numbers);
+  DEBUG("entering");
   res = caml_alloc(21, 0);
   int length = sms->OtherNumbersNum;
   int i;
 
   Store_field(res, 0, VAL_UCHAR(sms->ReplaceMessage));
+  DEBUG("");  
   Store_field(res, 1, Val_bool(sms->RejectDuplicates));
+  DEBUG("");   
   Store_field(res, 2, VAL_GSM_UDHHeader(&(sms->UDH)));
+  DEBUG("");  
   Store_field(res, 3, CAML_COPY_USTRING(sms->Number));
+  DEBUG("");  
   vother_numbers = caml_alloc(length, 0);
+  DEBUG("");  
   for (i=0; i < length; i++)
     Store_field(vother_numbers, i, CAML_COPY_USTRING(sms->OtherNumbers[i]));
+  DEBUG("");  
   Store_field(res, 4, vother_numbers);
+  DEBUG("");  
   /* Store_field(res, 5, Val_GSM_SMSC(sms->SMSC)); NYI */
   Store_field(res, 5, VAL_GSM_MEMORYTYPE(sms->Memory));
+  DEBUG("");  
   Store_field(res, 6, Val_int(sms->Location));
+  DEBUG("");  
   Store_field(res, 7, Val_int(sms->Folder));
+  DEBUG("");  
   Store_field(res, 8, Val_bool(sms->InboxFolder));
+  DEBUG("");  
   Store_field(res, 9, VAL_GSM_SMS_STATE(sms->State));
+  DEBUG("");  
   Store_field(res, 10, CAML_COPY_USTRING(sms->Name));
+  DEBUG("");  
   Store_field(res, 11, CAML_COPY_USTRING(sms->Text));
+  DEBUG("");  
   Store_field(res, 12, VAL_GSM_SMSMESSAGETYPE(sms->PDU));
+  DEBUG("");  
   Store_field(res, 13, VAL_GSM_CODING_TYPE(sms->Coding));
+  DEBUG("");  
   Store_field(res, 14, Val_GSM_DateTime(&(sms->DateTime)));
+  DEBUG("");  
   Store_field(res, 15, Val_GSM_DateTime(&(sms->SMSCTime)));
+  DEBUG("");  
   Store_field(res, 16, VAL_UCHAR(sms->DeliveryStatus));
+  DEBUG("");  
   Store_field(res, 17, Val_bool(sms->ReplyViaSameSMSC));
+  DEBUG("");  
   Store_field(res, 18, VAL_CHAR(sms->Class));
+  DEBUG("");  
   Store_field(res, 19, VAL_UCHAR(sms->MessageReference));
 
+  DEBUG("leaving");
   CAMLreturn(res);
 }
 
