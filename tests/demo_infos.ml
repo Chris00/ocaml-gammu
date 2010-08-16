@@ -3,13 +3,18 @@ open Gammu
 open Utils_demo
 
 let print_dyn_infos s =
-  let status = SMS.get_status s in
-  print_string "(#unread) #used/#max:\n";
-  Printf.printf "(%d) %d/%d (SIM)\t"
-    status.SMS.sim_unread status.SMS.sim_used status.SMS.sim_size;
-  Printf.printf "(%d) %d/%d (Phone)\n"
-    status.SMS.phone_unread status.SMS.phone_used status.SMS.phone_size;
-  Printf.printf "#templates used: %d\n" status.SMS.templates_used;
+  begin
+    try
+      let status = SMS.get_status s in
+      print_string "(#unread) #used/#max:\n";
+      Printf.printf "(%d) %d/%d (SIM)\t"
+        status.SMS.sim_unread status.SMS.sim_used status.SMS.sim_size;
+      Printf.printf "(%d) %d/%d (Phone)\n"
+        status.SMS.phone_unread status.SMS.phone_used status.SMS.phone_size;
+      Printf.printf "#templates used: %d\n" status.SMS.templates_used;
+    with Error NOTSUPPORTED ->
+      print_string "Your phone doesn't support getting sms status.\n";
+  end;
   flush stdout;
   let bat = Info.battery_charge s in
   Printf.printf "%s\n"
@@ -65,6 +70,27 @@ let print_dyn_infos s =
     (string_of_network_state network.Info.packet_state);
   flush stdout;;
 
+let string_of_memory_type = function
+  | ME -> "Internal memory of the mobile equipment"
+  | SM -> "SIM card memory"
+  | ON -> "Own numbers"
+  | DC -> "Dialled calls"
+  | RC -> "Received calls"
+  | MC -> "Missed calls"
+  | MT -> "Combined ME and SIM phonebook"
+  | FD -> "Fixed dial"
+  | VM -> "Voice mailbox"
+  | SL -> "Sent SMS logs"
+  | QD -> "Quick dialing choices"
+
+let string_of_folder folder =
+  Printf.sprintf "%s (%s) in %s"
+    folder.SMS.name
+    (match folder.SMS.box with
+      SMS.Inbox -> "Inbox"
+    | SMS.Outbox -> "Outbox")
+    (string_of_memory_type folder.SMS.folder_memory)
+
 let () =
   parse_args ();
   let s = make () in
@@ -74,11 +100,16 @@ let () =
   Printf.printf "Manufacturer: \"%s\" (%s month)\n"
     (Info.manufacturer s) (Info.manufacture_month s);
   Printf.printf "Product code: %s\n" (Info.product_code s);
-  let f = Info.firmware s in
+  let fw = Info.firmware s in
   Printf.printf "Hardware: %s\n" (Info.hardware s);
-  Printf.printf "Firmware version: \"%s\", date \"%s\", num \"%i\"\n"
-    f.Info.version f.Info.ver_date f.Info.ver_num;
+  Printf.printf "Firmware version: \"%s\", date \"%s\", num \"%f\"\n"
+    fw.Info.version fw.Info.ver_date fw.Info.ver_num;
   Printf.printf "IMEI: %s\n" (Info.imei s);
+  print_string "Folders:\n";
+  Array.iteri
+    (fun i folder ->
+      Printf.printf "  %d : %s\n" i (string_of_folder folder))
+    (SMS.folders s);
   print_newline ();
   while true do
     print_dyn_infos s;

@@ -1,10 +1,10 @@
 open Gammu
 
-let debug_level = ref "nothing";;
-let connection = ref "at";;
-let device = ref "/dev/ttyUSB0";;
-let folder = ref 1;;
-let message_number = ref 1;;
+let debug_level = ref "nothing"
+let connection = ref "at"
+let device = ref "/dev/ttyUSB0"
+let folder = ref 1
+let message_number = ref 1
 
 let parse_args () =
   let args = [
@@ -14,14 +14,14 @@ let parse_args () =
     ("--connection", Arg.Set_string connection,
      "<connection_type> Set connection/protocol type (defaults to \"at\").");
     ("--device", Arg.Set_string device,
-     "<device> Set device file (defaults to \"/dev/ttyUSB0\")."); 
+     "<device> Set device file (defaults to \"/dev/ttyUSB0\").");
     ("--folder", Arg.Set_int folder,
      "<connection_type> Set folder location (default = 1).");
     ("--message-number", Arg.Set_int message_number,
      "<connection_type> Set message number (default = 1).");
   ] in
   let anon _ = raise (Arg.Bad "No anonymous arguments.") in
-  Arg.parse args anon "Usage:";;
+  Arg.parse args anon "Usage:"
 
 let configure s =
   (* TODO: debug things seem to be ignored... *)
@@ -45,14 +45,13 @@ let configure s =
   Debug.set_global di true;
   Debug.set_output Debug.global stderr;
   Debug.set_level Debug.global !debug_level;
-  push_config s config;
-  assert (length_config s = 1);;
+  push_config s config
 
 (* Connect and unlock phone. *)
 let prepare_phone s =
   (* Unlock the phone asking user for codes. *)
   let rec ask_user_code s code_type code_type_name =
-    print_string ("Enter " ^ code_type_name ^ " code : ");
+    Printf.printf "Enter %s code: " code_type_name;
     flush stdout;
     let code = read_line () in
     try
@@ -82,7 +81,7 @@ let prepare_phone s =
   print_string "Trying to connect.\n";
   flush stdout;
   connect s;
-  print_string ("Phone model : " ^ Info.model s ^ "\n");
+  Printf.printf "Phone model : \"%s\"\n" (Info.model s);
   print_string "Unlock SIM/Phone:\n";
   flush stdout;
-  unlock_phone s;;
+  unlock_phone s

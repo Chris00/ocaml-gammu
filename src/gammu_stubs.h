@@ -445,6 +445,11 @@ CAMLexport
 value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
                                 value vstart);
 
+#define OUTBOX(outbox) (Val_int(outbox))
+
+CAMLexport
+value caml_gammu_GSM_GetSMSFolders(value s);
+
 static value Val_GSM_SMSMemoryStatus(GSM_SMSMemoryStatus *sms_mem);
 
 CAMLexport

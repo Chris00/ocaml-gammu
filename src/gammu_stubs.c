@@ -275,7 +275,7 @@ static void caml_gammu_state_machine_finalize(value s)
     caml_remove_global_root(&(state_machine->incoming_SMS_callback));
   if (state_machine->incoming_Call_callback)
     caml_remove_global_root(&(state_machine->incoming_Call_callback));
-  
+
   free(state_machine);
 }
 
@@ -589,16 +589,13 @@ value caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
   GSM_Error error;
   GSM_SecurityCode security_code;
 
-  DEBUG("Entering function.");
   security_code.Type = GSM_SECURITYCODETYPE_VAL(vcode_type);
   CPY_TRIM_STRING_VAL(security_code.Code, vcode);
 
-  DEBUG("Call GSM_EnterSecurityCode");
   error = GSM_EnterSecurityCode(GSM_STATEMACHINE_VAL(s),
                                 security_code);
   caml_gammu_raise_Error(error);
 
-  DEBUG("Leaving function.");
   CAMLreturn(Val_unit);
 }
 
@@ -653,7 +650,7 @@ static value Val_GSM_BatteryCharge(GSM_BatteryCharge *battery_charge)
   Store_field(res, 7, Val_int(battery_charge->PhoneCurrent));
   Store_field(res, 8, Val_int(battery_charge->BatteryTemperature));
   Store_field(res, 9, Val_int(battery_charge->PhoneTemperature));
-  
+
   CAMLreturn(res);
 }
 
@@ -1182,20 +1179,39 @@ static GSM_OneSMSFolder *GSM_OneSMSFolder_val(value vfolder)
   return folder;
 } */
 
-/* Unused
 static value Val_GSM_OneSMSFolder(GSM_OneSMSFolder *folder)
 {
   CAMLparam0();
   CAMLlocal1(res);
-  res = caml_alloc(4, 0);
-  Store_field(res, 0, Val_bool(folder->InboxFolder));
-  Store_field(res, 1, Val_bool(folder->OutboxFolder));
-  Store_field(res, 2, VAL_GSM_MEMORYTYPE(folder->Memory));
-  Store_field(res, 3, CAML_COPY_USTRING(folder->Name));
-  CAMLreturn(res);
-} */
 
-/* folders */
+  res = caml_alloc(4, 0);
+  Store_field(res, 0, OUTBOX(folder->OutboxFolder));
+  Store_field(res, 1, VAL_GSM_MEMORYTYPE(folder->Memory));
+  Store_field(res, 2, CAML_COPY_USTRING(folder->Name));
+
+  CAMLreturn(res);
+}
+
+CAMLexport
+value caml_gammu_GSM_GetSMSFolders(value s)
+{
+  CAMLparam1(s);
+  CAMLlocal1(res);
+  GSM_SMSFolders folders;
+  GSM_Error error;
+  int i;
+  
+  /* Get the folders. */
+  error = GSM_GetSMSFolders(GSM_STATEMACHINE_VAL(s), &folders);
+  caml_gammu_raise_Error(error);
+  
+  /* Convert it to a an array of SMS.folder values. */
+  res = caml_alloc(folders.Number, 0);
+  for (i=0; i < folders.Number; i++)
+    Store_field(res, i, Val_GSM_OneSMSFolder(&(folders.Folder[i])));
+  
+  CAMLreturn(res);
+}
 
 /* Unused
 static GSM_SMSMemoryStatus *GSM_SMSMemoryStatus_val(value vsms_mem)
@@ -1235,7 +1251,7 @@ value caml_gammu_GSM_GetSMSStatus(value s)
   CAMLparam1(s);
   GSM_SMSMemoryStatus status;
   GSM_Error error;
-  
+
   error = GSM_GetSMSStatus(GSM_STATEMACHINE_VAL(s), &status);
   caml_gammu_raise_Error(error);
 

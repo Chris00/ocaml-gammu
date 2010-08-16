@@ -393,7 +393,7 @@ sig
   type firmware = {
     version : string;
     ver_date : string;
-    ver_num : int;
+    ver_num : float;
   }
 
   (** Model identification, used for finding phone features. *)
@@ -668,7 +668,7 @@ module SMS : sig
                          where SMS is saved. *)
     inbox_folder : bool; (** For saved SMS: whether SMS is really in Inbox. *)
     state : state;   (** Status (read/unread/...) of SMS message. *)
-    name : string;   (** Name in Nokia with SMS memory (6210/7110, etc.)
+    nokia_name : string;   (** Name in Nokia with SMS memory (6210/7110, etc.)
                          Ignored in other. *)
     text : string;   (** Text for SMS. *)
     pdu : message_type; (** Type of message. *)
@@ -709,15 +709,14 @@ module SMS : sig
 
       @raise NOTSUPPORTED if the mechanism is not supported by the phone. *)
 
-  type folder_box = Inbox | Outbox
-
   type folder = {
     box : folder_box;     (** Whether it is inbox or outbox. *)
     folder_memory : memory_type; (** Where exactly it's saved. *)
     name : string;        (** Name of the folder. *)
   }
+  and folder_box = Inbox | Outbox
 
-  (* val folders : t -> folder array (* NYI *) *)
+  val folders : t -> folder array
   (** @return SMS folders information. *)
 
   (** Status of SMS memory. *)

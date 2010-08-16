@@ -337,7 +337,7 @@ struct
   type firmware = {
     version : string;
     ver_date : string;
-    ver_num : int;
+    ver_num : float;
   }
 
   type phone_model = {
@@ -587,7 +587,7 @@ struct
     folder : int;
     inbox_folder : bool;
     state : state;
-    name : string;
+    nokia_name : string;
     text : string;
     pdu : message_type;
     coding : coding;
@@ -613,15 +613,14 @@ struct
     | None -> _get_next s 0 folder true
     | Some n -> _get_next s n folder false
 
-  type folder_box = Inbox | Outbox
-
   type folder = {
     box : folder_box;
     folder_memory : memory_type;
     name : string;
   }
+  and folder_box = Inbox | Outbox
 
-  (* TODO: folders *)
+  external folders : t -> folder array = "caml_gammu_GSM_GetSMSFolders"
 
   type memory_status = {
     sim_unread : int;
