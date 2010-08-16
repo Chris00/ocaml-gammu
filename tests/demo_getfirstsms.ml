@@ -1,6 +1,7 @@
 (* Simple demo/test file that prints some informations and the first sms. *)
 open Gammu
-open Utils_demo
+open Args_demo
+open Utils_tests
 
 let () =
   parse_args ();
@@ -14,13 +15,7 @@ let () =
   Printf.printf "Number: %s\n" sms.SMS.number;
   Printf.printf "Date and time: %s\n"
     (DateTime.os_date_time sms.SMS.date_time);
-  Printf.printf "Status : %s\n"
-    (match sms.SMS.state with
-      SMS.Sent -> "sent";
-    | SMS.Unsent -> "unsent";
-    | SMS.Read -> "read";
-    | SMS.Unread -> "unread");
-  print_string "Text : ";
+  Printf.printf "Status : %s\n" (string_of_sms_status sms.SMS.state);
   if (sms.SMS.udh_header.SMS.udh = SMS.No_udh) then
     (* There's no udh so text is raw in the sms message. *)
     print_string sms.SMS.text

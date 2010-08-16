@@ -1,6 +1,7 @@
 (*i Simple demo/test file that gathers some informations about the phone. *)
 open Gammu
-open Utils_demo
+open Args_demo
+open Utils_tests
 
 let print_dyn_infos s =
   begin
@@ -42,54 +43,20 @@ let print_dyn_infos s =
     bat.Info.phone_temperature
     bat.Info.charge_current
     bat.Info.charge_voltage;
-  let signal = Info.signal_quality s in
-  Printf.printf "Signal Strength = %i, %i%%\n"
-    signal.Info.signal_strength signal.Info.signal_percent;
+  Printf.printf "%s\n" (string_of_signal_quality (Info.signal_quality s));
   flush stdout;
-  let network = Info.network_info s
-  and string_of_network_state = function
-    | Info.HomeNetwork -> "Home"
-    | Info.NoNetwork -> "No Network"
-    | Info.RoamingNetwork -> "Roaming"
-    | Info.RegistrationDenied -> "Registration Denied"
-    | Info.Unknown_network -> "Unknown status"
-    | Info.RequestingNetwork -> "Requesting"
-  in
+  let network = Info.network_info s in
   Printf.printf "Network %s, %s\n"
     (string_of_network_state network.Info.state)
     network.Info.name;
   Printf.printf "CID \"%s\", code \"%s\", LAC \"%s\"\n"
     network.Info.cid network.Info.code network.Info.lac;
   Printf.printf "GPRS %s, packet CID \"%s\", LAC \"%s\", \"%s\"\n"
-    (match network.Info.gprs with
-      Info.Detached -> "Detached"
-    | Info.Attached -> "Attached"
-    | Info.Unknown_gprs -> "Unknown")
+    (string_of_info_gprs network.Info.gprs)
     network.Info.packet_cid
     network.Info.packet_lac
     (string_of_network_state network.Info.packet_state);
   flush stdout;;
-
-let string_of_memory_type = function
-  | ME -> "Internal memory of the mobile equipment"
-  | SM -> "SIM card memory"
-  | ON -> "Own numbers"
-  | DC -> "Dialled calls"
-  | RC -> "Received calls"
-  | MC -> "Missed calls"
-  | MT -> "Combined ME and SIM phonebook"
-  | FD -> "Fixed dial"
-  | VM -> "Voice mailbox"
-  | SL -> "Sent SMS logs"
-  | QD -> "Quick dialing choices"
-
-let string_of_folder folder =
-  Printf.sprintf "%s (%s) in %s"
-    folder.SMS.name
-    (match folder.SMS.box with
-      SMS.Inbox -> "Inbox"
-    | SMS.Outbox -> "Outbox")
-    (string_of_memory_type folder.SMS.folder_memory)
 
 let () =
   parse_args ();
