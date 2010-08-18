@@ -758,6 +758,22 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality)
   CAMLreturn(res);
 }
 
+CAMLexport
+value caml_gammu_GSM_GetNetworkName(value vcode)
+{
+  CAMLparam1(vcode);
+  const unsigned char *name = GSM_GetNetworkName(String_val(vcode));
+  CAMLreturn(CAML_COPY_USTRING(name));
+}
+
+CAMLexport
+value caml_gammu_GSM_GetCountryName(value vcode)
+{
+  CAMLparam1(vcode);
+  const unsigned char *name = GSM_GetCountryName(String_val(vcode));
+  CAMLreturn(CAML_COPY_USTRING(name));
+}
+
 CAML_GAMMU_GSM_TYPE_GET(BatteryCharge)
 
 CAMLexport
@@ -1058,49 +1074,49 @@ static value Val_GSM_SMSMessage(GSM_SMSMessage *sms)
   int i;
 
   Store_field(res, 0, VAL_UCHAR(sms->ReplaceMessage));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 1, Val_bool(sms->RejectDuplicates));
-  DEBUG("");   
+  DEBUG("");
   Store_field(res, 2, VAL_GSM_UDHHeader(&(sms->UDH)));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 3, CAML_COPY_USTRING(sms->Number));
-  DEBUG("");  
+  DEBUG("");
   vother_numbers = caml_alloc(length, 0);
-  DEBUG("");  
+  DEBUG("");
   for (i=0; i < length; i++)
     Store_field(vother_numbers, i, CAML_COPY_USTRING(sms->OtherNumbers[i]));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 4, vother_numbers);
-  DEBUG("");  
+  DEBUG("");
   /* Store_field(res, 5, Val_GSM_SMSC(sms->SMSC)); NYI */
   Store_field(res, 5, VAL_GSM_MEMORYTYPE(sms->Memory));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 6, Val_int(sms->Location));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 7, Val_int(sms->Folder));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 8, Val_bool(sms->InboxFolder));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 9, VAL_GSM_SMS_STATE(sms->State));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 10, CAML_COPY_USTRING(sms->Name));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 11, CAML_COPY_USTRING(sms->Text));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 12, VAL_GSM_SMSMESSAGETYPE(sms->PDU));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 13, VAL_GSM_CODING_TYPE(sms->Coding));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 14, Val_GSM_DateTime(&(sms->DateTime)));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 15, Val_GSM_DateTime(&(sms->SMSCTime)));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 16, VAL_UCHAR(sms->DeliveryStatus));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 17, Val_bool(sms->ReplyViaSameSMSC));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 18, VAL_CHAR(sms->Class));
-  DEBUG("");  
+  DEBUG("");
   Store_field(res, 19, VAL_UCHAR(sms->MessageReference));
 
   DEBUG("leaving");
@@ -1223,16 +1239,16 @@ value caml_gammu_GSM_GetSMSFolders(value s)
   GSM_SMSFolders folders;
   GSM_Error error;
   int i;
-  
+
   /* Get the folders. */
   error = GSM_GetSMSFolders(GSM_STATEMACHINE_VAL(s), &folders);
   caml_gammu_raise_Error(error);
-  
+
   /* Convert it to a an array of SMS.folder values. */
   res = caml_alloc(folders.Number, 0);
   for (i=0; i < folders.Number; i++)
     Store_field(res, i, Val_GSM_OneSMSFolder(&(folders.Folder[i])));
-  
+
   CAMLreturn(res);
 }
 

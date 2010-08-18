@@ -440,6 +440,15 @@ sig
     bit_error_rate : int;  (* Bit error rate in percent.  *)
   }
 
+  val network_code_name : string -> string
+  (** [network_code_name code] returns the name the network designed by the
+      code [code], of the form "[0-9]{3} [0-9]{2}". *)
+
+  val country_code_name : string -> string
+  (** [country_code_name code] returns the name of the country designed by the
+      code [code], of the form "[0-9]{3}" (the first 3 digits of the the
+      network code). *)
+
   val battery_charge : t -> battery_charge
   (** @return information about battery charge and phone charging state. *)
 

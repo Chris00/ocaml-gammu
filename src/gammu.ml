@@ -376,7 +376,14 @@ struct
     bit_error_rate : int;
   }
 
-  external battery_charge : t -> battery_charge = "caml_gammu_GSM_GetBatteryCharge"
+  external network_code_name : string -> string
+    = "caml_gammu_GSM_GetNetworkName"
+
+  external country_code_name : string -> string
+    = "caml_gammu_GSM_GetCountryName"
+
+  external battery_charge : t -> battery_charge
+    = "caml_gammu_GSM_GetBatteryCharge"
 
   external firmware : t -> firmware = "caml_gammu_GSM_GetFirmWare"
 
@@ -384,7 +391,8 @@ struct
 
   external imei : t -> string = "caml_gammu_GSM_GetIMEI"
 
-  external manufacture_month : t -> string = "caml_gammu_GSM_GetManufactureMonth"
+  external manufacture_month : t -> string
+    = "caml_gammu_GSM_GetManufactureMonth"
 
   external manufacturer : t -> string = "caml_gammu_GSM_GetManufacturer"
 

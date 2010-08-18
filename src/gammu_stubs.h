@@ -354,6 +354,12 @@ static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
     CAMLreturn(Val_GSM_##name(&res));                                   \
   }
 
+CAMLexport
+value caml_gammu_GSM_GetNetworkName(value vcode);
+
+CAMLexport
+value caml_gammu_GSM_GetCountryName(value vcode);
+
 CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(BatteryCharge);
 
 CAMLexport
