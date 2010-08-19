@@ -8,6 +8,10 @@ byte native install uninstall reinstall doc:
 tests: all
 	$(MAKE) -C tests all
 
+.PHONY: svn
+svn:
+	bzr push svn+ssh://scm.ocamlcore.org/svnroot/ml-gammu/trunk
+
 clean:
 	$(MAKE) -C src $@
 	$(MAKE) -C tests $@
