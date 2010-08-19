@@ -141,14 +141,14 @@ sig
 
       [level] must be one of :
       {ul
-      {li nothing}
-      {li text}
-      {li textall}
-      {li binary}
-      {li errors}
-      {li textdate}
-      {li textalldate}
-      {li errorsdate}} *)
+      {li nothing - no debug level}
+      {li text - transmission dump in text format}
+      {li textall - all possible info in text format}
+      {li textalldate - all possible info in text format, with time stamp}
+      {li errors - errors in text format}
+      {li errorsdate - errors in text format, with time stamp}
+      {li binary - transmission dump in binary format}}
+  *)
 
 end
 
@@ -442,11 +442,11 @@ sig
 
   val network_code_name : string -> string
   (** [network_code_name code] returns the name the network designed by the
-      code [code], of the form "[0-9]{3} [0-9]{2}". *)
+      code [code], of the form "\[0-9\]\{3\} \[0-9\]\{2\}". *)
 
   val country_code_name : string -> string
   (** [country_code_name code] returns the name of the country designed by the
-      code [code], of the form "[0-9]{3}" (the first 3 digits of the the
+      code [code], of the form "\[0-9\]\{3\}" (the first 3 digits of the the
       network code). *)
 
   val battery_charge : t -> battery_charge
