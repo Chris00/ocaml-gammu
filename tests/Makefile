@@ -19,6 +19,8 @@ demo_incoming.exe: $(DEMO_LIBS)
 demo_incoming.com: $(DEMO_LIBS:.cma=.cmxa)
 demo_readsms.exe: $(DEMO_LIBS)
 demo_readsms.com: $(DEMO_LIBS:.cma=.cmxa)
+demo_readall.exe: $(DEMO_LIBS)
+demo_readall.com: $(DEMO_LIBS:.cma=.cmxa)
 demo_infos.exe: $(DEMO_LIBS)
 demo_infos.com: $(DEMO_LIBS:.cma=.cmxa)
 

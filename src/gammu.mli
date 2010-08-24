@@ -446,7 +446,7 @@ sig
 
   val country_code_name : string -> string
   (** [country_code_name code] returns the name of the country designed by the
-      code [code], of the form "\[0-9\]\{3\}" (the first 3 digits of the the
+      code [code], of the form "\[0-9\]\{3\}" (the first 3 digits of the
       network code). *)
 
   val battery_charge : t -> battery_charge
@@ -714,7 +714,7 @@ module SMS : sig
       @raise EMPTY if there's no next SMS.
 
       @raise NOTIMPLEMENTED if GetNext function is not implemented in libGammu
-      for the the currently used phone.
+      for the currently used phone.
 
       @raise NOTSUPPORTED if the mechanism is not supported by the phone. *)
 
