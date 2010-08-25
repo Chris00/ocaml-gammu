@@ -697,19 +697,22 @@ module SMS : sig
   val get : t -> folder:int -> message_number:int -> multi_sms
   (** Reads SMS message. *)
 
-  val get_next : t -> folder:int -> ?message_number:int -> unit -> multi_sms
-  (** Reads next SMS message (iterating trough SMS's *and* folders). This
-      might be faster for some phones than using {!Gammu.SMS.get} for each
-      message.
+  val fold : t -> ?folder:int -> ?for_n:int -> ('a -> multi_sms -> 'a) -> 'a -> 'a
+  (** [fold s f a] fold SMS messages through the function [f] with [a] as
+      initial value, iterating trough SMS' *and* folders).
 
-      Please note that this command does not mark the message as read in
+      This function uses the GSM_GetNext function from libGammu. This might be
+      faster for some phones than using {!Gammu.SMS.get} for each message.
+
+      Please note that this command does not mark the messages as read in
       phone. To do so, you have to call {!Gammu.SMS.get}.
 
-      NOTE: Only use that function if you know what you're doing.
+      @param folder specifies the folder from where to start folding SMS
+      (default = 0, the first one).
 
-      @param message_number if not defined, start reading from beginning. Note
-      that for some phone drivers, that number may be ignored and the function
-      behaves as an iterator.
+      @param for_n how many messages are to be folded (at maximum). If
+      negative, the fold goes over all messages from the beginning of the
+      given folder and higherly numbered ones (default = -1).
 
       @raise EMPTY if there's no next SMS.
 

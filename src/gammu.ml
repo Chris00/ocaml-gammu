@@ -616,10 +616,23 @@ struct
 
   external _get_next : t -> int -> int -> bool ->
     multi_sms = "caml_gammu_GSM_GetNextSMS"
-  let get_next s ~folder ?message_number () =
-    match message_number with
-    | None -> _get_next s 0 folder true
-    | Some n -> _get_next s n folder false
+  let fold s ?(folder=0) ?(for_n=(-1)) f a =
+    let rec aux location acc = function
+      | 0 -> acc
+      | for_n ->
+        try
+          let multi_sms =
+            match location with
+            | -1 -> (* Start from the beginning of the folder. *)
+              _get_next s 0 folder true
+            | loc -> (* Get next location, folder need to be 0 because the
+                       location carry the folder in its representation. *)
+              _get_next s loc 0 false
+          in
+          aux multi_sms.(0).location (f acc multi_sms) (for_n - 1)
+        with Error EMPTY -> acc (* There's no next SMS message *)
+    in
+    aux (-1) a for_n
 
   type folder = {
     box : folder_box;

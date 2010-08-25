@@ -26,30 +26,21 @@ let print_multi_sms multi_sms =
   print_newline ();
   flush stdout
 
-let rec read_all s ~folder ?message_number () =
-  try
-    match message_number with
-    | None ->
-      let multi_sms = SMS.get_next s ~folder () in
-      print_multi_sms multi_sms;
-      read_all s ~folder:0 ~message_number:(multi_sms.(0).SMS.location) ()
-    | Some message_number ->
-      let multi_sms = SMS.get_next s ~folder ~message_number () in
-      print_multi_sms multi_sms;
-      read_all s ~folder:0 ~message_number:(multi_sms.(0).SMS.location) ()
-  with
-    Error EMPTY -> ()
-  | Error NOTSUPPORTED | Error NOTIMPLEMENTED ->
-    print_string "Sorry but your phone doesn't support GetNext \
-                  or it is not implemented.\n"
-
 let () =
   parse_args ();
   let s = make () in
   configure s;
   prepare_phone s;
-  print_string "From folder: ";
+  print_string "Start reading from folder: ";
   let folder = int_of_string (read_line ()) in
-  read_all s ~folder ();
+  let begin_time = Unix.gettimeofday () in
+  let c =
+    try SMS.fold s ~folder (fun c m -> print_multi_sms m; c + 1) 0;
+    with Error NOTSUPPORTED | Error NOTIMPLEMENTED ->
+      failwith "Sorry but your phone doesn't support GetNext \
+                 or it is not implemented.\n"
+  in
+  let elapsed_time = Unix.gettimeofday () -. begin_time in
+  Printf.printf "\n%i message read in %fsecs\n" c elapsed_time
 (* TODO: add trap to disconnect *)
 
