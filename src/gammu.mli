@@ -262,7 +262,7 @@ val load_gammurc : ?path:string -> t -> unit
 (* maybe a type t should be created by reading a config file, then one
    connects.  config files seem to play the same role as files for
    [open_*] *)
-val connect : ?log:(string -> unit) -> ?reply_num:int -> t -> unit
+val connect : ?log:(string -> unit) -> ?replies:int -> t -> unit
 (** Initiates connection.
 
     IMPORTANT: do not forget to call disconnect when done as otherwise the
@@ -271,7 +271,7 @@ val connect : ?log:(string -> unit) -> ?reply_num:int -> t -> unit
     by the same time terminate your connection.
 
     @param log logging function.
-    @param reply_num number of replies to await (default 3).
+    @param replies number of replies to wait for on each request (default: 3).
 
     @raise UNCONFIGURED if no configuration was set. *)
 
@@ -697,7 +697,8 @@ module SMS : sig
   val get : t -> folder:int -> message_number:int -> multi_sms
   (** Reads SMS message. *)
 
-  val fold : t -> ?folder:int -> ?for_n:int -> ('a -> multi_sms -> 'a) -> 'a -> 'a
+  val fold : t -> ?folder:int -> ?for_n:int -> ?retries:int ->
+    ?on_err:(int -> error -> unit) -> ('a -> multi_sms -> 'a) -> 'a -> 'a
   (** [fold s f a] fold SMS messages through the function [f] with [a] as
       initial value, iterating trough SMS' *and* folders).
 
@@ -714,7 +715,15 @@ module SMS : sig
       negative, the fold goes over all messages from the beginning of the
       given folder and higherly numbered ones (default = -1).
 
-      @raise EMPTY if there's no next SMS.
+      @param retries how many times to retry (first try not counted in) the
+      retrieval of one message in case of error [UNKNOWN] or
+      [CORRUPTED]. TODO: On some phones (symbian/gnapgen), it may just loop
+      forever (since the location argument is ignored in their
+      driver). (default = 2)
+
+      @param on_err function to handle errors [UNKNOWN] or [CORRUPTED]. The
+      location of the SMS message for which the next one failed to be read and
+      the error are given (default: does nothing).
 
       @raise NOTIMPLEMENTED if GetNext function is not implemented in libGammu
       for the currently used phone.

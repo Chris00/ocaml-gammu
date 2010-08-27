@@ -266,9 +266,9 @@ external _connect : t -> int -> unit= "caml_gammu_GSM_InitConnection"
 external _connect_log : t -> int -> (string -> unit) -> unit
   = "caml_gammu_GSM_InitConnection_Log"
 
-let connect ?log ?(reply_num=3) s = match log with
-  | None -> _connect s reply_num
-  | Some log_func -> _connect_log s reply_num log_func
+let connect ?log ?(replies=3) s = match log with
+  | None -> _connect s replies
+  | Some log_func -> _connect_log s replies log_func
 
 external disconnect : t -> unit = "caml_gammu_GSM_TerminateConnection"
 
@@ -616,8 +616,9 @@ struct
 
   external _get_next : t -> int -> int -> bool ->
     multi_sms = "caml_gammu_GSM_GetNextSMS"
-  let fold s ?(folder=0) ?(for_n=(-1)) f a =
-    let rec aux location acc = function
+  let fold s ?(folder=0) ?(for_n=(-1))
+      ?(retries=2) ?(on_err=(fun _ _ -> ())) f a =
+    let rec aux retries_num location acc = function
       | 0 -> acc
       | for_n ->
         try
@@ -626,14 +627,22 @@ struct
             | -1 -> (* Start from the beginning of the folder. *)
               _get_next s 0 folder true
             | loc -> (* Get next location, folder need to be 0 because the
-                       location carry the folder in its representation. *)
+                       location carries the folder in its representation. *)
               _get_next s loc 0 false
           in
-          aux multi_sms.(0).location (f acc multi_sms) (for_n - 1)
+          aux 0 multi_sms.(0).location (f acc multi_sms) (for_n - 1)
         with Error EMPTY -> acc (* There's no next SMS message *)
+        | Error e when e = UNKNOWN || e = CORRUPTED ->
+          on_err location e;
+          if retries_num = retries then
+            (* Continue with next message. *)
+            aux 0 (location + 1) acc for_n
+          else
+            (* Retry retrieval. *)
+            aux (retries_num + 1) location acc for_n;
     in
-    aux (-1) a for_n
-
+    aux 0 (-1) a for_n
+      
   type folder = {
     box : folder_box;
     folder_memory : memory_type;
