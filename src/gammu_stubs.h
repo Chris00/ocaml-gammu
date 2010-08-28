@@ -104,7 +104,9 @@ void caml_gammu_init();
 #define UCHAR_VAL(v) ((unsigned char) Int_val(v))
 #define VAL_UCHAR(c) (Val_int(c))
 
+/* Currently unused
 static value option_val(value voption, gboolean *some);
+*/
 #define VAL_NONE (Val_int(0))
 static value val_some(value vsome);
 
@@ -412,9 +414,11 @@ value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone);
 #define VAL_GSM_MEMORYTYPE(mt) Val_int(mt - 1)
 #define VAL_GSM_ENTRYTYPE(et) Val_int(et - 1)
 
+/* Currently unused
 static value Val_GSM_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry);
 
 static value Val_GSM_MemoryEntry(GSM_MemoryEntry *mem_entry);
+*/
 
 
 /************************************************************************/
@@ -479,12 +483,13 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 /************************************************************************/
 /* Calls */
 
+/* Currently unused
 static GSM_CallStatus GSM_CallStatus_val(value vcall_status, int *param_int1);
-
+*/
 static value Val_GSM_CallStatus(GSM_CallStatus call_status, int *param_int1);
-
+/* Currently unused
 static GSM_Call *GSM_Call_val(GSM_Call *call, value vcall);
-
+*/
 static value Val_GSM_Call(GSM_Call *call);
 
 

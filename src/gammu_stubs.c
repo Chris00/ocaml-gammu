@@ -63,6 +63,7 @@ void caml_gammu_init()
 /************************************************************************/
 /* Utils functions and macros. */
 
+/* Currently unused.
 static value option_val(value voption, gboolean *some)
 {
   CAMLparam1(voption);
@@ -74,6 +75,7 @@ static value option_val(value voption, gboolean *some)
   *some = TRUE;
   CAMLreturn(Field(voption, 1));
 }
+*/
 
 static value val_some(value vsome)
 {
@@ -620,24 +622,6 @@ value caml_gammu_GSM_GetSecurityStatus(value s)
 /************************************************************************/
 /* Informations on the phone */
 
-/* Unused
-static GSM_BatteryCharge *GSM_BatteryCharge_val(value vbattery_charge)
-{
-  GSM_BatteryCharge *battery_charge = malloc(sizeof(GSM_BatteryCharge));
-  battery_charge->BatteryType = GSM_BATTERYTYPE_VAL(Field(vbattery_charge, 0));
-  battery_charge->BatteryCapacity = Int_val(Field(vbattery_charge, 1));
-  battery_charge->BatteryPercent = Int_val(Field(vbattery_charge, 2));
-  battery_charge->ChargeState = GSM_CHARGESTATE_VAL(Field(vbattery_charge, 3));
-  battery_charge->BatteryVoltage = Int_val(Field(vbattery_charge, 4));
-  battery_charge->ChargeVoltage = Int_val(Field(vbattery_charge, 5));
-  battery_charge->ChargeCurrent = Int_val(Field(vbattery_charge, 6));
-  battery_charge->PhoneCurrent = Int_val(Field(vbattery_charge, 7));
-  battery_charge->BatteryTemperature = Int_val(Field(vbattery_charge, 8));
-  battery_charge->PhoneTemperature = Int_val(Field(vbattery_charge, 9));
-  return battery_charge;
-}
-*/
-
 static value Val_GSM_BatteryCharge(GSM_BatteryCharge *battery_charge)
 {
   CAMLparam0();
@@ -658,19 +642,6 @@ static value Val_GSM_BatteryCharge(GSM_BatteryCharge *battery_charge)
   CAMLreturn(res);
 }
 
-// Unused
-//static GSM_PhoneModel *GSM_PhoneModel_val(value vphone_model)
-// {
-//  /* Check alloc */
-//  GSM_PhoneModel *phone_model = malloc(sizeof(GSM_PhoneModel));
-//  /* TODO: implement that.
-//    phone_model->features = NULL; */
-//  phone_model->model = String_val(Field(vphone_model, 0));
-//  phone_model->number = String_val(Field(vphone_model, 1));
-//  phone_model->irdamodel = String_val(Field(vphone_model, 2));
-//  return phone_model;
-//}
-
 static value Val_GSM_PhoneModel(GSM_PhoneModel *phone_model)
 {
   CAMLparam0();
@@ -683,24 +654,6 @@ static value Val_GSM_PhoneModel(GSM_PhoneModel *phone_model)
 
   CAMLreturn(res);
 }
-
-/* broken code, never used
-static GSM_NetworkInfo *GSM_NetworkInfo_val(value vnetwork)
-{
-  GSM_NetworkInfo *network = malloc(sizeof(GSM_NetworkInfo));
-  if (network == NULL)
-    return NULL
-  network->CID = String_val(Field(vnetwork, 0));
-  network->NetworkCode = String_val(Field(vnetwork, 1));
-  network->State = GSM_NETWORKINFO_STATE_VAL(Field(vnetwork, 2));
-  network->LAC = String_val(Field(vnetwork, 3));
-  network->NetworkName = String_val(Field(vnetwork, 4));
-  network->GPRS = GSM_GPRS_STATE_VAL(Field(vnetwork, 5));
-  network->PacketCID = String_val(Field(vnetwork, 6));
-  network->PacketState = GSM_NETWORKINFO_STATE_VAL(Field(vnetwork, 7));
-  network->PacketLAC = String_val(Field(vnetwork, 8));
-  return network;
-}*/
 
 static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
 {
@@ -737,17 +690,6 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
 
   CAMLreturn(res);
 }
-
-/* Unused
-static GSM_SignalQuality *GSM_SignalQuality_val(value vsignal_quality)
-{
-  GSM_SignalQuality *signal_quality = malloc(sizeof(GSM_SignalQuality));
-  signal_quality->SignalStrength = Int_val(Field(vsignal_quality, 0));
-  signal_quality->SignalPercent = Int_val(Field(vsignal_quality, 1));
-  signal_quality->BitGSM_ErrorRate = Int_val(Field(vsignal_quality, 2));
-  return signal_quality;
-}
-*/
 
 static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality)
 {
@@ -915,28 +857,7 @@ value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone)
 /************************************************************************/
 /* Memory */
 
-/* Unused
-static GSM_SubMemoryEntry *GSM_SubMemoryEntry_val(value vsub_mem_entry)
-{
-  value vsms_list;
-  GSM_SubMemoryEntry *res = malloc(sizeof(GSM_SubMemoryEntry));
-  int i;
-  res->EntryType = GSM_ENTRYTYPE_VAL(Field(vsub_mem_entry, 0));
-  res->Date = *GSM_DateTime_val(Field(vsub_mem_entry, 1));
-  res->Number = Int_val(Field(vsub_mem_entry, 2));
-  res->VoiceTag = Int_val(Field(vsub_mem_entry, 3));
-  vsms_list = Field(vsub_mem_entry, 4);
-  if (Wosize_val(vsms_list) != 20)
-    return NULL; // TODO: Raise error !
-  for (i=0; i < 20; i++)
-    res->SMSList[i] = Field(vsms_list, i);
-  res->CallLength = Int_val(Field(vsub_mem_entry, 5));
-  res->AddError = GSM_ERROR_VAL(Field(vsub_mem_entry, 6));
-  CPY_TRIM_STRING_VAL(res->Text, Field(vsub_mem_entry, 7));
-  return res;
-}
-*/
-
+/* Currently unused.
 static value Val_GSM_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
 {
   CAMLparam0();
@@ -958,27 +879,6 @@ static value Val_GSM_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
   CAMLreturn(res);
 }
 
-/* Unused
-static GSM_MemoryEntry *GSM_MemoryEntry_val(value vmem_entry)
-{
-  value ventries;
-  GSM_MemoryEntry *mem_entry = malloc(sizeof(GSM_MemoryEntry));
-  int length;
-  int i;
-  ventries = Field(vmem_entry, 2);
-  length = Wosize_val(ventries);
-  mem_entry->MemoryType = GSM_MEMORYTYPE_VAL(Field(vmem_entry, 0));
-  mem_entry->Location = Int_val(Field(vmem_entry, 1));
-  // TODO: raise exception if too many entries.
-  if (length > GSM_PHONEBOOK_ENTRIES)
-    length = GSM_PHONEBOOK_ENTRIES;
-  for (i=0; i < length; i++)
-    mem_entry->Entries[i] = *GSM_SubMemoryEntry_val(Field(ventries, i));
-  mem_entry->EntriesNum = length;
-  return mem_entry;
-}
-*/
-
 static value Val_GSM_MemoryEntry(GSM_MemoryEntry *mem_entry)
 {
   CAMLparam0();
@@ -997,6 +897,7 @@ static value Val_GSM_MemoryEntry(GSM_MemoryEntry *mem_entry)
 
   CAMLreturn(res);
 }
+*/
 
 /************************************************************************/
 /* Messages */
@@ -1072,58 +973,35 @@ static value Val_GSM_SMSMessage(GSM_SMSMessage *sms)
 {
   CAMLparam0();
   CAMLlocal2(res, vother_numbers);
-  DEBUG("entering");
   res = caml_alloc(21, 0);
   int length = sms->OtherNumbersNum;
   int i;
 
   Store_field(res, 0, VAL_UCHAR(sms->ReplaceMessage));
-  DEBUG("");
   Store_field(res, 1, Val_bool(sms->RejectDuplicates));
-  DEBUG("");
   Store_field(res, 2, VAL_GSM_UDHHeader(&(sms->UDH)));
-  DEBUG("");
   Store_field(res, 3, CAML_COPY_USTRING(sms->Number));
-  DEBUG("");
   vother_numbers = caml_alloc(length, 0);
-  DEBUG("");
   for (i=0; i < length; i++)
     Store_field(vother_numbers, i, CAML_COPY_USTRING(sms->OtherNumbers[i]));
-  DEBUG("");
   Store_field(res, 4, vother_numbers);
-  DEBUG("");
   /* Store_field(res, 5, Val_GSM_SMSC(sms->SMSC)); NYI */
   Store_field(res, 5, VAL_GSM_MEMORYTYPE(sms->Memory));
-  DEBUG("");
   Store_field(res, 6, Val_int(sms->Location));
-  DEBUG("");
   Store_field(res, 7, Val_int(sms->Folder));
-  DEBUG("");
   Store_field(res, 8, Val_bool(sms->InboxFolder));
-  DEBUG("");
   Store_field(res, 9, VAL_GSM_SMS_STATE(sms->State));
-  DEBUG("");
   Store_field(res, 10, CAML_COPY_USTRING(sms->Name));
-  DEBUG("");
   Store_field(res, 11, CAML_COPY_USTRING(sms->Text));
-  DEBUG("");
   Store_field(res, 12, VAL_GSM_SMSMESSAGETYPE(sms->PDU));
-  DEBUG("");
   Store_field(res, 13, VAL_GSM_CODING_TYPE(sms->Coding));
-  DEBUG("");
   Store_field(res, 14, Val_GSM_DateTime(&(sms->DateTime)));
-  DEBUG("");
   Store_field(res, 15, Val_GSM_DateTime(&(sms->SMSCTime)));
-  DEBUG("");
   Store_field(res, 16, VAL_UCHAR(sms->DeliveryStatus));
-  DEBUG("");
   Store_field(res, 17, Val_bool(sms->ReplyViaSameSMSC));
-  DEBUG("");
   Store_field(res, 18, VAL_CHAR(sms->Class));
-  DEBUG("");
   Store_field(res, 19, VAL_UCHAR(sms->MessageReference));
 
-  DEBUG("leaving");
   CAMLreturn(res);
 }
 
@@ -1211,17 +1089,6 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
 
-/* Unused
-static GSM_OneSMSFolder *GSM_OneSMSFolder_val(value vfolder)
-{
-  GSM_OneSMSFolder *folder = malloc(sizeof(GSM_OneSMSFolder));
-  folder->InboxFolder = Bool_val(Field(vfolder, 0));
-  folder->OutboxFolder = Bool_val(Field(vfolder, 1));
-  folder->Memory = GSM_MEMORYTYPE_VAL(Field(vfolder, 2));
-  CPY_TRIM_STRING_VAL(folder->Name, Field(vfolder, 3));
-  return folder;
-} */
-
 static value Val_GSM_OneSMSFolder(GSM_OneSMSFolder *folder)
 {
   CAMLparam0();
@@ -1255,21 +1122,6 @@ value caml_gammu_GSM_GetSMSFolders(value s)
 
   CAMLreturn(res);
 }
-
-/* Unused
-static GSM_SMSMemoryStatus *GSM_SMSMemoryStatus_val(value vsms_mem)
-{
-  GSM_SMSMemoryStatus *sms_mem = malloc(sizeof(GSM_SMSMemoryStatus));
-  sms_mem->SIMUnRead = Int_val(Field(vsms_mem, 0));
-  sms_mem->SIMUsed = Int_val(Field(vsms_mem, 1));
-  sms_mem->SIMSize = Int_val(Field(vsms_mem, 2));
-  sms_mem->TemplatesUsed = Int_val(Field(vsms_mem, 3));
-  sms_mem->PhoneUnRead = Int_val(Field(vsms_mem, 4));
-  sms_mem->PhoneUsed = Int_val(Field(vsms_mem, 5));
-  sms_mem->PhoneSize = Int_val(Field(vsms_mem, 6));
-  return sms_mem;
-}
-*/
 
 static value Val_GSM_SMSMemoryStatus(GSM_SMSMemoryStatus *sms_mem)
 {
@@ -1364,29 +1216,6 @@ static value Val_GSM_MultiPartSMSEntry(GSM_MultiPartSMSEntry mult_part_sms)
   CAMLreturn(res);
 }
 
-/*
-static GSM_MultiPartSMSInfo *GSM_MultiPartSMSInfo_val(value vmult_part_sms)
-{
-  value ventries;
-  GSM_MultiPartSMSInfo *mult_part_sms = malloc(sizeof(GSM_MultiPartSMSInfo));
-  int length;
-  int i;
-  ventries = Field(vmult_part_sms, 4);
-  length = Wosize_val(ventries);
-  mult_part_sms->UnicodeCoding = Bool_val(Field(vmult_part_sms, 0));
-  mult_part_sms->Class = Int_val(Field(vmult_part_sms, 1));
-  mult_part_sms->ReplaceMessage =
-    (unsigned char) GSM_Char_val(Field(vmult_part_sms, 2));
-  mult_part_sms->Unknown = Bool_val(Field(vmult_part_sms, 3));
-  if (length > (GSM_MAX_MULTI_SMS))
-    length = GSM_MAX_MULTI_SMS;
-  for (i=0; i < length; i++)
-    mult_part_sms->Entries[i] = GSM_MultiPartSMSEntry_val(Field(ventries, i));
-  mult_part_sms->EntriesNum = length;
-  return mult_part_sms;
-}
-*/
-
 static value Val_GSM_MultiPartSMSInfo(GSM_MultiPartSMSInfo *multipart_sms_info)
 {
   CAMLparam0();
@@ -1443,13 +1272,14 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 /************************************************************************/
 /* Calls */
 
+/* Currently unused.
 static GSM_CallStatus GSM_CallStatus_val(value vcall_status, int *arg_int1)
 {
   int ret = 0;
   value hash;
 
-  /* vcall_status is a variant type maybe parameterized. It is constant if it
-   * is an immediate integer. */
+  // vcall_status is a variant type maybe parameterized. It is constant if it
+  // is an immediate integer.
   if (Is_long(vcall_status)) {
     arg_int1 = 0;
     ret = Int_val(vcall_status);
@@ -1467,6 +1297,7 @@ static GSM_CallStatus GSM_CallStatus_val(value vcall_status, int *arg_int1)
 
   return ret;
 }
+*/
 
 static value Val_GSM_CallStatus(GSM_CallStatus call_status, int *arg_int1)
 {
@@ -1487,13 +1318,7 @@ static value Val_GSM_CallStatus(GSM_CallStatus call_status, int *arg_int1)
   CAMLreturn(res);
 }
 
-
- /*type call = {
-    status : status;
-    call_id : int option;
-    phone_number : string;
-  }*/
-
+/* Currently unused.
 static GSM_Call *GSM_Call_val(GSM_Call *call, value vcall)
 {
 
@@ -1503,6 +1328,7 @@ static GSM_Call *GSM_Call_val(GSM_Call *call, value vcall)
 
   return call;
 }
+*/
 
 static value Val_GSM_Call(GSM_Call *call)
 {
