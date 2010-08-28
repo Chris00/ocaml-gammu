@@ -567,13 +567,17 @@ value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
   GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
   int read_bytes;
 
+  read_bytes = GSM_ReadDevice(sm, Bool_val(vwait_for_reply));
   /* Bug in GSM_ReadDevice, the function already checks for connection, but
      one can't make the difference between a GSM not connected or 33 bytes
-     read.  TODO: Send a bug report. */
+     read. This bug has been fixed in 1.28.92, it returns (-1) in that
+     case. */
+#if VERSION_NUM >= 12892
+  if (read_bytes == -1)
+#else
   if (!GSM_IsConnected(sm))
+#endif
     caml_gammu_raise_Error(ERR_NOTCONNECTED);
-
-  read_bytes = GSM_ReadDevice(sm, Bool_val(vwait_for_reply));
 
   CAMLreturn(Val_int(read_bytes));
 }
