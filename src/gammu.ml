@@ -247,8 +247,6 @@ external make : unit -> t = "caml_gammu_GSM_AllocStateMachine"
 
 external get_config : t -> int -> config = "caml_gammu_GSM_GetConfig"
 
-(*external set_config : t -> config -> int -> unit = "caml_gammu_GSM_set_config" *)
-
 external push_config : t -> config -> unit = "caml_gammu_push_config"
 
 external remove_config : t -> config = "caml_gammu_remove_config"
@@ -404,7 +402,8 @@ struct
 
   external product_code : t -> string = "caml_gammu_GSM_GetProductCode"
 
-  external signal_quality : t -> signal_quality = "caml_gammu_GSM_GetSignalQuality"
+  external signal_quality : t -> signal_quality
+    = "caml_gammu_GSM_GetSignalQuality"
 
 end
 
@@ -642,7 +641,7 @@ struct
             aux (retries_num + 1) location acc for_n;
     in
     aux 0 (-1) a for_n
-      
+
   type folder = {
     box : folder_box;
     folder_memory : memory_type;

@@ -373,7 +373,8 @@ CAML_GAMMU_GSM_STR_GET_PROTOTYPE(IMEI, GSM_MAX_IMEI_LENGTH + 1);
 
 CAML_GAMMU_GSM_STR_GET_PROTOTYPE(ManufactureMonth, BUFFER_LENGTH);
 
-CAML_GAMMU_GSM_STR_GET_PROTOTYPE(Manufacturer, GSM_MAX_MANUFACTURER_LENGTH + 1);
+CAML_GAMMU_GSM_STR_GET_PROTOTYPE(
+  Manufacturer, GSM_MAX_MANUFACTURER_LENGTH + 1);
 
 CAML_GAMMU_GSM_STR_GET_PROTOTYPE(Model, GSM_MAX_MODEL_LENGTH + 1);
 
@@ -390,7 +391,8 @@ CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(SignalQuality);
 /************************************************************************/
 /* Date and time */
 
-static GSM_DateTime *GSM_DateTime_val(GSM_DateTime *date_time, value vdate_time);
+static GSM_DateTime *GSM_DateTime_val(
+  GSM_DateTime *date_time, value vdate_time);
 
 static value Val_GSM_DateTime(GSM_DateTime *date_time);
 

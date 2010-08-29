@@ -38,7 +38,8 @@ let () =
     try
       SMS.fold s ~folder
         ~on_err:(fun loc e ->
-          printf "Failed to get SMS (location %i): %s\n" loc (string_of_error e);
+          printf "Failed to get SMS next to location %i: %s\n"
+            loc (string_of_error e);
           flush stdout;
           Unix.sleep 1)
         (fun c m -> print_multi_sms m; c + 1) 0;

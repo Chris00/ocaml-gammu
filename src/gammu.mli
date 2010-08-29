@@ -25,7 +25,7 @@
     length. Strings too long will be trimmed before being passed to libGammu
     (caml Strings remain immutable).
 
-    NOTE: this library is not thread safe. *)
+    NOTE: This library is not thread safe. *)
 
 val pointer_value : 'a -> int
 
@@ -349,7 +349,8 @@ type security_code_type =
   | SEC_Phone   (** Phone code needed. *)
   | SEC_Network (** Network code needed. *)
 
-val enter_security_code : t -> code_type:security_code_type -> code:string -> unit
+val enter_security_code :
+  t -> code_type:security_code_type -> code:string -> unit
 (** Enters security code (PIN, PUK,...). *)
 
 val get_security_status : t -> security_code_type
@@ -744,9 +745,10 @@ module SMS : sig
   type memory_status = {
     sim_unread : int;     (** Number of unread messages on SIM. *)
     sim_used : int;       (** Number of saved messages
-                             (including unread) on SIM. *)
+                              (including unread) on SIM. *)
     sim_size : int;       (** Number of possible messages on SIM. *)
-    templates_used : int; (** Number of used templates (62xx/63xx/7110/etc.). *)
+    templates_used : int; (** Number of used templates
+                              (62xx/63xx/7110/etc.). *)
     phone_unread : int;   (** Number of unread messages in phone. *)
     phone_used : int;     (** Number of saved messages in phone. *)
     phone_size : int;     (** Number of possible messages on phone. *)

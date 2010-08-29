@@ -1337,7 +1337,8 @@ static value Val_GSM_Call(GSM_Call *call)
 
   res = caml_alloc(4, 0);
   Store_field(res, 0, Val_GSM_CallStatus(call->Status, &(call->StatusCode)));
-  Store_field(res, 1, call->CallIDAvailable ? val_some(call->CallID) : VAL_NONE);
+  Store_field(res, 1, call->CallIDAvailable ?
+              val_some(call->CallID) : VAL_NONE);
   Store_field(res, 2, CAML_COPY_USTRING(call->PhoneNumber));
 
   CAMLreturn(res);
