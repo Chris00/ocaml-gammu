@@ -235,10 +235,6 @@ val get_config : t -> int -> config
     [num] is the number of the section to read starting from zero, [-1] for
     the currently used one. *)
 
-(*val set_config : t -> config -> int -> unit
-(** [set_config s config num] sets [num]th state machine configuration [s] to
-  [config]. *)*)
-
 val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the
     configuration stack of [s]. *)
@@ -252,16 +248,13 @@ val length_config : t -> int
     the number of active configurations. *)
 
 val load_gammurc : ?path:string -> t -> unit
-(** (* NYI *) Automaticaly find the gammurc file (see
+(** (* NYI *) Automaticaly finds the gammurc file (see
     {!Gammu.INI.ini_of_gammurc}), read it and push the configs in the state
     machine.
 
-    @param path force the use of a custom path instead of the autodetected
-    one (default: autodetection is performed). *)
+    @param path force the use of a custom path instead of the autodetected one
+    (default: autodetection is performed). *)
 
-(* maybe a type t should be created by reading a config file, then one
-   connects.  config files seem to play the same role as files for
-   [open_*] *)
 val connect : ?log:(string -> unit) -> ?replies:int -> t -> unit
 (** Initiates connection.
 
@@ -271,6 +264,7 @@ val connect : ?log:(string -> unit) -> ?replies:int -> t -> unit
     by the same time terminate your connection.
 
     @param log logging function.
+
     @param replies number of replies to wait for on each request (default: 3).
 
     @raise UNCONFIGURED if no configuration was set. *)

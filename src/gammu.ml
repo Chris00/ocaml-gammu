@@ -217,8 +217,8 @@ struct
     (* TODO: Check if can set a better unicode flag. *)
     { head = s_node; unicode=false; }
 
-  external _config_of_ini : section_node -> int -> config =
-        "caml_gammu_GSM_ReadConfig"
+  external _config_of_ini : section_node -> int -> config
+    = "caml_gammu_GSM_ReadConfig"
 
   let config_of_ini cfg_info num =
     _config_of_ini cfg_info.head num
@@ -256,7 +256,7 @@ external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 let load_gammurc ?path s =
   let ini = INI.ini_of_gammurc ?path () in
   (* Read first config from INI file.
-     TODO: we should read all sections from * the INI file. *)
+     TODO: we should read all sections from the INI file. *)
   let cfg = INI.config_of_ini ini 0 in
   push_config s cfg
 
