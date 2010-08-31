@@ -27,7 +27,7 @@ let print_dyn_infos s =
     | Info.BatteryFull -> "Powered from AC, battery is fully charged."
     | Info.PowerFault -> "Power failure.");
   flush stdout;
-  Printf.printf "Battery (%s): %imAh, %i%%, %imV, %i Celius\n"
+  Printf.printf "Battery (%s): %imAh, %i%%, %imV, %i Celcius\n"
     (match bat.Info.battery_type with
       Info.Unknown_battery -> "Unknown"
     | Info.NiMH -> "NiMH"
