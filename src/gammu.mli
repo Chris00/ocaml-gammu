@@ -479,31 +479,36 @@ end
 module DateTime :
 sig
 
-  type date_time = {
-    timezone : int; (* The difference between local time and GMT in seconds *)
+  type t = {
+    timezone : int; (** The difference between local time and GMT in seconds *)
     second : int;
     minute : int;
     hour : int;
     day : int;
-    month : int;    (* January = 1, February = 2, etc. *)
-    year : int;     (* Complete year number. Not 03, but 2003. *)
-  }
+    month : int;    (** January = 1, February = 2, etc. *)
+    year : int;     (** 4 digits year number. *)
+  } (** Date and time type. *)
 
-  val check_date : date_time -> bool
+  val compare : t -> t -> int
+  (** [compare d1 d2] returns [0] if [d1] is the same date and time as [d2], a
+      negative integer if [d1] is before [d2], and a positive integer if [d1]
+      is after [d2]. *)
+
+  val check_date : t -> bool
   (** Checks whether date is valid. This does not check time, see [check_time]
       for this. *)
 
-  val check_time : date_time -> bool
+  val check_time : t -> bool
   (** Checks whether time is valid. This does not check date, see [check_date]
       for this. *)
 
-  val os_date : date_time -> string
+  val os_date : t -> string
   (** Converts date from timestamp to string according to OS settings. *)
 
-  val os_date_time : ?timezone:bool -> date_time -> string
-(** Converts timestamp to string according to OS settings.
+  val os_date_time : ?timezone:bool -> t -> string
+  (** Converts timestamp to string according to OS settings.
 
-    @param timezone Whether to include time zone (default false). *)
+      @param timezone Whether to include time zone (default false). *)
 
 end
 
@@ -537,15 +542,14 @@ type memory_entry = {
 } (** Value for saving phonebook entries. *)
 and sub_memory_entry = {
   entry_type : entry_type; (** Type of entry. *)
-  date : DateTime.date_time; (** Text of entry
-                                 (if applicable, see {!entry_type}). *)
+  date : DateTime.t;
   number : int; (** Number of entry (if applicable, see {!entry_type}). *)
   voice_tag : int; (** Voice dialling tag. *)
   sms_list : int array;
   call_length : int;
   add_error : error; (** During adding SubEntry Gammu can return here info,
                          if it was done OK. *)
-  text : string; (** Text of entry (if applicable, see GSM_EntryType). *)
+  text : string; (** Text of entry (if applicable, see {!entry_type}). *)
   (* picture : binary_picture (* NYI Picture data. *) *)
 } (** One value of phonebook memory entry. *)
 and entry_type =
@@ -677,8 +681,8 @@ module SMS : sig
     text : string;   (** Text for SMS. *)
     pdu : message_type; (** Type of message. *)
     coding : coding; (** Type of coding. *)
-    date_time : DateTime.date_time;
-    smsc_time : DateTime.date_time;
+    date_time : DateTime.t;
+    smsc_time : DateTime.t;
     delivery_status : char; (** In delivery reports: status. *)
     reply_via_same_smsc : bool; (** Indicates whether "Reply via same
                                     center" is set. *)

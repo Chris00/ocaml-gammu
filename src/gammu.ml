@@ -414,7 +414,7 @@ end
 module DateTime =
 struct
 
-  type date_time = {
+  type t = {
     timezone : int;
     second : int;
     minute : int;
@@ -424,17 +424,24 @@ struct
     year : int;
   }
 
-  external check_date : date_time -> bool = "caml_gammu_GSM_CheckDate"
+  let compare d1 d2 =
+    (* Rough integer representation of the GMT date and time. *)
+    let int_of_date d =
+      d.year * 32140800 + d.month * 2678400 + d.day * 86400
+      + d.hour * 3600 + d.minute * 60 + d.second
+      - d.timezone
+    in
+    compare (int_of_date d1) (int_of_date d2)
 
-  external check_time : date_time -> bool = "caml_gammu_GSM_CheckTime"
+  external check_date : t -> bool = "caml_gammu_GSM_CheckDate"
 
-  external os_date : date_time -> string = "caml_gammu_GSM_OSDate"
+  external check_time : t -> bool = "caml_gammu_GSM_CheckTime"
 
-  external _os_date_time : date_time -> bool -> string
-    = "caml_gammu_GSM_OSDateTime"
+  external os_date : t -> string = "caml_gammu_GSM_OSDate"
 
-  let os_date_time ?(timezone=false) dt =
-    _os_date_time dt timezone
+  external _os_date_time : t -> bool -> string = "caml_gammu_GSM_OSDateTime"
+
+  let os_date_time ?(timezone=false) dt = _os_date_time dt timezone
 
 end
 
@@ -462,15 +469,15 @@ type memory_entry = {
 }
 and sub_memory_entry = {
   entry_type : entry_type; (** Type of entry. *)
-  date : DateTime.date_time; (** Text of entry
-                                 (if applicable, see {!entry_type}). *)
+  date : DateTime.t;
   number : int; (** Number of entry (if applicable, see {!entry_type}). *)
   voice_tag : int; (** Voice dialling tag. *)
   sms_list : int array;
   call_length : int;
   add_error : error; (** During adding SubEntry Gammu can return here info,
                          if it was done OK. *)
-  text : string; (** Text of entry (if applicable, see GSM_EntryType). *)
+  text : string; (** Text of entry
+                     (if applicable, see {!entry_type}). *)
   (* picture : binary_picture (* NYI Picture data. *) *)
 }
 and entry_type =
@@ -598,8 +605,8 @@ struct
     text : string;
     pdu : message_type;
     coding : coding;
-    date_time : DateTime.date_time;
-    smsc_time : DateTime.date_time;
+    date_time : DateTime.t;
+    smsc_time : DateTime.t;
     delivery_status : char;
     reply_via_same_smsc : bool;
     sms_class : char;
