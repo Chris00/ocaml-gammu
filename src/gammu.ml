@@ -18,8 +18,6 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details. *)
 
-external pointer_value : 'a -> int = "caml_gammu_pointer_value"
-
 (* Initialize the C library *)
 external c_init : unit -> unit = "caml_gammu_init"
 let () = c_init ()
@@ -633,7 +631,7 @@ struct
             | -1 -> (* Start from the beginning of the folder. *)
               _get_next s 0 folder true
             | loc -> (* Get next location, folder need to be 0 because the
-                       location carries the folder in its representation. *)
+                        location carries the folder in its representation. *)
               _get_next s loc 0 false
           in
           aux 0 multi_sms.(0).location (f acc multi_sms) (for_n - 1)

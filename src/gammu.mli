@@ -27,7 +27,6 @@
 
     NOTE: This library is not thread safe. *)
 
-val pointer_value : 'a -> int
 
 (************************************************************************)
 (** {2 Error handling} *)
