@@ -895,7 +895,7 @@ end
 (************************************************************************)
 (** {2 Events} *)
 
-val incoming_sms : t -> ?enable:bool -> (SMS.message -> unit) -> unit
+val incoming_sms : ?enable:bool -> t -> (SMS.message -> unit) -> unit
 (** [incoming_sms s f] register [f] as callback function in the event of an
     incoming SMS.
 
@@ -905,7 +905,7 @@ val enable_incoming_sms : t -> bool -> unit
 (** [enable_incoming_sms t enable] enable incoming sms events or not,
     according to [enable]. *)
 
-val incoming_call : t -> ?enable:bool -> (Call.call -> unit) -> unit
+val incoming_call : ?enable:bool -> t -> (Call.call -> unit) -> unit
 (** [incoming_call s f] register [f] as callback function in the event of
     incoming call.
 

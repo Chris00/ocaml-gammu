@@ -807,7 +807,7 @@ external enable_incoming_sms : t -> bool -> unit
 external _incoming_sms : t -> (SMS.message -> unit) -> unit
   = "caml_gammu_GSM_SetIncomingSMSCallback"
 
-let incoming_sms s ?(enable=true) f =
+let incoming_sms ?(enable=true) s f =
   _incoming_sms s f;
   enable_incoming_sms s enable
 
@@ -817,7 +817,7 @@ external enable_incoming_call : t -> bool -> unit
 external _incoming_call : t -> (Call.call -> unit) -> unit
   = "caml_gammu_GSM_SetIncomingCallCallback"
 
-let incoming_call s ?(enable=true) f =
+let incoming_call ?(enable=true) s f =
   _incoming_call s f;
   enable_incoming_call s enable
 

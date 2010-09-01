@@ -33,10 +33,8 @@ let () =
       | G.Error G.UNKNOWN -> warn_not_supported itype;
       | G.Error G.NOTSUPPORTED -> warn_not_supported itype;
     in
-    try_set_incoming (fun s m -> G.incoming_sms s m)
-      incoming_sms_callback "sms";
-    try_set_incoming (fun s m -> G.incoming_call s m)
-      incoming_call_callback "call";
+    try_set_incoming G.incoming_sms incoming_sms_callback "sms";
+    try_set_incoming G.incoming_call incoming_call_callback "call";
     print_newline ();
     (* Busy waiting to keep communication with phone *)
     while true do
