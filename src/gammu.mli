@@ -229,6 +229,7 @@ val init_locales : ?path:string -> unit -> unit
 val make : unit -> t
 (** Make a new clean state machine. *)
 
+(* TODO: make the num parameter optional to mean "-1" *)
 val get_config : t -> int -> config
 (** [get_config s num] gets gammu configuration from state machine [s], where
     [num] is the number of the section to read starting from zero, [-1] for
@@ -236,7 +237,10 @@ val get_config : t -> int -> config
 
 val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the
-    configuration stack of [s]. *)
+    configuration stack of [s].
+
+    Gammu tries each configuration, from the bottom to the top of the stack,
+    in order to connect. *)
 
 val remove_config : t -> config
 (** [remove_config s] remove the top configuration from the config stack of
@@ -259,8 +263,8 @@ val connect : ?log:(string -> unit) -> ?replies:int -> t -> unit
 
     IMPORTANT: do not forget to call disconnect when done as otherwise the
     connection may be prematurely terminated. In fact, the problem is that if
-    you have no reference to the state machine left, the GC will free it and
-    by the same time terminate your connection.
+    you have no reference to the state machine left, the GC may free it and by
+    the same time terminate your connection.
 
     @param log logging function.
 

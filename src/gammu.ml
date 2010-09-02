@@ -116,11 +116,7 @@ let () = Callback.register_exception "Gammu.GSM_Error" (Error NONE);
 
 module Debug =
 struct
-  (* GSM_Debug_Info is not directly represented; a Debug.info can either be
-     global or attached to a state machine. So we use a parametrized variant
-     type so that the dependency (for the GC) of a Debug.info to a state
-     machine or nothing is declared. And the actual GSM_Debug_Info is accessed
-     trough the state machine or trough the global debug. *)
+
   type info
 
   external get_global : unit -> info = "caml_gammu_GSM_GetGlobalDebug"
