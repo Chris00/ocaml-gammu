@@ -4,7 +4,6 @@ let debug_level = ref "nothing"
 let connection = ref "at"
 let device = ref "/dev/ttyUSB0"
 let folder = ref 1
-let message_number = ref 1
 
 let parse_args () =
   let args = [
@@ -17,8 +16,6 @@ let parse_args () =
      "<device> Set device file (defaults to \"/dev/ttyUSB0\").");
     ("--folder", Arg.Set_int folder,
      "<connection_type> Set folder location (default = 1).");
-    ("--message-number", Arg.Set_int message_number,
-     "<connection_type> Set message number (default = 1).");
   ] in
   let anon _ = raise (Arg.Bad "No anonymous arguments.") in
   Arg.parse args anon "Usage:"

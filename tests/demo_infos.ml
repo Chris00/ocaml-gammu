@@ -1,4 +1,4 @@
-(*i Simple demo/test file that gathers some informations about the phone. *)
+(* Simple demo/test file that gathers some informations about the phone. *)
 open Args_demo
 open Utils_tests
 open Printf
