@@ -732,6 +732,17 @@ module SMS : sig
 
       @raise NOTSUPPORTED if the mechanism is not supported by the phone. *)
 
+  val set : t -> message -> int * int
+  (** [set s sms] sets [sms] at the specified location and folder (given in
+      {!SMS.message} representation). And returns a couple for folder and
+      location really set (after transformation). *)
+
+  val add : t -> message -> int * int
+  (** [add s sms] adds [sms] to the folder specified in the [folder] field of
+      [sms] and returns the couple folder and location where the message was
+      stored (folder may be transformed). The location fields of [sms] are ignored when adding SMS, put
+      whatever you want there. *)
+
   type folder = {
     box : folder_box;     (** Whether it is inbox or outbox. *)
     folder_memory : memory_type; (** Where exactly it's saved. *)

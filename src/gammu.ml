@@ -643,6 +643,10 @@ struct
     in
     aux 0 (-1) a for_n
 
+  external set : t -> message -> int * int = "caml_gammu_GSM_SetSMS"
+
+  external add : t -> message -> int * int = "caml_gammu_GSM_AddSMS"
+
   type folder = {
     box : folder_box;
     folder_memory : memory_type;

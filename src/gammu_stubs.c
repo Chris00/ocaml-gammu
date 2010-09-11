@@ -1089,12 +1089,16 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
 
+CAML_GAMMU_GSM_SETSMS(Set)
+
+CAML_GAMMU_GSM_SETSMS(Add)
+
 static value Val_GSM_OneSMSFolder(GSM_OneSMSFolder *folder)
 {
   CAMLparam0();
   CAMLlocal1(res);
 
-  res = caml_alloc(4, 0);
+  res = caml_alloc(3, 0);
   Store_field(res, 0, OUTBOX(folder->OutboxFolder));
   Store_field(res, 1, VAL_GSM_MEMORYTYPE(folder->Memory));
   Store_field(res, 2, CAML_COPY_USTRING(folder->Name));
