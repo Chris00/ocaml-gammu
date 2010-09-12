@@ -71,10 +71,6 @@ typedef int gboolean;
 /* Init */
 GSM_Debug_Info *global_debug;
 
-value caml_hash_Some;
-value caml_hash_RemoteEnded;
-
-CAMLexport
 void caml_gammu_init();
 
 

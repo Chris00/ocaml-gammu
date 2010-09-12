@@ -48,13 +48,17 @@ value caml_gammu_pointer_value(value v)
 /************************************************************************/
 /* Init */
 
+static value caml_hash_Some;
+static value caml_hash_RemoteEnded;
+
 CAMLexport
-void caml_gammu_init()
+void caml_gammu_init(value vunit)
 {
+  /* noalloc */
   global_debug = GSM_GetGlobalDebug();
   /* Pre-compute hashs for variant types with arguments. */
-  caml_hash_Some = caml_hash_variant("Some");;
-  caml_hash_RemoteEnded = caml_hash_variant("RemoteEnded");;
+  caml_hash_Some = caml_hash_variant("Some");
+  caml_hash_RemoteEnded = caml_hash_variant("RemoteEnded");
   /* Initialize gettext. */
   GSM_InitLocales(NULL);
 }
@@ -81,7 +85,7 @@ static value val_some(value vsome)
 {
   CAMLparam1(vsome);
   CAMLlocal1(res);
-
+  
   res = caml_alloc(2, 0);
   Store_field(res, 0, caml_hash_Some);
   Store_field(res, 1, vsome);
