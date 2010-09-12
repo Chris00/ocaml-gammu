@@ -78,9 +78,5 @@ let () =
     (fun i folder -> printf "  %d : %s\n" i (string_of_folder folder))
     (SMS.folders s);
   print_newline ();
-  while true do
-    print_dyn_infos s;
-    print_string "Press [Enter] to refresh informations.\n";
-    ignore (read_line ());
-  done;;
+  print_dyn_infos s;
   (* TODO: Add a trap to disconnect... *)
