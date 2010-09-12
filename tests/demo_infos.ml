@@ -1,4 +1,5 @@
-(*i Simple demo/test file that gathers some informations about the phone. *)
+(* Simple demo/test file that gathers some informations about the phone. *)
+open Printf
 open Gammu
 open Args_demo
 open Utils_tests
@@ -8,17 +9,17 @@ let print_dyn_infos s =
     try
       let status = SMS.get_status s in
       print_string "(#unread) #used/#max:\n";
-      Printf.printf "(%d) %d/%d (SIM)\t"
+      printf "(%d) %d/%d (SIM)\t"
         status.SMS.sim_unread status.SMS.sim_used status.SMS.sim_size;
-      Printf.printf "(%d) %d/%d (Phone)\n"
+      printf "(%d) %d/%d (Phone)\n"
         status.SMS.phone_unread status.SMS.phone_used status.SMS.phone_size;
-      Printf.printf "#templates used: %d\n" status.SMS.templates_used;
+      printf "#templates used: %d\n" status.SMS.templates_used;
     with Error NOTSUPPORTED ->
       print_string "Your phone doesn't support getting sms status.\n";
   end;
   flush stdout;
   let bat = Info.battery_charge s in
-  Printf.printf "%s\n"
+  printf "%s\n"
     (match bat.Info.charge_state with
       Info.BatteryPowered -> "Powered from battery."
     | Info.BatteryConnected -> "Powered from AC, battery connected."
@@ -27,7 +28,7 @@ let print_dyn_infos s =
     | Info.BatteryFull -> "Powered from AC, battery is fully charged."
     | Info.PowerFault -> "Power failure.");
   flush stdout;
-  Printf.printf "Battery (%s): %imAh, %i%%, %imV, %i Celius\n"
+  printf "Battery (%s): %imAh, %i%%, %imV, %i Celius\n"
     (match bat.Info.battery_type with
       Info.Unknown_battery -> "Unknown"
     | Info.NiMH -> "NiMH"
@@ -38,20 +39,20 @@ let print_dyn_infos s =
     bat.Info.battery_voltage
     bat.Info.battery_temperature;
   flush stdout;
-  Printf.printf "Consumption: phone %imA (%i Celcius), charger %imA %imV\n"
+  printf "Consumption: phone %imA (%i Celcius), charger %imA %imV\n"
     bat.Info.phone_current
     bat.Info.phone_temperature
     bat.Info.charge_current
     bat.Info.charge_voltage;
-  Printf.printf "%s\n" (string_of_signal_quality (Info.signal_quality s));
+  printf "%s\n" (string_of_signal_quality (Info.signal_quality s));
   flush stdout;
   let network = Info.network_info s in
-  Printf.printf "Network %s, %s\n"
+  printf "Network %s, %s\n"
     (string_of_network_state network.Info.state)
     network.Info.name;
-  Printf.printf "CID \"%s\", code \"%s\", LAC \"%s\"\n"
+  printf "CID \"%s\", code \"%s\", LAC \"%s\"\n"
     network.Info.cid network.Info.code network.Info.lac;
-  Printf.printf "GPRS %s, packet CID \"%s\", LAC \"%s\", \"%s\"\n"
+  printf "GPRS %s, packet CID \"%s\", LAC \"%s\", \"%s\"\n"
     (string_of_info_gprs network.Info.gprs)
     network.Info.packet_cid
     network.Info.packet_lac
@@ -63,19 +64,18 @@ let () =
   let s = make () in
   configure s;
   prepare_phone s;
-  Printf.printf "Phone model: %s\n" (Info.model s);
-  Printf.printf "Manufacturer: \"%s\" (%s month)\n"
+  printf "Phone model: %s\n" (Info.model s);
+  printf "Manufacturer: \"%s\" (%s month)\n"
     (Info.manufacturer s) (Info.manufacture_month s);
-  Printf.printf "Product code: %s\n" (Info.product_code s);
+  printf "Product code: %s\n" (Info.product_code s);
   let fw = Info.firmware s in
-  Printf.printf "Hardware: %s\n" (Info.hardware s);
-  Printf.printf "Firmware version: \"%s\", date \"%s\", num \"%f\"\n"
+  printf "Hardware: %s\n" (Info.hardware s);
+  printf "Firmware version: \"%s\", date \"%s\", num \"%f\"\n"
     fw.Info.version fw.Info.ver_date fw.Info.ver_num;
-  Printf.printf "IMEI: %s\n" (Info.imei s);
+  printf "IMEI: %s\n" (Info.imei s);
   print_string "Folders:\n";
   Array.iteri
-    (fun i folder ->
-      Printf.printf "  %d : %s\n" i (string_of_folder folder))
+    (fun i folder -> printf "  %d : %s\n" i (string_of_folder folder))
     (SMS.folders s);
   print_newline ();
   while true do

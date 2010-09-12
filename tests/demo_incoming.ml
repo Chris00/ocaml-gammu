@@ -1,4 +1,5 @@
 (* Simple demo/test file that listen for incoming events. *)
+open Printf
 open Gammu
 open Args_demo
 open Utils_tests
@@ -10,17 +11,17 @@ let () =
   prepare_phone s;
   let incoming_sms_callback sms =
     print_string "\nIncoming SMS !\n";
-    Printf.printf "From number: %s\n" sms.SMS.number;
+    printf "From number: %s\n" sms.SMS.number;
   and incoming_call_callback call =
     print_string "\nIncoming Call !\n";
-    Printf.printf "From number: %s\n" call.Call.number;
+    printf "From number: %s\n" call.Call.number;
   in
   (* Check for (maybe) non supported operation. Unfortunately, libGammu
      doesn't recognize the CMS error for those function right now. CMS Error
      303 "operation not supported" is translated to Error UNKNOWN. *)
   let try_set_incoming incoming_itype callback itype =
     let warn_not_supported t =
-      Printf.printf "Sorry, incoming_%s notifications \
+      printf "Sorry, incoming_%s notifications \
                      aren't supported by your phone." t;
       flush stdout
     in
@@ -35,7 +36,7 @@ let () =
   print_newline ();
   (* Busy waiting to keep communication with phone *)
   while true do
-    Printf.printf "\r%s" (string_of_signal_quality (Info.signal_quality s));
+    printf "\r%s" (string_of_signal_quality (Info.signal_quality s));
     flush(stdout);
     Unix.sleep 1;
   done;;
