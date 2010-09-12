@@ -131,7 +131,21 @@ CAMLexport
 value caml_gammu_GSM_ErrorString(value verr)
 {
   CAMLparam1(verr);
-  const char *msg = GSM_ErrorString(GSM_ERROR_VAL(verr));
+  const int err = GSM_ERROR_VAL(verr);
+  const char *msg;
+  switch (err) {
+  case ERR_INI_KEY_NOT_FOUND:
+    msg = "Pair section/value not found in INI file.";
+    break;
+  case ERR_COULD_NOT_DECODE:
+    msg = "Decoding SMS Message failed.";
+    break;
+  case ERR_INVALID_CONFIG_NUM:
+    msg = "Invalid config number.";
+    break;
+  default:
+    msg = GSM_ErrorString(err);
+  }
   assert(msg != NULL);
   CAMLreturn(caml_copy_string(msg));
 }

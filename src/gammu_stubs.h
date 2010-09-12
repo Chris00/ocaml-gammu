@@ -115,7 +115,8 @@ static char *yesno_bool(gboolean b);
 /************************************************************************/
 /* Error handling */
 
-/* Error codes added by our bindings implementation. */
+/* Error codes added by our bindings implementation.
+   WARNING: add error messages to caml_gammu_GSM_ErrorString */
 typedef enum {
   ERR_INI_KEY_NOT_FOUND = 70,
   ERR_COULD_NOT_DECODE,
