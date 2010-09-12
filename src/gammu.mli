@@ -33,7 +33,6 @@ val pointer_value : 'a -> int
 (** {2 Error handling} *)
 
 type error =
-  | NONE                (** No error *)
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
   | DEVICENOTEXIST      (** Device does not exits *)

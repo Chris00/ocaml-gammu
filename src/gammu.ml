@@ -28,8 +28,8 @@ let () = c_init ()
 (************************************************************************)
 (* Error handling *)
 
+(* WARNING: Keep the order in sync with gammu-error.h *)
 type error =
-  | NONE                (** No error *)
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
   | DEVICENOTEXIST      (** Device does not exits *)
@@ -110,7 +110,7 @@ external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
 
 exception Error of error
 
-let () = Callback.register_exception "Gammu.GSM_Error" (Error NONE);
+let () = Callback.register_exception "Gammu.GSM_Error" (Error DEVICEOPENERROR)
 
 
 (************************************************************************)

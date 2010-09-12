@@ -122,8 +122,9 @@ typedef enum {
   ERR_INVALID_CONFIG_NUM
 } CAML_GAMMU_Error;
 
-#define GSM_ERROR_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_ERROR(v) Val_int(v - 1)
+#define GSM_ERROR_VAL(v) (Int_val(v) + 2)
+#define VAL_GSM_ERROR(v) Val_int(v - 2)
+/* We do not report the first value ERR_NONE = 1 */
 
 static void caml_gammu_raise_Error(int err);
 
