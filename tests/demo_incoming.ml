@@ -5,9 +5,7 @@ open Args_demo
 open Utils_tests
 
 let () =
-  parse_args ();
-  let s = make () in
-  configure s;
+  let s = Gammu.make () in
   prepare_phone s;
   let incoming_sms_callback sms =
     print_string "\nIncoming SMS !\n";

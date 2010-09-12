@@ -27,9 +27,7 @@ let print_sms s folder message_number =
   print_newline ()
 
 let () =
-  parse_args ();
-  let s = make () in
-  configure s;
+  let s = Gammu.make () in
   prepare_phone s;
   while true do
     print_string "Enter folder: ";

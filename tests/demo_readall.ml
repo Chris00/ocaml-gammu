@@ -20,14 +20,12 @@ let print_multi_sms multi_sms =
   else begin
     (* There's an udh so we have to decode the sms. *)
     let multi_info = SMS.decode_multipart multi_sms in
-    Array.iter (fun info -> print_string info.SMS.buffer) multi_info.SMS.entries
+    Array.iter (fun info -> printf "%s" info.SMS.buffer) multi_info.SMS.entries
   end;
   printf "\n%!"
 
 let () =
-  parse_args ();
-  let s = make () in
-  configure s;
+  let s = Gammu.make () in
   prepare_phone s;
   print_string "Start reading from folder: ";
   let folder = int_of_string (read_line ()) in

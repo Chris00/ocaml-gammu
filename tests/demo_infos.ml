@@ -55,9 +55,7 @@ let print_dyn_infos s =
     (string_of_network_state network.Info.packet_state)
 
 let () =
-  parse_args ();
-  let s = make () in
-  configure s;
+  let s = Gammu.make () in
   prepare_phone s;
   printf "Phone model: %s\n" (Info.model s);
   printf "Manufacturer: \"%s\"" (Info.manufacturer s);
