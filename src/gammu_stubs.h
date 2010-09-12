@@ -455,6 +455,29 @@ CAMLexport
 value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
                                 value vstart);
 
+CAMLexport
+value caml_gammu_GSM_SetSMS(value s, value vsms);
+
+CAMLexport
+value caml_gammu_GSM_AddSMS(value s, value vsms);
+
+#define CAML_GAMMU_GSM_SETSMS(set)                              \
+  CAMLexport                                                    \
+  value caml_gammu_GSM_##set##SMS(value s, value vsms)          \
+  {                                                             \
+    CAMLparam2(s, vsms);                                        \
+    CAMLlocal1(res);                                            \
+    GSM_Error error;                                            \
+    GSM_SMSMessage sms;                                         \
+    GSM_SMSMessage_val(&sms, vsms);                             \
+    error = GSM_##set##SMS(GSM_STATEMACHINE_VAL(s), &sms);      \
+    caml_gammu_raise_Error(error);                              \
+    res = caml_alloc(2, 0);                                     \
+    Store_field(res, 0, Val_int(sms.Folder));                   \
+    Store_field(res, 1, Val_int(sms.Location));                 \
+    CAMLreturn(res);                                            \
+  }
+
 #define OUTBOX(outbox) (Val_int(outbox))
 
 CAMLexport

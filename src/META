@@ -1,4 +1,4 @@
-# Specifications for the Gnuplot module                   -*-conf-unix-*-
+# Specifications for the Gammu module
 name="gammu"
 description="OCaml libGammu Interface"
 requires = ""

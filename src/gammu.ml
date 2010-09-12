@@ -18,8 +18,6 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details. *)
 
-external pointer_value : 'a -> int = "caml_gammu_pointer_value"
-
 (* Initialize the C library *)
 external c_init : unit -> unit = "caml_gammu_init"
 let () = c_init ()
@@ -117,11 +115,7 @@ let () = Callback.register_exception "Gammu.GSM_Error" (Error DEVICEOPENERROR)
 
 module Debug =
 struct
-  (* GSM_Debug_Info is not directly represented; a Debug.info can either be
-     global or attached to a state machine. So we use a parametrized variant
-     type so that the dependency (for the GC) of a Debug.info to a state
-     machine or nothing is declared. And the actual GSM_Debug_Info is accessed
-     trough the state machine or trough the global debug. *)
+
   type info
 
   external get_global : unit -> info = "caml_gammu_GSM_GetGlobalDebug"
@@ -216,8 +210,8 @@ struct
     (* TODO: Check if can set a better unicode flag. *)
     { head = s_node; unicode=false; }
 
-  external _config_of_ini : section_node -> int -> config =
-        "caml_gammu_GSM_ReadConfig"
+  external _config_of_ini : section_node -> int -> config
+    = "caml_gammu_GSM_ReadConfig"
 
   let config_of_ini cfg_info num =
     _config_of_ini cfg_info.head num
@@ -255,7 +249,7 @@ external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 let load_gammurc ?path s =
   let ini = INI.ini_of_gammurc ?path () in
   (* Read first config from INI file.
-     TODO: we should read all sections from * the INI file. *)
+     TODO: we should read all sections from the INI file. *)
   let cfg = INI.config_of_ini ini 0 in
   push_config s cfg
 
@@ -413,7 +407,7 @@ end
 module DateTime =
 struct
 
-  type date_time = {
+  type t = {
     timezone : int;
     second : int;
     minute : int;
@@ -423,17 +417,24 @@ struct
     year : int;
   }
 
-  external check_date : date_time -> bool = "caml_gammu_GSM_CheckDate"
+  let compare d1 d2 =
+    (* Rough integer representation of the GMT date and time. *)
+    let int_of_date d =
+      d.year * 32140800 + d.month * 2678400 + d.day * 86400
+      + d.hour * 3600 + d.minute * 60 + d.second
+      - d.timezone
+    in
+    compare (int_of_date d1) (int_of_date d2)
 
-  external check_time : date_time -> bool = "caml_gammu_GSM_CheckTime"
+  external check_date : t -> bool = "caml_gammu_GSM_CheckDate"
 
-  external os_date : date_time -> string = "caml_gammu_GSM_OSDate"
+  external check_time : t -> bool = "caml_gammu_GSM_CheckTime"
 
-  external _os_date_time : date_time -> bool -> string
-    = "caml_gammu_GSM_OSDateTime"
+  external os_date : t -> string = "caml_gammu_GSM_OSDate"
 
-  let os_date_time ?(timezone=false) dt =
-    _os_date_time dt timezone
+  external _os_date_time : t -> bool -> string = "caml_gammu_GSM_OSDateTime"
+
+  let os_date_time ?(timezone=false) dt = _os_date_time dt timezone
 
 end
 
@@ -461,15 +462,15 @@ type memory_entry = {
 }
 and sub_memory_entry = {
   entry_type : entry_type; (** Type of entry. *)
-  date : DateTime.date_time; (** Text of entry
-                                 (if applicable, see {!entry_type}). *)
+  date : DateTime.t;
   number : int; (** Number of entry (if applicable, see {!entry_type}). *)
   voice_tag : int; (** Voice dialling tag. *)
   sms_list : int array;
   call_length : int;
   add_error : error; (** During adding SubEntry Gammu can return here info,
                          if it was done OK. *)
-  text : string; (** Text of entry (if applicable, see GSM_EntryType). *)
+  text : string; (** Text of entry
+                     (if applicable, see {!entry_type}). *)
   (* picture : binary_picture (* NYI Picture data. *) *)
 }
 and entry_type =
@@ -597,8 +598,8 @@ struct
     text : string;
     pdu : message_type;
     coding : coding;
-    date_time : DateTime.date_time;
-    smsc_time : DateTime.date_time;
+    date_time : DateTime.t;
+    smsc_time : DateTime.t;
     delivery_status : char;
     reply_via_same_smsc : bool;
     sms_class : char;
@@ -625,7 +626,7 @@ struct
             | -1 -> (* Start from the beginning of the folder. *)
               _get_next s 0 folder true
             | loc -> (* Get next location, folder need to be 0 because the
-                       location carries the folder in its representation. *)
+                        location carries the folder in its representation. *)
               _get_next s loc 0 false
           in
           aux 0 multi_sms.(0).location (f acc multi_sms) (for_n - 1)
@@ -640,6 +641,10 @@ struct
             aux (retries_num + 1) location acc for_n;
     in
     aux 0 (-1) a for_n
+
+  external set : t -> message -> int * int = "caml_gammu_GSM_SetSMS"
+
+  external add : t -> message -> int * int = "caml_gammu_GSM_AddSMS"
 
   type folder = {
     box : folder_box;
@@ -801,7 +806,7 @@ external enable_incoming_sms : t -> bool -> unit
 external _incoming_sms : t -> (SMS.message -> unit) -> unit
   = "caml_gammu_GSM_SetIncomingSMSCallback"
 
-let incoming_sms s ?(enable=true) f =
+let incoming_sms ?(enable=true) s f =
   _incoming_sms s f;
   enable_incoming_sms s enable
 
@@ -811,7 +816,7 @@ external enable_incoming_call : t -> bool -> unit
 external _incoming_call : t -> (Call.call -> unit) -> unit
   = "caml_gammu_GSM_SetIncomingCallCallback"
 
-let incoming_call s ?(enable=true) f =
+let incoming_call ?(enable=true) s f =
   _incoming_call s f;
   enable_incoming_call s enable
 

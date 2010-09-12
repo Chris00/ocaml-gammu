@@ -1,8 +1,12 @@
 (* Simple demo/test file that gathers some informations about the phone. *)
 open Printf
-open Gammu
 open Args_demo
 open Utils_tests
+open Printf
+
+module G = Gammu
+module Info = Gammu.Info
+module SMS = Gammu.SMS
 
 let print_dyn_infos s =
   begin
@@ -14,7 +18,7 @@ let print_dyn_infos s =
       printf "(%d) %d/%d (Phone)\n"
         status.SMS.phone_unread status.SMS.phone_used status.SMS.phone_size;
       printf "#templates used: %d\n%!" status.SMS.templates_used;
-    with Error NOTSUPPORTED ->
+    with G.Error G.NOTSUPPORTED ->
       printf "Your phone doesn't support getting sms status.\n%!";
   end;
   let bat = Info.battery_charge s in
@@ -44,8 +48,7 @@ let print_dyn_infos s =
   printf "%s\n%!" (string_of_signal_quality (Info.signal_quality s));
   let network = Info.network_info s in
   printf "Network %s, %s\n"
-    (string_of_network_state network.Info.state)
-    network.Info.name;
+    (string_of_network_state network.Info.state) network.Info.name;
   printf "CID \"%s\", code \"%s\", LAC \"%s\"\n"
     network.Info.cid network.Info.code network.Info.lac;
   printf "GPRS %s, packet CID \"%s\", LAC \"%s\", \"%s\"\n%!"
@@ -55,22 +58,23 @@ let print_dyn_infos s =
     (string_of_network_state network.Info.packet_state)
 
 let () =
-  let s = Gammu.make () in
-  prepare_phone s;
-  printf "Phone model: %s\n" (Info.model s);
-  printf "Manufacturer: \"%s\"" (Info.manufacturer s);
-  if Info.manufacture_month s = "" then printf "\n"
-  else printf " (month: %s)\n" (Info.manufacture_month s);
-  printf "Product code: %s\n" (Info.product_code s);
-  let fw = Info.firmware s in
-  printf "Hardware: %s\n" (Info.hardware s);
-  printf "Firmware version: \"%s\", date \"%s\", num \"%f\"\n"
-    fw.Info.version fw.Info.ver_date fw.Info.ver_num;
-  printf "IMEI: %s\n" (Info.imei s);
-  print_string "Folders:\n";
-  Array.iteri
-    (fun i folder -> printf "  %d : %s\n" i (string_of_folder folder))
-    (SMS.folders s);
-  print_newline ();
-  print_dyn_infos s;
-  (* TODO: Add a trap to disconnect... *)
+  try
+    let s = Gammu.make () in
+    prepare_phone s;
+    printf "Phone model: %s\n" (Info.model s);
+    printf "Manufacturer: \"%s\"" (Info.manufacturer s);
+    if Info.manufacture_month s = "" then printf "\n"
+    else printf " (month: %s)\n" (Info.manufacture_month s);
+    printf "Product code: %s\n" (Info.product_code s);
+    let fw = Info.firmware s in
+    printf "Hardware: %s\n" (Info.hardware s);
+    printf "Firmware version: \"%s\", date \"%s\", num \"%f\"\n"
+      fw.Info.version fw.Info.ver_date fw.Info.ver_num;
+    printf "IMEI: %s\n" (Info.imei s);
+    print_string "Folders:\n";
+    Array.iteri
+      (fun i folder -> printf "  %d : %s\n" i (string_of_folder folder))
+      (SMS.folders s);
+    print_newline ();
+    print_dyn_infos s;
+  with G.Error e -> printf "Error: %s\n" (G.string_of_error e)

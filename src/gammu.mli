@@ -27,7 +27,6 @@
 
     NOTE: This library is not thread safe. *)
 
-val pointer_value : 'a -> int
 
 (************************************************************************)
 (** {2 Error handling} *)
@@ -229,18 +228,18 @@ val init_locales : ?path:string -> unit -> unit
 val make : unit -> t
 (** Make a new clean state machine. *)
 
+(* TODO: make the num parameter optional to mean "-1" *)
 val get_config : t -> int -> config
 (** [get_config s num] gets gammu configuration from state machine [s], where
     [num] is the number of the section to read starting from zero, [-1] for
     the currently used one. *)
 
-(*val set_config : t -> config -> int -> unit
-(** [set_config s config num] sets [num]th state machine configuration [s] to
-  [config]. *)*)
-
 val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the
-    configuration stack of [s]. *)
+    configuration stack of [s].
+
+    Gammu tries each configuration, from the bottom to the top of the stack,
+    in order to connect. *)
 
 val remove_config : t -> config
 (** [remove_config s] remove the top configuration from the config stack of
@@ -251,25 +250,23 @@ val length_config : t -> int
     the number of active configurations. *)
 
 val load_gammurc : ?path:string -> t -> unit
-(** (* NYI *) Automaticaly find the gammurc file (see
+(** (* NYI *) Automaticaly finds the gammurc file (see
     {!Gammu.INI.ini_of_gammurc}), read it and push the configs in the state
     machine.
 
-    @param path force the use of a custom path instead of the autodetected
-    one (default: autodetection is performed). *)
+    @param path force the use of a custom path instead of the autodetected one
+    (default: autodetection is performed). *)
 
-(* maybe a type t should be created by reading a config file, then one
-   connects.  config files seem to play the same role as files for
-   [open_*] *)
 val connect : ?log:(string -> unit) -> ?replies:int -> t -> unit
 (** Initiates connection.
 
     IMPORTANT: do not forget to call disconnect when done as otherwise the
     connection may be prematurely terminated. In fact, the problem is that if
-    you have no reference to the state machine left, the GC will free it and
-    by the same time terminate your connection.
+    you have no reference to the state machine left, the GC may free it and by
+    the same time terminate your connection.
 
     @param log logging function.
+
     @param replies number of replies to wait for on each request (default: 3).
 
     @raise UNCONFIGURED if no configuration was set. *)
@@ -484,31 +481,36 @@ end
 module DateTime :
 sig
 
-  type date_time = {
-    timezone : int; (* The difference between local time and GMT in seconds *)
+  type t = {
+    timezone : int; (** The difference between local time and GMT in seconds *)
     second : int;
     minute : int;
     hour : int;
     day : int;
-    month : int;    (* January = 1, February = 2, etc. *)
-    year : int;     (* Complete year number. Not 03, but 2003. *)
-  }
+    month : int;    (** January = 1, February = 2, etc. *)
+    year : int;     (** 4 digits year number. *)
+  } (** Date and time type. *)
 
-  val check_date : date_time -> bool
+  val compare : t -> t -> int
+  (** [compare d1 d2] returns [0] if [d1] is the same date and time as [d2], a
+      negative integer if [d1] is before [d2], and a positive integer if [d1]
+      is after [d2]. *)
+
+  val check_date : t -> bool
   (** Checks whether date is valid. This does not check time, see [check_time]
       for this. *)
 
-  val check_time : date_time -> bool
+  val check_time : t -> bool
   (** Checks whether time is valid. This does not check date, see [check_date]
       for this. *)
 
-  val os_date : date_time -> string
+  val os_date : t -> string
   (** Converts date from timestamp to string according to OS settings. *)
 
-  val os_date_time : ?timezone:bool -> date_time -> string
-(** Converts timestamp to string according to OS settings.
+  val os_date_time : ?timezone:bool -> t -> string
+  (** Converts timestamp to string according to OS settings.
 
-    @param timezone Whether to include time zone (default false). *)
+      @param timezone Whether to include time zone (default false). *)
 
 end
 
@@ -542,15 +544,14 @@ type memory_entry = {
 } (** Value for saving phonebook entries. *)
 and sub_memory_entry = {
   entry_type : entry_type; (** Type of entry. *)
-  date : DateTime.date_time; (** Text of entry
-                                 (if applicable, see {!entry_type}). *)
+  date : DateTime.t;
   number : int; (** Number of entry (if applicable, see {!entry_type}). *)
   voice_tag : int; (** Voice dialling tag. *)
   sms_list : int array;
   call_length : int;
   add_error : error; (** During adding SubEntry Gammu can return here info,
                          if it was done OK. *)
-  text : string; (** Text of entry (if applicable, see GSM_EntryType). *)
+  text : string; (** Text of entry (if applicable, see {!entry_type}). *)
   (* picture : binary_picture (* NYI Picture data. *) *)
 } (** One value of phonebook memory entry. *)
 and entry_type =
@@ -682,8 +683,8 @@ module SMS : sig
     text : string;   (** Text for SMS. *)
     pdu : message_type; (** Type of message. *)
     coding : coding; (** Type of coding. *)
-    date_time : DateTime.date_time;
-    smsc_time : DateTime.date_time;
+    date_time : DateTime.t;
+    smsc_time : DateTime.t;
     delivery_status : char; (** In delivery reports: status. *)
     reply_via_same_smsc : bool; (** Indicates whether "Reply via same
                                     center" is set. *)
@@ -729,6 +730,17 @@ module SMS : sig
       for the currently used phone.
 
       @raise NOTSUPPORTED if the mechanism is not supported by the phone. *)
+
+  val set : t -> message -> int * int
+  (** [set s sms] sets [sms] at the specified location and folder (given in
+      {!SMS.message} representation). And returns a couple for folder and
+      location really set (after transformation). *)
+
+  val add : t -> message -> int * int
+  (** [add s sms] adds [sms] to the folder specified in the [folder] field of
+      [sms] and returns the couple folder and location where the message was
+      stored (folder may be transformed). The location fields of [sms] are ignored when adding SMS, put
+      whatever you want there. *)
 
   type folder = {
     box : folder_box;     (** Whether it is inbox or outbox. *)
@@ -897,7 +909,7 @@ end
 (************************************************************************)
 (** {2 Events} *)
 
-val incoming_sms : t -> ?enable:bool -> (SMS.message -> unit) -> unit
+val incoming_sms : ?enable:bool -> t -> (SMS.message -> unit) -> unit
 (** [incoming_sms s f] register [f] as callback function in the event of an
     incoming SMS.
 
@@ -907,7 +919,7 @@ val enable_incoming_sms : t -> bool -> unit
 (** [enable_incoming_sms t enable] enable incoming sms events or not,
     according to [enable]. *)
 
-val incoming_call : t -> ?enable:bool -> (Call.call -> unit) -> unit
+val incoming_call : ?enable:bool -> t -> (Call.call -> unit) -> unit
 (** [incoming_call s f] register [f] as callback function in the event of
     incoming call.
 

@@ -36,14 +36,6 @@
 #include "gammu_stubs.h"
 #include "io.h"
 
-CAMLexport
-value caml_gammu_pointer_value(value v)
-{
-  CAMLparam1(v);
-  DEBUG("value = %ld", (long) v);
-  CAMLreturn(Val_long((long) v));
-}
-
 
 /************************************************************************/
 /* Init */
@@ -117,13 +109,18 @@ static char *yesno_bool(gboolean b)
 static void caml_gammu_raise_Error(int err)
 {
   static value *exn = NULL;
-
-  if (err != ERR_NONE) {
+  
+  switch (err) {
+  case ERR_NONE:
+  case ERR_USING_DEFAULTS:
+    /* only a warning, not fatal. */
+    break;
+  default:
     if (exn == NULL) {
       /* First time around, look up by name */
       exn = caml_named_value("Gammu.GSM_Error");
     }
-    caml_raise_with_arg(*exn, VAL_GSM_ERROR(err));
+    caml_raise_with_arg(*exn, VAL_GSM_ERROR(err));    
   }
 }
 
@@ -1107,12 +1104,16 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
 
+CAML_GAMMU_GSM_SETSMS(Set)
+
+CAML_GAMMU_GSM_SETSMS(Add)
+
 static value Val_GSM_OneSMSFolder(GSM_OneSMSFolder *folder)
 {
   CAMLparam0();
   CAMLlocal1(res);
 
-  res = caml_alloc(4, 0);
+  res = caml_alloc(3, 0);
   Store_field(res, 0, OUTBOX(folder->OutboxFolder));
   Store_field(res, 1, VAL_GSM_MEMORYTYPE(folder->Memory));
   Store_field(res, 2, CAML_COPY_USTRING(folder->Name));
