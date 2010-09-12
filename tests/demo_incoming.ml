@@ -20,14 +20,10 @@ let () =
        doesn't recognize the CMS error for those function right now. CMS Error
        303 "operation not supported" is translated to Error UNKNOWN. *)
     let try_set_incoming incoming_itype callback itype =
-      let warn_not_supported t =
-        printf "Sorry, incoming_%s notifications \
-                     aren't supported by your phone.%!" t in
-      try
-        incoming_itype s callback;
-      with
-      | Error UNKNOWN -> warn_not_supported itype;
-      | Error NOTSUPPORTED -> warn_not_supported itype;
+      try incoming_itype s callback;
+      with Error UNKNOWN | Error NOTSUPPORTED ->
+        printf "Sorry, incoming_%s notifications aren't supported by \
+	  your phone.%!" itype;
     in
     try_set_incoming (fun s m -> incoming_sms s m) incoming_sms_callback "sms";
     try_set_incoming (fun s m -> incoming_call s m) incoming_call_callback "call";
