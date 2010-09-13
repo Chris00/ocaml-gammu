@@ -416,8 +416,15 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
 {
   CAMLparam2(vcfg_info, vnum);
   GSM_Config cfg;
-  INI_Section *cfg_info = INI_SECTION_VAL(vcfg_info);
+  INI_Section *cfg_info;
 
+  cfg_info = INI_SECTION_VAL(vcfg_info);
+  /* Initialize those strings, because the first thing GSM_ReadConfig tries to
+     do is freeing them. */
+  cfg.Device = strdup("");
+  cfg.Connection = strdup("");
+  cfg.DebugFile = strdup("");
+  
   caml_gammu_raise_Error(GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum)));
 
   CAMLreturn(Val_GSM_Config(&cfg));
