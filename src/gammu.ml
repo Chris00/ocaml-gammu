@@ -196,7 +196,7 @@ struct
   }
 
   external _read : string -> bool -> section_node = "caml_gammu_INI_ReadFile"
-  let read ?(unicode=true) file_name =
+  let read ?(unicode=false) file_name =
     { head = _read file_name unicode;
       unicode = unicode; }
 

@@ -305,7 +305,9 @@ module INI : sig
   val read : ?unicode:bool -> string -> sections
   (** [read fname] reads INI data from the file [fname].
 
-      @param unicode Whether file should be treated as unicode encoded. *)
+      @param unicode Whether file should be treated as unicode encoded
+      (default = false, beware that unicode handling is somewhat buggy in
+      libGammu). *)
 
   val ini_of_gammurc : ?path:string -> unit -> sections
   (** Finds and reads gammu configuration file.  The search order depends on

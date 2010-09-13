@@ -162,7 +162,7 @@ value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel);
 /************************************************************************/
 /* INI files */
 
-#define INI_SECTION_VAL(v) (*(INI_Section **) (Data_custom_val(v)))
+#define INI_SECTION_VAL(v) (*((INI_Section **) Data_custom_val(v)))
 
 static void caml_gammu_ini_section_finalize(value vini_section);
 

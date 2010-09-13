@@ -209,14 +209,18 @@ value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel)
 
 static void caml_gammu_ini_section_finalize(value vini_section)
 {
+  DEBUG("Finalize INI Section.");
   INI_Free(INI_SECTION_VAL(vini_section));
 }
 
 static value alloc_INI_Section()
 {
+  CAMLparam0();
+  CAMLlocal1(res);
   /* TODO: Can alloc_custom fail ? */
-  return alloc_custom(&caml_gammu_ini_section_ops, sizeof(INI_Section *),
-                      1, 100);
+  res = alloc_custom(&caml_gammu_ini_section_ops, sizeof(INI_Section *),
+                     1, 100);
+  CAMLreturn(res);
 }
 
 static value Val_INI_Section(INI_Section *ini_section)
@@ -248,16 +252,22 @@ value caml_gammu_INI_GetValue(value vfile_info, value vsection, value vkey,
                               value vunicode)
 {
   CAMLparam4(vfile_info, vsection, vkey, vunicode);
-  unsigned char* res;
+  CAMLlocal1(res);
+  unsigned char* val;
+  gboolean unicode = Bool_val(vunicode);
 
-  res = INI_GetValue(INI_SECTION_VAL(vfile_info),
+  val = INI_GetValue(INI_SECTION_VAL(vfile_info),
                      (unsigned char *) String_val(vsection),
                      (unsigned char *) String_val(vkey),
-                     Bool_val(vunicode));
-  if (res == NULL)
+                     unicode);
+  if (val == NULL)
     caml_gammu_raise_Error(ERR_INI_KEY_NOT_FOUND);
 
-  CAMLreturn(CAML_COPY_USTRING(res));
+  if (unicode)
+    res = CAML_COPY_USTRING(val);
+  else
+    res = caml_copy_string((char *) val);
+  CAMLreturn(res);
 }
 
 
@@ -461,7 +471,7 @@ value caml_gammu_push_config(value s, value vcfg)
       GSM_Config_val(dest_cfg, vcfg);
       GSM_SetConfigNum(sm, cfg_num + 1);
   } else {
-    /* To many configs (more than MAX_CONFIG_NUM+1 (=6),
+    /* Too many configs (more than MAX_CONFIG_NUM+1 (=6),
        unfortunately this const is not exported) */
     caml_gammu_raise_Error(ERR_INVALID_CONFIG_NUM);
   }
