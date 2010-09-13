@@ -247,11 +247,9 @@ external remove_config : t -> config = "caml_gammu_remove_config"
 
 external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 
-let load_gammurc ?path s =
+let load_gammurc ?path ?(section=0) s =
   let ini = INI.ini_of_gammurc ?path () in
-  (* Read first config from INI file.
-     TODO: we should read all sections from the INI file. *)
-  let cfg = INI.config_of_ini ini 0 in
+  let cfg = INI.config_of_ini ini section in
   push_config s cfg
 
 external _connect : t -> int -> unit= "caml_gammu_GSM_InitConnection"

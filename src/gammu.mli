@@ -250,13 +250,15 @@ val length_config : t -> int
 (** @return length of the configuration stack of the state machine. i.e
     the number of active configurations. *)
 
-val load_gammurc : ?path:string -> t -> unit
-(** (* NYI *) Automaticaly finds the gammurc file (see
-    {!Gammu.INI.ini_of_gammurc}), read it and push the configs in the state
-    machine.
+val load_gammurc : ?path:string -> ?section:int -> t -> unit
+(** Automaticaly finds the gammurc file (see {!Gammu.INI.ini_of_gammurc}),
+    read it and push the config in the state machine.
 
     @param path force the use of a custom path instead of the autodetected one
-    (default: autodetection is performed). *)
+    (default: autodetection is performed).
+
+    @param section section number of the gammurc file to read. See
+    {!INI.config_of_ini} for details. *)
 
 val connect : ?log:(string -> unit) -> ?replies:int -> t -> unit
 (** Initiates connection.
