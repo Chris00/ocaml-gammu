@@ -105,7 +105,7 @@ static char *yesno_bool(gboolean b)
 static void caml_gammu_raise_Error(int err)
 {
   static value *exn = NULL;
-  
+
   switch (err) {
   case ERR_NONE:
   case ERR_USING_DEFAULTS:
@@ -116,7 +116,7 @@ static void caml_gammu_raise_Error(int err)
       /* First time around, look up by name */
       exn = caml_named_value("Gammu.GSM_Error");
     }
-    caml_raise_with_arg(*exn, VAL_GSM_ERROR(err));    
+    caml_raise_with_arg(*exn, VAL_GSM_ERROR(err));
   }
 }
 
@@ -424,7 +424,7 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   cfg.Device = strdup("");
   cfg.Connection = strdup("");
   cfg.DebugFile = strdup("");
-  
+
   caml_gammu_raise_Error(GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum)));
 
   CAMLreturn(Val_GSM_Config(&cfg));
@@ -561,7 +561,13 @@ value caml_gammu_GSM_GetUsedConnection(value s)
 {
   CAMLparam1(s);
   GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
-  GSM_ConnectionType conn_type = GSM_GetUsedConnection(sm);
+  GSM_ConnectionType conn_type;
+
+  if (!GSM_IsConnected(sm))
+    caml_gammu_raise_Error(ERR_NOTCONNECTED);
+
+  conn_type = GSM_GetUsedConnection(sm);
+  DEBUG("GSM_GetUsedConnection call made: conn_type = %i", (int) conn_type);
 
   CAMLreturn(VAL_GSM_CONNECTIONTYPE(conn_type));
 }
