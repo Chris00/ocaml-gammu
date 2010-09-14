@@ -1,50 +1,25 @@
 open Printf
 
-let debug_level = ref "nothing"
-let connection = ref "at"
-let device = ref "/dev/ttyUSB0"
-let folder = ref 1
-
 let parse_args () =
+  let gammurc = ref None
+  and section = ref 0 in
   let args = [
-    ("--debug", Arg.Set_string debug_level,
-     sprintf "<debug_level> Set debug level \
-      (e.g \"textall\", defaults to %S)." !debug_level);
-    ("--connection", Arg.Set_string connection,
-     sprintf "<connection_type> Set connection/protocol type \
-	(defaults to %S)." !connection);
-    ("--device", Arg.Set_string device,
-     sprintf "<device> Set device file (defaults to %S)." !device);
-    ("--folder", Arg.Set_int folder,
-     sprintf "<connection_type> Set folder location (default = %i)." !folder);
+    ("--gammurc", Arg.String (fun s -> gammurc := Some s),
+     "<file> Force gammurc file path (no autodetection).");
+    ("--section", Arg.Set_int section,
+     "<integer> Section number from gammurc to load.");
   ] in
   let anon _ = raise (Arg.Bad "No anonymous arguments.") in
-  Arg.parse (Arg.align args) anon "Usage:"
+  Arg.parse (Arg.align args) anon (sprintf "Usage: %s [options]" Sys.argv.(0));
+  (!gammurc, !section)
 
 let configure s =
-  parse_args ();
-  (* TODO: debug things seem to be ignored... *)
-  let config = {
-    Gammu.model = "";
-    debug_level = !debug_level;
-    device = !device;
-    connection = !connection;
-    sync_time = false; (* On some phones, year "10" is interpreted as 1910... *)
-    lock_device = false;
-    debug_file = "";
-    start_info = true;
-    use_global_debug_file = true;
-    text_reminder = "";
-    text_meeting = "";
-    text_call = "";
-    text_birthday = "";
-    text_memo = "";
-  } in
-  let di = Gammu.get_debug s in
-  Gammu.Debug.set_global di true;
-  Gammu.Debug.set_output Gammu.Debug.global stderr;
-  Gammu.Debug.set_level Gammu.Debug.global !debug_level;
-  Gammu.push_config s config
+  let path, section = parse_args () in
+  (* Not ideal but quick workaround to effectively use debug configuration
+     from gammurc. *)
+  let ini = Gammu.INI.ini_of_gammurc ?path () in
+  let cfg = Gammu.INI.config_of_ini ini section in
+  Gammu.push_config s { cfg with Gammu.use_global_debug_file = false }
 
 (* Connect and unlock phone. *)
 let prepare_phone s =
