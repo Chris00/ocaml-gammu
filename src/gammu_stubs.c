@@ -457,19 +457,25 @@ value caml_gammu_GSM_GetConfig(value s, value vnum)
   CAMLreturn(Val_GSM_Config(cfg));
 }
 
-/* set_config */
-
 CAMLexport
 value caml_gammu_push_config(value s, value vcfg)
 {
   CAMLparam2(s, vcfg);
   GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
   int cfg_num = GSM_GetConfigNum(sm);
-  GSM_Config *dest_cfg = GSM_GetConfig(sm, cfg_num);
-
-  if (dest_cfg != NULL) {
-      GSM_Config_val(dest_cfg, vcfg);
-      GSM_SetConfigNum(sm, cfg_num + 1);
+  GSM_Config *dest_cfg;
+  
+  /* We have to check that we don't push too much configs. If we have pushed
+     enough configs to fill the stack, we'll set cfg_num to -1. */
+  if (cfg_num != -1) {
+    dest_cfg = GSM_GetConfig(sm, cfg_num);
+    GSM_Config_val(dest_cfg, vcfg);
+    /* GSM_SetConfigNum downsets the config num to maximum number of configs
+       allowed. So, if the number of configs doesn't change, it's because
+       we've reached max. */
+    GSM_SetConfigNum(sm, cfg_num + 1);
+    if (GSM_GetConfigNum(sm) == cfg_num)
+      GSM_SetConfigNum(sm, -1);
   } else {
     /* Too many configs (more than MAX_CONFIG_NUM+1 (=6),
        unfortunately this const is not exported) */
