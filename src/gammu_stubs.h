@@ -71,10 +71,6 @@ typedef int gboolean;
 /* Init */
 GSM_Debug_Info *global_debug;
 
-value caml_hash_Some;
-value caml_hash_RemoteEnded;
-
-CAMLexport
 void caml_gammu_init();
 
 
@@ -119,15 +115,17 @@ static char *yesno_bool(gboolean b);
 /************************************************************************/
 /* Error handling */
 
-/* Error codes added by our bindings implementation. */
+/* Error codes added by our bindings implementation.
+   WARNING: add error messages to caml_gammu_GSM_ErrorString */
 typedef enum {
   ERR_INI_KEY_NOT_FOUND = 70,
   ERR_COULD_NOT_DECODE,
   ERR_INVALID_CONFIG_NUM
 } CAML_GAMMU_Error;
 
-#define GSM_ERROR_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_ERROR(v) Val_int(v - 1)
+#define GSM_ERROR_VAL(v) (Int_val(v) + 2)
+#define VAL_GSM_ERROR(v) Val_int(v - 2)
+/* We do not report the first value ERR_NONE = 1 */
 
 static void caml_gammu_raise_Error(int err);
 

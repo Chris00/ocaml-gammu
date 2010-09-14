@@ -1,4 +1,4 @@
-open Gammu
+open Printf
 
 let debug_level = ref "nothing"
 let connection = ref "at"
@@ -8,22 +8,24 @@ let folder = ref 1
 let parse_args () =
   let args = [
     ("--debug", Arg.Set_string debug_level,
-     "<debug_level>  Set debug level \
-      (e.g \"textall\", defaults to \"nothing\").");
+     sprintf "<debug_level> Set debug level \
+      (e.g \"textall\", defaults to %S)." !debug_level);
     ("--connection", Arg.Set_string connection,
-     "<connection_type> Set connection/protocol type (defaults to \"at\").");
+     sprintf "<connection_type> Set connection/protocol type \
+	(defaults to %S)." !connection);
     ("--device", Arg.Set_string device,
-     "<device> Set device file (defaults to \"/dev/ttyUSB0\").");
+     sprintf "<device> Set device file (defaults to %S)." !device);
     ("--folder", Arg.Set_int folder,
-     "<connection_type> Set folder location (default = 1).");
+     sprintf "<connection_type> Set folder location (default = %i)." !folder);
   ] in
   let anon _ = raise (Arg.Bad "No anonymous arguments.") in
-  Arg.parse args anon "Usage:"
+  Arg.parse (Arg.align args) anon "Usage:"
 
 let configure s =
+  parse_args ();
   (* TODO: debug things seem to be ignored... *)
   let config = {
-    model = "";
+    Gammu.model = "";
     debug_level = !debug_level;
     device = !device;
     connection = !connection;
@@ -38,47 +40,43 @@ let configure s =
     text_birthday = "";
     text_memo = "";
   } in
-  let di = get_debug s in
-  Debug.set_global di true;
-  Debug.set_output Debug.global stderr;
-  Debug.set_level Debug.global !debug_level;
-  push_config s config
+  let di = Gammu.get_debug s in
+  Gammu.Debug.set_global di true;
+  Gammu.Debug.set_output Gammu.Debug.global stderr;
+  Gammu.Debug.set_level Gammu.Debug.global !debug_level;
+  Gammu.push_config s config
 
 (* Connect and unlock phone. *)
 let prepare_phone s =
+  configure s;
   (* Unlock the phone asking user for codes. *)
   let rec ask_user_code s code_type code_type_name =
-    Printf.printf "Enter %s code: " code_type_name;
-    flush stdout;
+    printf "Enter %s code: %!" code_type_name;
     let code = read_line () in
     try
-      enter_security_code s ~code_type ~code;
+      Gammu.enter_security_code s ~code_type ~code;
       (* Check if there's another security code to enter. *)
       unlock_phone s;
-    with Error SECURITYERROR ->
-      print_string "Wrong code, retry.\n";
-      flush stdout;
+    with Gammu.Error Gammu.SECURITYERROR ->
+      printf "Wrong code, retry.\n%!";
       ask_user_code s code_type code_type_name;
   and unlock_phone s =
     let sec_status =
-      try
-        get_security_status s
-      with Error UNKNOWNRESPONSE -> SEC_None
+      try Gammu.get_security_status s
+      with Gammu.Error Gammu.UNKNOWNRESPONSE -> Gammu.SEC_None
     in
-    (match sec_status with
-      SEC_None -> print_string "SIM/Phone unlocked.\n"
-    | SEC_SecurityCode as c -> ask_user_code s c "Security"
-    | SEC_Pin as c -> ask_user_code s c "PIN"
-    | SEC_Pin2 as c -> ask_user_code s c "PIN2"
-    | SEC_Puk as c -> ask_user_code s c "PUK"
-    | SEC_Puk2 as c -> ask_user_code s c "PUK2"
-    | SEC_Phone as c -> ask_user_code s c "Phone"
-    | SEC_Network as c -> ask_user_code s c "Network")
+    match sec_status with
+    | Gammu.SEC_None -> print_string "SIM/Phone unlocked.\n"
+    | Gammu.SEC_SecurityCode as c -> ask_user_code s c "Security"
+    | Gammu.SEC_Pin as c -> ask_user_code s c "PIN"
+    | Gammu.SEC_Pin2 as c -> ask_user_code s c "PIN2"
+    | Gammu.SEC_Puk as c -> ask_user_code s c "PUK"
+    | Gammu.SEC_Puk2 as c -> ask_user_code s c "PUK2"
+    | Gammu.SEC_Phone as c -> ask_user_code s c "Phone"
+    | Gammu.SEC_Network as c -> ask_user_code s c "Network"
   in
-  print_string "Trying to connect.\n";
-  flush stdout;
-  connect s;
-  Printf.printf "Phone model : \"%s\"\n" (Info.model s);
-  print_string "Unlock SIM/Phone:\n";
-  flush stdout;
+  printf "Trying to connect.\n%!";
+  Gammu.connect s;
+  printf "Phone model : \"%s\"\n" (Gammu.Info.model s);
+  printf "Unlock SIM/Phone:\n%!";
   unlock_phone s

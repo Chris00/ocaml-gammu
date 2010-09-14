@@ -26,8 +26,8 @@ let () = c_init ()
 (************************************************************************)
 (* Error handling *)
 
+(* WARNING: Keep the order in sync with gammu-error.h *)
 type error =
-  | NONE                (** No error *)
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
   | DEVICENOTEXIST      (** Device does not exits *)
@@ -98,17 +98,16 @@ type error =
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   | GETTING_SMSC        (** Failed to get SMSC number from phone. *)
-  (* Caml bindings own errors *)
+  (* Errors specific to the Caml bindings (not present in Gammu): *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
   | INVALID_CONFIG_NUM  (** Invalid config number. *)
 
-(* TODO: It will fail with caml bindings own errors. *)
 external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
 
 exception Error of error
 
-let () = Callback.register_exception "Gammu.GSM_Error" (Error NONE);
+let () = Callback.register_exception "Gammu.GSM_Error" (Error DEVICEOPENERROR)
 
 
 (************************************************************************)

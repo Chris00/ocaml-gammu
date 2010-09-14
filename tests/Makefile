@@ -1,21 +1,18 @@
-OCAMLPACKS     = unix
-OCAMLC_FLAGS   = -dtypes -g
+OCAMLPACKS     = unix gammu
+OCAMLC_FLAGS   = -annot -g
 OCAMLOPT_FLAGS = 
-
 OCAMLINCLUDES = ../src
-LIBS_CMA      = gammu.cma args_demo.cma utils_tests.cma
-LIBS_CMXA     = $(LIBS_CMA:.cma=.cmxa)
-DEMO_LIBS     = args_demo.cma utils_tests.cma
-TESTS         = $(DEMO_LIBS) $(wildcard test_*.ml demo_*.ml)
+#GAMMU_CMA = gammu.cma
+
+DEMO_LIBS = args_demo.ml utils_tests.ml
+TESTS     = $(wildcard test_*.ml demo_*.ml)
 
 .PHONY: all byte native
 all: byte native
 byte: $(TESTS:.ml=.exe)
-native: $(patsubst %.cma,%.cmxa, $(TESTS:.ml=.com))
+native: $(TESTS:.ml=.com)
 
-args_demo.cma: args_demo.cmo
-args_demo.cmxa: args_demo.cmx
-utils_tests.cma: utils_tests.cmo
-utils_tests.cmxa: utils_tests.cmx
+$(TESTS:.ml=.exe): $(GAMMU_CMA) $(DEMO_LIBS:.ml=.cmo)
+$(TESTS:.ml=.com): $(GAMMU_CMA:.cma=.cmxa) $(DEMO_LIBS:.ml=.cmx)
 
 include ../Makefile.ocaml

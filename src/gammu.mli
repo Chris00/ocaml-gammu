@@ -32,7 +32,6 @@
 (** {2 Error handling} *)
 
 type error =
-  | NONE                (** No error *)
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
   | DEVICENOTEXIST      (** Device does not exits *)
@@ -124,11 +123,11 @@ sig
   type info
 
   val global : info
-  (** global debug settings. *)
+  (** Global debug settings. *)
 
   val set_global : info -> bool -> unit
-  (** Enables using of global debugging configuration. Makes no effect
-      on global debug configuration. *)
+  (** Enables the use of the global debugging configuration.  Has no
+      effect on the global debug configuration itself. *)
 
   val set_output : info -> out_channel -> unit
   (** [set_debug_output di channel] sets output channel of [di] to

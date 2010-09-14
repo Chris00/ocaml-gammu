@@ -40,13 +40,17 @@
 /************************************************************************/
 /* Init */
 
+static value caml_hash_Some;
+static value caml_hash_RemoteEnded;
+
 CAMLexport
-void caml_gammu_init()
+void caml_gammu_init(value vunit)
 {
+  /* noalloc */
   global_debug = GSM_GetGlobalDebug();
   /* Pre-compute hashs for variant types with arguments. */
-  caml_hash_Some = caml_hash_variant("Some");;
-  caml_hash_RemoteEnded = caml_hash_variant("RemoteEnded");;
+  caml_hash_Some = caml_hash_variant("Some");
+  caml_hash_RemoteEnded = caml_hash_variant("RemoteEnded");
   /* Initialize gettext. */
   GSM_InitLocales(NULL);
 }
@@ -73,7 +77,7 @@ static value val_some(value vsome)
 {
   CAMLparam1(vsome);
   CAMLlocal1(res);
-
+  
   res = caml_alloc(2, 0);
   Store_field(res, 0, caml_hash_Some);
   Store_field(res, 1, vsome);
@@ -124,7 +128,21 @@ CAMLexport
 value caml_gammu_GSM_ErrorString(value verr)
 {
   CAMLparam1(verr);
-  const char *msg = GSM_ErrorString(GSM_ERROR_VAL(verr));
+  const int err = GSM_ERROR_VAL(verr);
+  const char *msg;
+  switch (err) {
+  case ERR_INI_KEY_NOT_FOUND:
+    msg = "Pair section/value not found in INI file.";
+    break;
+  case ERR_COULD_NOT_DECODE:
+    msg = "Decoding SMS Message failed.";
+    break;
+  case ERR_INVALID_CONFIG_NUM:
+    msg = "Invalid config number.";
+    break;
+  default:
+    msg = GSM_ErrorString(err);
+  }
   assert(msg != NULL);
   CAMLreturn(caml_copy_string(msg));
 }

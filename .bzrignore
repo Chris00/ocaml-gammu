@@ -3,3 +3,5 @@
 *.cmxa
 .depend.ocaml
 RE:doc/.*\.(html|css)
+*.com
+*.exe
