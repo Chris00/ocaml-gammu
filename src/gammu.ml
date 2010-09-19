@@ -530,10 +530,6 @@ and entry_type =
 module SMS =
 struct
 
-  type format = Pager | Fax | Email | Text
-
-  type validity_period = Hour_1 | Hour_6 | Day_1 | Day_3 | Week | Max_time
-
   type state = Sent | Unsent | Read | Unread
 
   type udh =
@@ -568,6 +564,19 @@ struct
     all_parts : int;
   }
 
+  type format = Pager | Fax | Email | Text
+
+  type validity = Not_available | Relative of char
+
+  type smsc = {
+    smsc_location : int;
+    smsc_name : string;
+    smsc_number : string;
+    validity : validity;
+    format : format;
+    default_number : string;
+  }
+
   type message_type =
     | Deliver
     | Status_Report
@@ -586,7 +595,7 @@ struct
     udh_header : udh_header;
     number : string;
     other_numbers : string array;
-    (* smsc : smsc; (* NYI *) *)
+    smsc : smsc;
     memory : memory_type;
     location : int;
     folder : int;

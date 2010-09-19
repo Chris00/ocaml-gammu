@@ -18,6 +18,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details. *)
 
+
 (** Interface to the gammu library (libGammu) to manage data in your
     cell phone such as contacts, calendar or messages.
 
@@ -619,9 +620,6 @@ and entry_type =
 (** SMS messages manipulations.  *)
 module SMS : sig
 
-  type format = Pager | Fax | Email | Text
-  type validity_period = Hour_1 | Hour_6 | Day_1 | Day_3 | Week | Max_time
-
   type state = Sent | Unsent | Read | Unread
 
   type udh =
@@ -656,6 +654,28 @@ module SMS : sig
     all_parts : int;    (** Total number of parts. *)
   }
 
+  type format = Pager | Fax | Email | Text
+  (** Format of SMS messages. See GSM 03.40 section 9.2.3.9. *)
+
+  (* Representation of the whole GSM_SMSValidity struct (2 enums in libGammu).
+     The relative validity period is in fact a char, other values than those
+     from GSM_ValidityPeriod can be given. *)
+  type validity = Not_available | Relative of char
+  (** Validity lengths for SMS messages. See GSM 03.40 section 9.2.3.12.1 for
+      meanings. *)
+
+  (* TODO: Add conversion function between relative validity period char
+     and its representation.*)
+
+  type smsc = {
+    smsc_location : int;     (** Number of the SMSC on SIM *)
+    smsc_name : string;      (** Name of the SMSC *)
+    smsc_number : string;    (** SMSC phone number *)
+    validity : validity;     (** Validity of SMS messges. *)
+    format : format;         (** Format of sent SMS messages. *)
+    default_number : string; (** Default recipient number. In old DCT3 ignored. *)
+  } (** SMSC (SMS Center) *)
+
   type message_type =
     | Deliver           (** SMS in Inbox. *)
     | Status_Report     (** Delivery Report *)
@@ -674,26 +694,26 @@ module SMS : sig
     udh_header : udh_header;
     number : string;
     other_numbers : string array;
-    (* smsc : smsc;     (** NYI SMS Center *) *)
+    smsc : smsc;         (** SMS Center *)
     memory : memory_type; (** For saved SMS: where exactly
                               it's saved (SIM/phone). *)
-    location : int;  (** For saved SMS: location of SMS in memory. *)
-    folder : int;    (** For saved SMS: number of folder,
-                         where SMS is saved. *)
+    location : int;      (** For saved SMS: location of SMS in memory. *)
+    folder : int;        (** For saved SMS: number of folder,
+                             where SMS is saved. *)
     inbox_folder : bool; (** For saved SMS: whether SMS is really in Inbox. *)
-    state : state;   (** Status (read/unread/...) of SMS message. *)
-    nokia_name : string;   (** Name in Nokia with SMS memory (6210/7110, etc.)
-                         Ignored in other. *)
-    text : string;   (** Text for SMS. *)
-    pdu : message_type; (** Type of message. *)
-    coding : coding; (** Type of coding. *)
+    state : state;       (** Status (read/unread/...) of SMS message. *)
+    nokia_name : string; (** Name in Nokia with SMS memory (6210/7110, etc.)
+                             Ignored in other. *)
+    text : string;       (** Text for SMS. *)
+    pdu : message_type;  (** Type of message. *)
+    coding : coding;     (** Type of coding. *)
     date_time : DateTime.t;
     smsc_time : DateTime.t;
     delivery_status : char; (** In delivery reports: status. *)
     reply_via_same_smsc : bool; (** Indicates whether "Reply via same
                                     center" is set. *)
-    sms_class : char; (** SMS class (0 is flash SMS, 1 is normal one). *)
-    message_reference : char; (** Message reference. *)
+    sms_class : char;    (** SMS class (0 is flash SMS, 1 is normal one). *)
+    message_reference : char;   (** Message reference. *)
   }
 
   type multi_sms = message array
