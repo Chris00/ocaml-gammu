@@ -428,6 +428,8 @@ struct
 
   external check_time : t -> bool = "caml_gammu_GSM_CheckTime"
 
+  let check t = check_date t && check_time t
+
   external os_date : t -> string = "caml_gammu_GSM_OSDate"
 
   external _os_date_time : t -> bool -> string = "caml_gammu_GSM_OSDateTime"

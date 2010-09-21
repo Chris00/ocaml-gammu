@@ -510,6 +510,10 @@ sig
   (** Checks whether time is valid. This does not check date, see [check_date]
       for this. *)
 
+  val check : t -> bool
+  (** Checks whether both date and time are valid (with [check_date]
+      and [check_time]). *)
+
   val os_date : t -> string
   (** Converts date from timestamp to string according to OS settings. *)
 
