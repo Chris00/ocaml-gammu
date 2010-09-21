@@ -195,7 +195,7 @@ struct
   }
 
   external _read : string -> bool -> section_node = "caml_gammu_INI_ReadFile"
-  let read ?(unicode=true) file_name =
+  let read ?(unicode=false) file_name =
     { head = _read file_name unicode;
       unicode = unicode; }
 
@@ -246,11 +246,9 @@ external remove_config : t -> config = "caml_gammu_remove_config"
 
 external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 
-let load_gammurc ?path s =
+let load_gammurc ?path ?(section=0) s =
   let ini = INI.of_gammurc ?path () in
-  (* Read first config from INI file.
-     TODO: we should read all sections from the INI file. *)
-  let cfg = INI.config ini 0 in
+  let cfg = INI.config ini section in
   push_config s cfg
 
 external _connect : t -> int -> unit= "caml_gammu_GSM_InitConnection"
@@ -532,10 +530,6 @@ and entry_type =
 module SMS =
 struct
 
-  type format = Pager | Fax | Email | Text
-
-  type validity_period = Hour_1 | Hour_6 | Day_1 | Day_3 | Week | Max_time
-
   type state = Sent | Unsent | Read | Unread
 
   type udh =
@@ -570,6 +564,19 @@ struct
     all_parts : int;
   }
 
+  type format = Pager | Fax | Email | Text
+
+  type validity = Not_available | Relative of char
+
+  type smsc = {
+    smsc_location : int;
+    smsc_name : string;
+    smsc_number : string;
+    validity : validity;
+    format : format;
+    default_number : string;
+  }
+
   type message_type =
     | Deliver
     | Status_Report
@@ -588,7 +595,7 @@ struct
     udh_header : udh_header;
     number : string;
     other_numbers : string array;
-    (* smsc : smsc; (* NYI *) *)
+    smsc : smsc;
     memory : memory_type;
     location : int;
     folder : int;

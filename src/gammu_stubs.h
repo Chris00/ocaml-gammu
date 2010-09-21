@@ -104,7 +104,7 @@ void caml_gammu_init();
 static value option_val(value voption, gboolean *some);
 */
 #define VAL_NONE (Val_int(0))
-static value val_some(value vsome);
+static value val_Some(value vsome);
 
 #if VERSION_NUM < 12792
 static gboolean is_true(const char *str);
@@ -152,7 +152,7 @@ value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel);
 /************************************************************************/
 /* INI files */
 
-#define INI_SECTION_VAL(v) (*(INI_Section **) (Data_custom_val(v)))
+#define INI_SECTION_VAL(v) (*((INI_Section **) Data_custom_val(v)))
 
 static void caml_gammu_ini_section_finalize(value vini_section);
 
@@ -424,7 +424,19 @@ static value Val_GSM_MemoryEntry(GSM_MemoryEntry *mem_entry);
 static GSM_UDHHeader *GSM_UDHHeader_val(GSM_UDHHeader *udh_header,
                                         value vudh_header);
 
-static value VAL_GSM_UDHHeader(GSM_UDHHeader *udh_header);
+static value Val_GSM_UDHHeader(GSM_UDHHeader *udh_header);
+
+static GSM_SMSValidity *GSM_SMSValidity_val(GSM_SMSValidity *validity,
+                                            value vvalidity);
+
+static value Val_GSM_SMSValidity(GSM_SMSValidity *validity);
+
+#define GSM_SMSFORMAT_VAL(v) (Int_val(v) + 1)
+#define VAL_GSM_SMSFORMAT(v) (Val_int(v) - 1)
+
+static GSM_SMSC *GSM_SMSC_val(GSM_SMSC *smsc, value vsmsc);
+
+static value Val_GSM_SMSC(GSM_SMSC *smsc);
 
 #define GSM_SMSMESSAGETYPE_VAL(v) (Int_val(v) + 1)
 #define VAL_GSM_SMSMESSAGETYPE(mt) Val_int(mt - 1)
