@@ -1,3 +1,4 @@
+# .bzrignore							-*-conf-*-
 *.annot
 *.cm[ioax]
 *.cmxa
@@ -5,3 +6,5 @@
 RE:doc/.*\.(html|css)
 *.com
 *.exe
+# Gammu log files
+*.log
