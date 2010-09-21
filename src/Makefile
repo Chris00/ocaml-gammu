@@ -19,7 +19,7 @@ $(STUBS_LIB)$(OBJ): $(STUBS_LIB).c
 	$(OCAMLC) -c $< -I /usr/include/gammu -cclib -lGammu -cclib -lm
 
 
-.PHONY: install uninstall reinstall doc
+.PHONY: install uninstall reinstall doc web
 
 install: $(INSTALL_FILES)
 	$(OCAMLFIND) install $(PKG_NAME) $(INSTALL_FILES)
