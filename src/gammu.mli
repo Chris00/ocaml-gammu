@@ -628,7 +628,7 @@ module SMS : sig
   type state = Sent | Unsent | Read | Unread
 
   type udh =
-    | No_udh
+    | No_udh                    (** Simple message, content in [SMS.text] *)
     | ConcatenatedMessages      (** Linked SMS. *)
     | ConcatenatedMessages16bit (** Linked SMS with 16 bit reference. *)
     | DisableVoice
@@ -660,26 +660,28 @@ module SMS : sig
   }
 
   type format = Pager | Fax | Email | Text
-  (** Format of SMS messages. See GSM 03.40 section 9.2.3.9. *)
+  (** Format of SMS messages.  See GSM 03.40 section 9.2.3.9. *)
 
   (* Representation of the whole GSM_SMSValidity struct (2 enums in libGammu).
      The relative validity period is in fact a char, other values than those
      from GSM_ValidityPeriod can be given. *)
   type validity = Not_available | Relative of char
-  (** Validity lengths for SMS messages. See GSM 03.40 section 9.2.3.12.1 for
-      meanings. *)
+  (** Validity lengths for SMS messages.  See GSM 03.40 section
+      9.2.3.12.1 for meanings. *)
 
   (* TODO: Add conversion function between relative validity period char
      and its representation.*)
 
+  (** SMSC (SMS Center) *)
   type smsc = {
     smsc_location : int;     (** Number of the SMSC on SIM *)
     smsc_name : string;      (** Name of the SMSC *)
     smsc_number : string;    (** SMSC phone number *)
     validity : validity;     (** Validity of SMS messges. *)
     format : format;         (** Format of sent SMS messages. *)
-    default_number : string; (** Default recipient number. In old DCT3 ignored. *)
-  } (** SMSC (SMS Center) *)
+    default_number : string; (** Default recipient number.
+                                 In old DCT3 ignored. *)
+  }
 
   type message_type =
     | Deliver           (** SMS in Inbox. *)
@@ -699,7 +701,7 @@ module SMS : sig
     udh_header : udh_header;
     number : string;
     other_numbers : string array;
-    smsc : smsc;         (** SMS Center *)
+    smsc : smsc;          (** SMS Center *)
     memory : memory_type; (** For saved SMS: where exactly
                               it's saved (SIM/phone). *)
     location : int;      (** For saved SMS: location of SMS in memory. *)
@@ -766,15 +768,16 @@ module SMS : sig
       location really set (after transformation). *)
 
   val add : t -> message -> int * int
-  (** [add s sms] adds [sms] to the folder specified in the [folder] field of
-      [sms] and returns the couple folder and location where the message was
-      stored (folder may be transformed). The location fields of [sms] are ignored when adding SMS, put
-      whatever you want there. *)
+  (** [add s sms] adds [sms] to the folder specified in the [folder]
+      field of [sms] and returns the couple folder and location where
+      the message was stored (folder may be transformed). The location
+      fields of [sms] are ignored when adding SMS, put whatever you
+      want there. *)
 
   type folder = {
-    box : folder_box;     (** Whether it is inbox or outbox. *)
+    box : folder_box;            (** Whether it is inbox or outbox. *)
     folder_memory : memory_type; (** Where exactly it's saved. *)
-    name : string;        (** Name of the folder. *)
+    name : string;               (** Name of the folder. *)
   }
   and folder_box = Inbox | Outbox
 
@@ -806,14 +809,63 @@ module SMS : sig
   (** Deletes SMS (SMS location and folder must be set). *)
 
 
-  type multipart_info = {
-    unicode_coding : bool;
-    info_class : int;
-    replace_message : char;
-    unknown : bool;
-    entries : info array;
-  } (** Multipart SMS Information *)
-  and info = {
+  (** ID during packing SMS for Smart Messaging 3.0, EMS and other *)
+  type encode_part_type_id =
+    | Text                  (** 1 text SMS. *)
+    | ConcatenatedTextLong  (** Contacenated SMS, when longer than 1 SMS. *)
+    | ConcatenatedAutoTextLong (** Contacenated SMS, auto Default/Unicode
+                                   coding. *)
+    | ConcatenatedTextLong16bit
+    | ConcatenatedAutoTextLong16bit
+    | NokiaProfileLong      (** Nokia profile = Name, Ringtone, ScreenSaver *)
+    | NokiaPictureImageLong (** Nokia Picture Image + (text) *)
+    | NokiaScreenSaverLong  (** Nokia screen saver + (text) *)
+    | NokiaRingtone         (** Nokia ringtone - old SM2.0 format, 1 SMS *)
+    | NokiaRingtoneLong     (** Nokia ringtone contacenated, when very long *)
+    | NokiaOperatorLogo     (** Nokia 72x14 operator logo, 1 SMS *)
+    | NokiaOperatorLogoLong (** Nokia 72x14 op logo or 78x21 in 2 SMS *)
+    | NokiaCallerLogo       (** Nokia 72x14 caller logo, 1 SMS *)
+    | NokiaWAPBookmarkLong  (** Nokia WAP bookmark in 1 or 2 SMS *)
+    | NokiaWAPSettingsLong  (** Nokia WAP settings in 2 SMS *)
+    | NokiaMMSSettingsLong  (** Nokia MMS settings in 2 SMS *)
+    | NokiaVCARD10Long      (** Nokia VCARD 1.0 - only name and default
+                                number *)
+    | NokiaVCARD21Long      (** Nokia VCARD 2.1 - all numbers + text *)
+    | NokiaVCALENDAR10Long  (** Nokia VCALENDAR 1.0 - can be in few sms *)
+    | NokiaVTODOLong
+    | VCARD10Long
+    | VCARD21Long
+    | DisableVoice
+    | DisableFax
+    | DisableEmail
+    | EnableVoice
+    | EnableFax
+    | EnableEmail
+    | VoidSMS
+    | EMSSound10            (** IMelody 1.0 *)
+    | EMSSound12            (** IMelody 1.2 *)
+    | EMSSonyEricssonSound  (** IMelody without header
+                                - SonyEricsson extension *)
+    | EMSSound10Long        (** IMelody 1.0 with UPI. *)
+    | EMSSound12Long        (** IMelody 1.2 with UPI. *)
+    | EMSSonyEricssonSoundLong (** IMelody without header with UPI. *)
+    | EMSPredefinedSound
+    | EMSPredefinedAnimation
+    | EMSAnimation
+    | EMSFixedBitmap        (** Fixed bitmap of size 16x16 or 32x32. *)
+    | EMSVariableBitmap
+    | EMSVariableBitmapLong
+    | MMSIndicatorLong      (** MMS message indicator. *)
+    | WAPIndicatorLong
+    | AlcatelMonoBitmapLong (** Variable bitmap with black and white
+                                colors *)
+    | AlcatelMonoAnimationLong (** Variable animation with black and white
+                                   colors *)
+    | AlcatelSMSTemplateName
+    | SiemensFile           (** Siemens OTA *)
+
+  (** SMS information, like type, text, text properties, etc... *)
+  type info = {
     id : encode_part_type_id;
     nbr : int;
     (* ringtone : ringtone; (* NYI *)
@@ -838,74 +890,28 @@ module SMS : sig
     underlined : bool;
     strikethrough : bool;
     ringtone_notes : int;
-  } (** SMS information, like type, text, text properties, etc... *)
-  and encode_part_type_id =
-    | Text (** 1 text SMS. *)
-    | ConcatenatedTextLong (** Contacenated SMS, when longer than 1 SMS. *)
-    | ConcatenatedAutoTextLong (** Contacenated SMS, auto Default/Unicode
-                                   coding. *)
-    | ConcatenatedTextLong16bit
-    | ConcatenatedAutoTextLong16bit
-    | NokiaProfileLong (** Nokia profile = Name, Ringtone, ScreenSaver *)
-    | NokiaPictureImageLong (** Nokia Picture Image + (text) *)
-    | NokiaScreenSaverLong (** Nokia screen saver + (text) *)
-    | NokiaRingtone (** Nokia ringtone - old SM2.0 format, 1 SMS *)
-    | NokiaRingtoneLong (** Nokia ringtone contacenated, when very long *)
-    | NokiaOperatorLogo (** Nokia 72x14 operator logo, 1 SMS *)
-    | NokiaOperatorLogoLong (** Nokia 72x14 op logo or 78x21 in 2 SMS *)
-    | NokiaCallerLogo (** Nokia 72x14 caller logo, 1 SMS *)
-    | NokiaWAPBookmarkLong (** Nokia WAP bookmark in 1 or 2 SMS *)
-    | NokiaWAPSettingsLong (** Nokia WAP settings in 2 SMS *)
-    | NokiaMMSSettingsLong (** Nokia MMS settings in 2 SMS *)
-    | NokiaVCARD10Long (** Nokia VCARD 1.0 - only name and default
-                           number *)
-    | NokiaVCARD21Long (** Nokia VCARD 2.1 - all numbers + text *)
-    | NokiaVCALENDAR10Long (** Nokia VCALENDAR 1.0 - can be in few sms *)
-    | NokiaVTODOLong
-    | VCARD10Long
-    | VCARD21Long
-    | DisableVoice
-    | DisableFax
-    | DisableEmail
-    | EnableVoice
-    | EnableFax
-    | EnableEmail
-    | VoidSMS
-    | EMSSound10 (** IMelody 1.0 *)
-    | EMSSound12 (** IMelody 1.2 *)
-    | EMSSonyEricssonSound (** IMelody without header
-                               - SonyEricsson extension *)
-    | EMSSound10Long (** IMelody 1.0 with UPI. *)
-    | EMSSound12Long (** IMelody 1.2 with UPI. *)
-    | EMSSonyEricssonSoundLong (** IMelody without header with UPI. *)
-    | EMSPredefinedSound
-    | EMSPredefinedAnimation
-    | EMSAnimation
-    | EMSFixedBitmap (** Fixed bitmap of size 16x16 or 32x32. *)
-    | EMSVariableBitmap
-    | EMSVariableBitmapLong
-    | MMSIndicatorLong (** MMS message indicator. *)
-    | WAPIndicatorLong
-    | AlcatelMonoBitmapLong (** Variable bitmap with black and white
-                                colors *)
-    | AlcatelMonoAnimationLong (** Variable animation with black and white
-                                   colors *)
-    | AlcatelSMSTemplateName
-    | SiemensFile (** Siemens OTA  *)
-  (** ID during packing SMS for Smart Messaging 3.0, EMS and other *)
+  }
+
+ (** Multipart SMS Information *)
+  type multipart_info = {
+    unicode_coding : bool;
+    info_class : int;
+    replace_message : char;
+    unknown : bool;
+    entries : info array;
+  }
 
   val decode_multipart : ?debug:Debug.info -> ?ems:bool ->
     multi_sms -> multipart_info
-(** [decode_multipart sms] Decodes multi part SMS to "readable"
-    format. [sms] is modified, return a {!Gammu.SMS.multipart_info}
-    associated.
+  (** [decode_multipart sms] Decodes multi part SMS to "readable"
+      format. [sms] is modified, return a {!Gammu.SMS.multipart_info}
+      associated.
 
-    @param debug log according to debug settings from [di]. If not specified,
-    use the one returned by {!Gammu.Debug.global}.
+      @param debug log according to debug settings from [di]. If not
+      specified, use the one returned by {!Gammu.Debug.global}.
 
-    @param ems whether to use EMS (Enhanced Messaging Service)
-    (default true). *)
-
+      @param ems whether to use EMS (Enhanced Messaging Service)
+      (default true). *)
 end
 
 (************************************************************************)
@@ -917,7 +923,7 @@ module Call : sig
   type call = {
     status : status;       (** Call status. *)
     call_id : int option;  (** Call ID, None when not available. *)
-    number : string; (** Remote phone number. *)
+    number : string;       (** Remote phone number. *)
   } (** Call information. *)
   and status =
     | Incoming    (** Somebody calls to us. *)

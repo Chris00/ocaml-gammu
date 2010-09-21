@@ -34,7 +34,7 @@ let print_multi_sms multi_sms =
   printf "\n%!"
 
 let string_of_signal_quality signal =
-  Printf.sprintf "Signal Strength = %d, %d%%, bit error rate = %d%%"
+  sprintf "Signal Strength = %d, %d%%, bit error rate = %d%%"
     signal.G.Info.signal_strength
     signal.G.Info.signal_percent
     signal.G.Info.bit_error_rate
