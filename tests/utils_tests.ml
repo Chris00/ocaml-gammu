@@ -24,7 +24,7 @@ let print_multi_sms multi_sms =
   printf "Status : %s\n" (string_of_sms_status sms.SMS.state);
   if sms.SMS.udh_header.SMS.udh = SMS.No_udh then
     (* There's no udh so text is raw in the sms message. *)
-    printf "%S" sms.SMS.text
+    printf "%s" sms.SMS.text
   else begin
     (* There's an udh so we have to decode the sms. *)
     let multi_info = SMS.decode_multipart multi_sms
