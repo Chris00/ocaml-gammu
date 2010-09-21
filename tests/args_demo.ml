@@ -17,8 +17,8 @@ let configure s =
   let path, section = parse_args () in
   (* Not ideal but quick workaround to effectively use debug configuration
      from gammurc. *)
-  let ini = Gammu.INI.ini_of_gammurc ?path () in
-  let cfg = Gammu.INI.config_of_ini ini section in
+  let ini = Gammu.INI.of_gammurc ?path () in
+  let cfg = Gammu.INI.config ini section in
   Gammu.push_config s { cfg with Gammu.use_global_debug_file = false }
 
 (* Connect and unlock phone. *)
