@@ -253,14 +253,14 @@ val length_config : t -> int
     the number of active configurations. *)
 
 val load_gammurc : ?path:string -> ?section:int -> t -> unit
-(** Automaticaly finds the gammurc file (see {!Gammu.INI.ini_of_gammurc}),
+(** Automaticaly finds the gammurc file (see {!Gammu.INI.of_gammurc}),
     read it and push the config in the state machine.
 
     @param path force the use of a custom path instead of the autodetected one
     (default: autodetection is performed).
 
     @param section section number of the gammurc file to read. See
-    {!INI.config_of_ini} for details. *)
+    {!Gammu.INI.config} for details. *)
 
 val connect : ?log:(string -> unit) -> ?replies:int -> t -> unit
 (** Initiates connection.
