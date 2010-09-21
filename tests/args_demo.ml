@@ -26,14 +26,14 @@ let prepare_phone s =
   configure s;
   (* Unlock the phone asking user for codes. *)
   let rec ask_user_code s code_type code_type_name =
-    printf "Enter %s code: %!" code_type_name;
+    printf "\n  Enter %s code: %!" code_type_name;
     let code = read_line () in
     try
       Gammu.enter_security_code s ~code_type ~code;
       (* Check if there's another security code to enter. *)
       unlock_phone s;
     with Gammu.Error Gammu.SECURITYERROR ->
-      printf "Wrong code, retry.\n%!";
+      printf "  Wrong code, retry.%!";
       ask_user_code s code_type code_type_name;
   and unlock_phone s =
     let sec_status =
@@ -41,17 +41,19 @@ let prepare_phone s =
       with Gammu.Error Gammu.UNKNOWNRESPONSE -> Gammu.SEC_None
     in
     match sec_status with
-    | Gammu.SEC_None -> print_string "SIM/Phone unlocked.\n"
-    | Gammu.SEC_SecurityCode as c -> ask_user_code s c "Security"
-    | Gammu.SEC_Pin as c -> ask_user_code s c "PIN"
-    | Gammu.SEC_Pin2 as c -> ask_user_code s c "PIN2"
-    | Gammu.SEC_Puk as c -> ask_user_code s c "PUK"
-    | Gammu.SEC_Puk2 as c -> ask_user_code s c "PUK2"
-    | Gammu.SEC_Phone as c -> ask_user_code s c "Phone"
-    | Gammu.SEC_Network as c -> ask_user_code s c "Network"
+    | Gammu.SEC_None -> print_endline "done."
+    | Gammu.SEC_SecurityCode -> ask_user_code s sec_status "Security"
+    | Gammu.SEC_Pin -> ask_user_code s sec_status "PIN"
+    | Gammu.SEC_Pin2 -> ask_user_code s sec_status "PIN2"
+    | Gammu.SEC_Puk -> ask_user_code s sec_status "PUK"
+    | Gammu.SEC_Puk2 -> ask_user_code s sec_status "PUK2"
+    | Gammu.SEC_Phone -> ask_user_code s sec_status "Phone"
+    | Gammu.SEC_Network -> ask_user_code s sec_status "Network"
   in
-  printf "Trying to connect.\n%!";
+  printf "Trying to connect... %!";
   Gammu.connect s;
-  printf "Phone model : \"%s\"\n" (Gammu.Info.model s);
-  printf "Unlock SIM/Phone:\n%!";
+  printf "done.\n%!";
+  printf "Phone model : %S\n" (Gammu.Info.model s);
+  printf "Unlock SIM/Phone... %!";
   unlock_phone s
+

@@ -12,14 +12,14 @@ let print_dyn_infos s =
   begin
     try
       let status = SMS.get_status s in
-      print_string "(#unread) #used/#max:\n";
-      printf "(%d) %d/%d (SIM)\t"
+      printf "SMS status, (#unread) #used/#max:\n";
+      printf "  (%d) %d/%d (SIM)\t"
         status.SMS.sim_unread status.SMS.sim_used status.SMS.sim_size;
       printf "(%d) %d/%d (Phone)\n"
         status.SMS.phone_unread status.SMS.phone_used status.SMS.phone_size;
-      printf "#templates used: %d\n%!" status.SMS.templates_used;
+      printf "  #templates used: %d\n%!" status.SMS.templates_used;
     with G.Error G.NOTSUPPORTED ->
-      printf "Your phone doesn't support getting sms status.\n%!";
+      printf "  Your phone doesn't support getting sms status.\n%!";
   end;
   let bat = Info.battery_charge s in
   printf "%s\n%!"
@@ -47,11 +47,11 @@ let print_dyn_infos s =
     bat.Info.charge_voltage;
   printf "%s\n%!" (string_of_signal_quality (Info.signal_quality s));
   let network = Info.network_info s in
-  printf "Network %s, %s\n"
+  printf "Network %S, %S\n"
     (string_of_network_state network.Info.state) network.Info.name;
-  printf "CID \"%s\", code \"%s\", LAC \"%s\"\n"
+  printf "CID %S, code %S, LAC %S\n"
     network.Info.cid network.Info.code network.Info.lac;
-  printf "GPRS %s, packet CID \"%s\", LAC \"%s\", \"%s\"\n%!"
+  printf "GPRS %S, packet CID %S, LAC %S, state %S\n%!"
     (string_of_info_gprs network.Info.gprs)
     network.Info.packet_cid
     network.Info.packet_lac
@@ -61,17 +61,16 @@ let () =
   try
     let s = Gammu.make () in
     prepare_phone s;
-    printf "Phone model: %s\n" (Info.model s);
-    printf "Manufacturer: \"%s\"" (Info.manufacturer s);
+    printf "Manufacturer: %S" (Info.manufacturer s);
     if Info.manufacture_month s = "" then printf "\n"
     else printf " (month: %s)\n" (Info.manufacture_month s);
-    printf "Product code: %s\n" (Info.product_code s);
+    printf "Product code: %S\n" (Info.product_code s);
     let fw = Info.firmware s in
-    printf "Hardware: %s\n" (Info.hardware s);
-    printf "Firmware version: \"%s\", date \"%s\", num \"%f\"\n"
+    printf "Hardware: %S\n" (Info.hardware s);
+    printf "Firmware version: %S, date %S, num \"%f\"\n"
       fw.Info.version fw.Info.ver_date fw.Info.ver_num;
     printf "IMEI: %s\n" (Info.imei s);
-    print_string "Folders:\n";
+    printf "Folders:\n";
     Array.iteri
       (fun i folder -> printf "  %d : %s\n" i (string_of_folder folder))
       (SMS.folders s);
