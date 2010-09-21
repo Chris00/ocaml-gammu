@@ -202,7 +202,7 @@ struct
   external _find_gammurc_force : string -> section_node
     = "caml_gammu_GSM_FindGammuRC_force"
   external _find_gammurc : unit -> section_node = "caml_gammu_GSM_FindGammuRC"
-  let ini_of_gammurc ?path () =
+  let of_gammurc ?path () =
     let s_node = match path with
       | None -> _find_gammurc ()
       | Some path -> _find_gammurc_force path
@@ -213,7 +213,7 @@ struct
   external _config_of_ini : section_node -> int -> config
     = "caml_gammu_GSM_ReadConfig"
 
-  let config_of_ini cfg_info num =
+  let config cfg_info num =
     _config_of_ini cfg_info.head num
 
   external _get_value : section_node -> string -> string -> bool -> string
@@ -247,10 +247,10 @@ external remove_config : t -> config = "caml_gammu_remove_config"
 external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 
 let load_gammurc ?path s =
-  let ini = INI.ini_of_gammurc ?path () in
+  let ini = INI.of_gammurc ?path () in
   (* Read first config from INI file.
      TODO: we should read all sections from the INI file. *)
-  let cfg = INI.config_of_ini ini 0 in
+  let cfg = INI.config ini 0 in
   push_config s cfg
 
 external _connect : t -> int -> unit= "caml_gammu_GSM_InitConnection"

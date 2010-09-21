@@ -102,12 +102,13 @@ type error =
   | COULDNT_CONNECT     (** Can not connect to server. *)
   | COULDNT_RESOLVE     (** Can not resolve host name. *)
   | GETTING_SMSC        (** Failed to get SMSC number from phone. *)
-  (* Caml bindings own errors *)
+  (* Errors specific to the Caml bindings (not present in Gammu): *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
   | INVALID_CONFIG_NUM  (** Invalid config number. *)
 
 val string_of_error : error -> string
+(** [string_of_error e] returns a textual description of the error [e]. *)
 
 exception Error of error
 (** May be raised by any of the functions of this module to indicate an
@@ -121,13 +122,15 @@ module Debug :
 sig
 
   type info
+  (** Value holding the debugging preferences. *)
 
   val global : info
   (** Global debug settings. *)
 
   val set_global : info -> bool -> unit
-  (** Enables the use of the global debugging configuration.  Has no
-      effect on the global debug configuration itself. *)
+  (** [set_global di] enables the use of the global debugging
+      configuration for [di].  Has no effect on the global debug
+      configuration itself. *)
 
   val set_output : info -> out_channel -> unit
   (** [set_debug_output di channel] sets output channel of [di] to
@@ -139,7 +142,7 @@ sig
 
       [level] must be one of :
       {ul
-      {li nothing - no debug level}
+      {li nothing - no debugging output}
       {li text - transmission dump in text format}
       {li textall - all possible info in text format}
       {li textalldate - all possible info in text format, with time stamp}
@@ -147,7 +150,6 @@ sig
       {li errorsdate - errors in text format, with time stamp}
       {li binary - transmission dump in binary format}}
   *)
-
 end
 
 
@@ -304,9 +306,10 @@ module INI : sig
   val read : ?unicode:bool -> string -> sections
   (** [read fname] reads INI data from the file [fname].
 
-      @param unicode Whether file should be treated as unicode encoded. *)
+      @param unicode Whether file should be treated as unicode encoded
+      (Default: [true]). *)
 
-  val ini_of_gammurc : ?path:string -> unit -> sections
+  val of_gammurc : ?path:string -> unit -> sections
   (** Finds and reads gammu configuration file.  The search order depends on
       platform.  On POSIX systems it looks for ~/.gammurc and then for
       /etc/gammurc, on Windows for gammurc in Application data folder, then in
@@ -315,19 +318,18 @@ module INI : sig
       @param path force the use of a custom path instead of the autodetected
       one (default: autodetection is performed).
 
-      @raise CANTOPENFILE if no gammu rc file can be found.
+      Raises [Error CANTOPENFILE] if no gammu rc file can be found.
+      Raises [Error FILENOTSUPPORTED] if first found gammu rc file is
+      not valid. *)
 
-      @raise FILENOTSUPPORTED if first found gammu rc file is not valid. *)
-
-  val config_of_ini : sections -> int -> config
+  val config : sections -> int -> config
   (** [read_config section num] processes and returns gammu configuration
       represented by the [num]th section of the INI file representation
-      [section]. Beware that [num]th section is in facts the section named
-      "gammu[num]" *)
+      [section].  Beware that [num]th section is in facts the section named
+      "gammu[num]" in the file itself. *)
 
   val get_value : sections -> section:string -> key:string -> string
-(** @return value of the INI file entry. *)
-
+  (** @return value of the INI file entry. *)
 end
 
 

@@ -129,31 +129,23 @@ typedef enum {
 
 static void caml_gammu_raise_Error(int err);
 
-CAMLexport
 value caml_gammu_GSM_ErrorString(value verr);
-
 
 /************************************************************************/
 /* Debugging handling */
 
-/* A Debug.info is either the global_debug pointer or the associated state
-   machine. */
+/* A Debug.info value is either the global_debug pointer or the
+   associated state machine. */
 static GSM_Debug_Info *GSM_Debug_Info_val(value vdi);
 /* di can be global_debug or a state machine value. */
 #define VAL_GSM_DEBUG_INFO(di) ((value) di)
 
-CAMLexport
 value caml_gammu_GSM_GetGlobalDebug(value vunit);
 
-CAMLexport
 value caml_gammu_GSM_SetDebugGlobal(value vdi, value vglobal);
 
-static FILE *FILE_val(value vchannel, const char *mode);
-
-CAMLexport
 value caml_gammu_GSM_SetDebugFileDescriptor(value vdi, value vchannel);
 
-CAMLexport
 value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel);
 
 
