@@ -1,38 +1,37 @@
+open Printf
 module G = Gammu
+module SMS = G.SMS
 
 let string_of_sms_status =
   function
-  | G.SMS.Sent -> "Sent"
-  | G.SMS.Unsent -> "Unsent"
-  | G.SMS.Read -> "Read"
-  | G.SMS.Unread -> "Unread"
+  | SMS.Sent -> "Sent"
+  | SMS.Unsent -> "Unsent"
+  | SMS.Read -> "Read"
+  | SMS.Unread -> "Unread"
 
 let print_multi_sms multi_sms =
-  let module P = Printf in
-  let module S = Gammu.SMS in
   let sms = multi_sms.(0) in
-  print_string "==SMS==\n";
-  P.printf "Folder: %d\n" sms.G.SMS.folder;
+  print_string "=== SMS ===\n";
+  printf "Folder: %d\n" sms.SMS.folder;
   (* TODO: rename location to message_number *)
-  P.printf "Message_number: %d\n" sms.G.SMS.location;
-  P.printf "Is in inbox: %B\n" sms.G.SMS.inbox_folder;
-  P.printf "Number: %s\n" sms.G.SMS.number;
-  P.printf "Date and time: %s\n"
-    (G.DateTime.os_date_time sms.G.SMS.date_time);
-  P.printf "Date and time (SMSC): %s\n"
-    (G.DateTime.os_date_time sms.G.SMS.smsc_time);
-  P.printf "Status : %s\n" (string_of_sms_status sms.G.SMS.state);
-  if (sms.G.SMS.udh_header.G.SMS.udh = G.SMS.No_udh) then
+  printf "Message_number: %d\n" sms.SMS.location;
+  printf "Is in inbox: %B\n" sms.SMS.inbox_folder;
+  printf "Number: %s\n" sms.SMS.number;
+  printf "Date and time: %s\n"
+    (G.DateTime.os_date_time sms.SMS.date_time);
+  printf "Date and time (SMSC): %s\n"
+    (G.DateTime.os_date_time sms.SMS.smsc_time);
+  printf "Status : %s\n" (string_of_sms_status sms.SMS.state);
+  if sms.SMS.udh_header.SMS.udh = SMS.No_udh then
     (* There's no udh so text is raw in the sms message. *)
-    print_string sms.G.SMS.text
+    printf "%S" sms.SMS.text
   else begin
     (* There's an udh so we have to decode the sms. *)
-    let multi_info = G.SMS.decode_multipart multi_sms
-    and print_info info = print_string info.G.SMS.buffer in
-    Array.iter print_info multi_info.G.SMS.entries
+    let multi_info = SMS.decode_multipart multi_sms
+    and print_info info = print_string info.SMS.buffer in
+    Array.iter print_info multi_info.SMS.entries
   end;
-  print_newline ();
-  flush stdout
+  printf "\n%!"
 
 let string_of_signal_quality signal =
   Printf.sprintf "Signal Strength = %d, %d%%, bit error rate = %d%%"
@@ -68,8 +67,8 @@ let string_of_memory_type = function
 
 let string_of_folder folder =
   let folder_box =
-    match folder.G.SMS.box with
-    | G.SMS.Inbox -> "Inbox"
-    | G.SMS.Outbox -> "Outbox"
-  and folder_memory = string_of_memory_type folder.G.SMS.folder_memory in
-  Printf.sprintf "%s (%s) in %s" folder.G.SMS.name folder_box folder_memory
+    match folder.SMS.box with
+    | SMS.Inbox -> "Inbox"
+    | SMS.Outbox -> "Outbox"
+  and folder_memory = string_of_memory_type folder.SMS.folder_memory in
+  sprintf "%s (%s) in %s" folder.SMS.name folder_box folder_memory
