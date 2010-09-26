@@ -201,7 +201,7 @@ value caml_gammu_GSM_SetDebugFileDescriptor(value vdi, value vchannel)
                                      GSM_Debug_Info_val(vdi));
   caml_gammu_raise_Error(error);
   CAMLreturn(Val_unit);
-}
+ }
 
 CAMLexport
 value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel)
@@ -250,10 +250,10 @@ value caml_gammu_INI_ReadFile(value vfilename, value vunicode)
 {
   CAMLparam2(vfilename, vunicode);
   INI_Section *cfg;
+  GSM_Error error;
 
-  caml_gammu_raise_Error(INI_ReadFile(String_val(vfilename),
-                                      Bool_val(vunicode),
-                                      &cfg));
+  error = INI_ReadFile(String_val(vfilename), Bool_val(vunicode), &cfg);
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(cfg));
 }
@@ -415,8 +415,10 @@ value caml_gammu_GSM_FindGammuRC_force(value vpath)
 {
   CAMLparam1(vpath);
   INI_Section *res;
+  GSM_Error error;
 
-  caml_gammu_raise_Error(GSM_FindGammuRC(&res, String_val(vpath)));
+  error = GSM_FindGammuRC(&res, String_val(vpath));
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(res));
 }
@@ -426,8 +428,10 @@ value caml_gammu_GSM_FindGammuRC(value vunit)
 {
   CAMLparam1(vunit);
   INI_Section *res;
+  GSM_Error error;
 
-  caml_gammu_raise_Error(GSM_FindGammuRC(&res, NULL));
+  error = GSM_FindGammuRC(&res, NULL);
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(res));
 }
@@ -438,6 +442,7 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   CAMLparam2(vcfg_info, vnum);
   GSM_Config cfg;
   INI_Section *cfg_info;
+  GSM_Error error;
 
   cfg_info = INI_SECTION_VAL(vcfg_info);
   /* Initialize those strings, because the first thing GSM_ReadConfig tries to
@@ -446,7 +451,8 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   cfg.Connection = strdup("");
   cfg.DebugFile = strdup("");
 
-  caml_gammu_raise_Error(GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum)));
+  error = GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum));
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_GSM_Config(&cfg));
 }
@@ -565,12 +571,14 @@ value caml_gammu_GSM_TerminateConnection(value s)
 {
   CAMLparam1(s);
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
+  GSM_Error error;
 
   /* Allow the GC to free the log function callback. And we don't unregister
    * the incomings callbacks since the user might re-init the connection
    * later (with the same callbacks). */
   UNREGISTER_SM_GLOBAL_ROOT(state_machine, log_function);
-  caml_gammu_raise_Error(GSM_TerminateConnection(state_machine->sm));
+  error = GSM_TerminateConnection(state_machine->sm);
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_unit);
 }
@@ -1149,6 +1157,7 @@ value caml_gammu_GSM_GetSMS(value s, value vlocation, value vfolder)
   CAMLparam3(s, vlocation, vfolder);
   CAMLlocal1(vsms);
   GSM_MultiSMSMessage sms;
+  GSM_Error error;
   int i;
 
   /* Clear SMS structure */
@@ -1160,7 +1169,8 @@ value caml_gammu_GSM_GetSMS(value s, value vlocation, value vfolder)
   /* TODO: Is that necessary ? */
   sms.Number = 0;
 
-  caml_gammu_raise_Error(GSM_GetSMS(GSM_STATEMACHINE_VAL(s), &sms));
+  error = GSM_GetSMS(GSM_STATEMACHINE_VAL(s), &sms);
+  caml_gammu_raise_Error(error);
 
   vsms = Val_GSM_MultiSMSMessage(&sms);
   CAMLreturn(vsms);
@@ -1172,6 +1182,7 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
 {
   CAMLparam4(s, vlocation, vfolder, vstart);
   GSM_MultiSMSMessage sms;
+  GSM_Error error;
   int i;
 
   /* Clear SMS structure */
@@ -1183,9 +1194,8 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   /* TODO: Is that necessary ? */
   sms.Number = 0;
 
-  caml_gammu_raise_Error(GSM_GetNextSMS(GSM_STATEMACHINE_VAL(s),
-                                        &sms,
-                                        Bool_val(vstart)));
+  error = GSM_GetNextSMS(GSM_STATEMACHINE_VAL(s), &sms, Bool_val(vstart));
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
