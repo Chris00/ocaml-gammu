@@ -1,0 +1,10 @@
+- Mark blocking sections in C code.
+- Handle SMS sending.
+- Make ml-gammu feature complete.
+
+Write tests for :
+=================
+  - Add/Set SMS.
+  - Delete SMS.
+  - Exceptions (bad get/set sms locations...).
+  - Handling of different encodings.
