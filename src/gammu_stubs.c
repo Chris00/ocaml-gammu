@@ -1144,9 +1144,9 @@ static value Val_GSM_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
 }
 
 CAMLexport
-value caml_gammu_GSM_GetSMS(value s, value vlocation, value vfolder)
+value caml_gammu_GSM_GetSMS(value s, value vfolder, value vlocation)
 {
-  CAMLparam3(s, vlocation, vfolder);
+  CAMLparam3(s, vfolder, vlocation);
   CAMLlocal1(vsms);
   GSM_MultiSMSMessage sms;
   int i;

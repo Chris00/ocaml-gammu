@@ -747,9 +747,9 @@ module SMS : sig
       @param folder specifies the folder from where to start folding SMS
       (default = 0, the first one).
 
-      @param n how many messages are to be folded (at maximum). If
+      @param n how many messages are to be folded (at maximum).  If
       negative, the fold goes over all messages from the beginning of the
-      given folder and higherly numbered ones (default = -1).
+      given folder and higher numbered ones (default = -1).
 
       @param retries how many times to retry (first try not counted in) the
       retrieval of one message in case of error [UNKNOWN] or

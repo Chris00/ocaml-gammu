@@ -619,39 +619,43 @@ struct
 
   type multi_sms = message array
 
-  external _get : t -> int -> int -> multi_sms =
+  external get : t -> folder:int -> message_number:int -> multi_sms =
     "caml_gammu_GSM_GetSMS"
-  let get s ~folder ~message_number =
-    _get s message_number folder
 
-  external _get_next : t -> int -> int -> bool ->
-    multi_sms = "caml_gammu_GSM_GetNextSMS"
+  external _get_next : t -> location:int -> folder:int -> bool -> multi_sms
+    = "caml_gammu_GSM_GetNextSMS"
+
+  let rec fold_loop s location folder n ~retries retries_num on_err f acc =
+    if n = 0 then acc
+    else (
+      try
+        let multi_sms =
+          if location = -1 then
+            (* Start from the beginning of the folder. *)
+            _get_next s ~location:0 ~folder true
+          else
+            (* Get next location, folder need to be 0 because the
+               location carries the folder in its representation. *)
+            _get_next s ~location ~folder:0 false
+        in
+        (* Not a tail recursive call but the number of SMS messages is
+           assumed to be small: *)
+        fold_loop s multi_sms.(0).location folder (n - 1) ~retries 0 on_err
+          f (f acc multi_sms)
+      with
+      | Error EMPTY -> acc (* There's no next SMS message *)
+      | Error (UNKNOWN | CORRUPTED as e) ->
+        on_err location e;
+        if retries_num = retries then
+          (* Continue with next message. *)
+          fold_loop s (location + 1) folder n ~retries 0 on_err f acc
+        else
+          (* Retry retrieval. *)
+          fold_loop s location folder n ~retries (retries_num + 1) on_err f acc
+    )
 
   let fold s ?(folder=0) ?(n=(-1)) ?(retries=2) ?(on_err=(fun _ _ -> ())) f a =
-    let rec aux retries_num location acc = function
-      | 0 -> acc
-      | for_n ->
-        try
-          let multi_sms =
-            match location with
-            | -1 -> (* Start from the beginning of the folder. *)
-              _get_next s 0 folder true
-            | loc -> (* Get next location, folder need to be 0 because the
-                        location carries the folder in its representation. *)
-              _get_next s loc 0 false
-          in
-          aux 0 multi_sms.(0).location (f acc multi_sms) (for_n - 1)
-        with Error EMPTY -> acc (* There's no next SMS message *)
-        | Error e when e = UNKNOWN || e = CORRUPTED ->
-          on_err location e;
-          if retries_num = retries then
-            (* Continue with next message. *)
-            aux 0 (location + 1) acc for_n
-          else
-            (* Retry retrieval. *)
-            aux (retries_num + 1) location acc for_n;
-    in
-    aux 0 (-1) a n
+    fold_loop s (-1) folder n ~retries 0 on_err f a
 
   external set : t -> message -> int * int = "caml_gammu_GSM_SetSMS"
 
