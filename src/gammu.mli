@@ -296,7 +296,7 @@ val read_device : ?wait_for_reply:bool -> t -> int
 (** {2 INI files} *)
 
 (** These functions parse ini file and make them available in easily
-    accessable manner. *)
+    accessible manner. *)
 module INI : sig
 
   (*type entry (* Useless, never used and abstract *) *)
@@ -622,35 +622,38 @@ and entry_type =
 (************************************************************************)
 (** {2 Messages} *)
 
-(** SMS messages manipulations.  *)
+(** SMS messages manipulation.  *)
 module SMS : sig
 
   type state = Sent | Unsent | Read | Unread
 
+  (** Types of UDH (User Data Header). *)
   type udh =
-    | No_udh                    (** Simple message, content in [SMS.text] *)
-    | ConcatenatedMessages      (** Linked SMS. *)
-    | ConcatenatedMessages16bit (** Linked SMS with 16 bit reference. *)
-    | DisableVoice
-    | DisableFax
-    | DisableEmail
-    | EnableVoice
-    | EnableFax
-    | EnableEmail
-    | VoidSMS
-    | NokiaRingtone
-    | NokiaRingtoneLong
-    | NokiaOperatorLogo
-    | NokiaOperatorLogoLong
-    | NokiaCallerLogo
-    | NokiaWAP
-    | NokiaWAPLong
-    | NokiaCalendarLong
-    | NokiaProfileLong
-    | NokiaPhonebookLong
-    | UserUDH
-    | MMSIndicatorLong
-  and udh_header = {
+  | No_udh                    (** Simple message, content in [SMS.text] *)
+  | ConcatenatedMessages      (** Linked SMS. *)
+  | ConcatenatedMessages16bit (** Linked SMS with 16 bit reference. *)
+  | DisableVoice
+  | DisableFax
+  | DisableEmail
+  | EnableVoice
+  | EnableFax
+  | EnableEmail
+  | VoidSMS
+  | NokiaRingtone
+  | NokiaRingtoneLong
+  | NokiaOperatorLogo
+  | NokiaOperatorLogoLong
+  | NokiaCallerLogo
+  | NokiaWAP
+  | NokiaWAPLong
+  | NokiaCalendarLong
+  | NokiaProfileLong
+  | NokiaPhonebookLong
+  | UserUDH
+  | MMSIndicatorLong
+
+  (** Structure for User Data Header. *)
+  type udh_header = {
     udh : udh;          (** UDH type. *)
     udh_text : string;  (** UDH text. *)
     id8bit : int;       (** 8-bit ID, when required (-1 otherwise). *)
@@ -696,31 +699,32 @@ module SMS : sig
     | Eight_bit                  (** 8-bit.  *)
 
   type message = {
-    replace : char; (* replace_message *)
-    reject_duplicates : bool;
-    udh_header : udh_header;
-    number : string;
+    replace : char;       (** Message to be replaced. *)
+    reject_duplicates : bool; (** Whether to reject duplicates. *)
+    udh_header : udh_header;  (** UDH (User Data Header) *)
+    number : string;          (** Sender or recipient number. *)
     other_numbers : string array;
     smsc : smsc;          (** SMS Center *)
     memory : memory_type; (** For saved SMS: where exactly
                               it's saved (SIM/phone). *)
-    location : int;      (** For saved SMS: location of SMS in memory. *)
-    folder : int;        (** For saved SMS: number of folder,
-                             where SMS is saved. *)
-    inbox_folder : bool; (** For saved SMS: whether SMS is really in Inbox. *)
-    state : state;       (** Status (read/unread/...) of SMS message. *)
-    nokia_name : string; (** Name in Nokia with SMS memory (6210/7110, etc.)
-                             Ignored in other. *)
-    text : string;       (** Text for SMS. *)
-    pdu : message_type;  (** Type of message. *)
-    coding : coding;     (** Type of coding. *)
-    date_time : DateTime.t;
-    smsc_time : DateTime.t;
+    location : int;       (** For saved SMS: location of SMS in memory. *)
+    folder : int;         (** For saved SMS: number of folder,
+                              where SMS is saved. *)
+    inbox_folder : bool;  (** For saved SMS: whether SMS is really in Inbox. *)
+    state : state;        (** Status (read/unread/...) of SMS message. *)
+    nokia_name : string;  (** Name in Nokia with SMS memory (6210/7110, etc.)
+                              Ignored in other. *)
+    text : string;        (** Text for SMS. *)
+    pdu : message_type;   (** Type of message. *)
+    coding : coding;      (** Type of coding. *)
+    date_time : DateTime.t; (** Date and time, when SMS was saved or sent. *)
+    smsc_time : DateTime.t; (** Date of SMSC response in DeliveryReport
+                                messages. *)
     delivery_status : char; (** In delivery reports: status. *)
     reply_via_same_smsc : bool; (** Indicates whether "Reply via same
                                     center" is set. *)
-    sms_class : char;    (** SMS class (0 is flash SMS, 1 is normal one). *)
-    message_reference : char;   (** Message reference. *)
+    sms_class : char;     (** SMS class (0 is flash SMS, 1 is normal one). *)
+    message_reference : char; (** Message reference. *)
   }
 
   type multi_sms = message array
@@ -729,7 +733,7 @@ module SMS : sig
   val get : t -> folder:int -> message_number:int -> multi_sms
   (** Reads SMS message. *)
 
-  val fold : t -> ?folder:int -> ?for_n:int -> ?retries:int ->
+  val fold : t -> ?folder:int -> ?n:int -> ?retries:int ->
     ?on_err:(int -> error -> unit) -> ('a -> multi_sms -> 'a) -> 'a -> 'a
   (** [fold s f a] fold SMS messages through the function [f] with [a] as
       initial value, iterating trough SMS' *and* folders).
@@ -743,7 +747,7 @@ module SMS : sig
       @param folder specifies the folder from where to start folding SMS
       (default = 0, the first one).
 
-      @param for_n how many messages are to be folded (at maximum). If
+      @param n how many messages are to be folded (at maximum). If
       negative, the fold goes over all messages from the beginning of the
       given folder and higherly numbered ones (default = -1).
 

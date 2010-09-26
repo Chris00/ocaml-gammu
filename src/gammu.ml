@@ -534,29 +534,31 @@ struct
 
   type state = Sent | Unsent | Read | Unread
 
+  (* udh_type would be more appropriate byt we want to be close to
+     libgammu choices. *)
   type udh =
-    | No_udh
-    | ConcatenatedMessages
-    | ConcatenatedMessages16bit
-    | DisableVoice
-    | DisableFax
-    | DisableEmail
-    | EnableVoice
-    | EnableFax
-    | EnableEmail
-    | VoidSMS
-    | NokiaRingtone
-    | NokiaRingtoneLong
-    | NokiaOperatorLogo
-    | NokiaOperatorLogoLong
-    | NokiaCallerLogo
-    | NokiaWAP
-    | NokiaWAPLong
-    | NokiaCalendarLong
-    | NokiaProfileLong
-    | NokiaPhonebookLong
-    | UserUDH
-    | MMSIndicatorLong
+  | No_udh
+  | ConcatenatedMessages
+  | ConcatenatedMessages16bit
+  | DisableVoice
+  | DisableFax
+  | DisableEmail
+  | EnableVoice
+  | EnableFax
+  | EnableEmail
+  | VoidSMS
+  | NokiaRingtone
+  | NokiaRingtoneLong
+  | NokiaOperatorLogo
+  | NokiaOperatorLogoLong
+  | NokiaCallerLogo
+  | NokiaWAP
+  | NokiaWAPLong
+  | NokiaCalendarLong
+  | NokiaProfileLong
+  | NokiaPhonebookLong
+  | UserUDH
+  | MMSIndicatorLong
   and udh_header = {
     udh : udh;
     udh_text : string;
@@ -580,16 +582,16 @@ struct
   }
 
   type message_type =
-    | Deliver
-    | Status_Report
-    | Submit
+  | Deliver
+  | Status_Report
+  | Submit
 
   type coding =
-    | Unicode_No_Compression
-    | Unicode_Compression
-    | Default_No_Compression
-    | Default_Compression
-    | Eight_bit
+  | Unicode_No_Compression
+  | Unicode_Compression
+  | Default_No_Compression
+  | Default_Compression
+  | Eight_bit
 
   type message = {
     replace : char;
@@ -624,8 +626,8 @@ struct
 
   external _get_next : t -> int -> int -> bool ->
     multi_sms = "caml_gammu_GSM_GetNextSMS"
-  let fold s ?(folder=0) ?(for_n=(-1))
-      ?(retries=2) ?(on_err=(fun _ _ -> ())) f a =
+
+  let fold s ?(folder=0) ?(n=(-1)) ?(retries=2) ?(on_err=(fun _ _ -> ())) f a =
     let rec aux retries_num location acc = function
       | 0 -> acc
       | for_n ->
@@ -649,7 +651,7 @@ struct
             (* Retry retrieval. *)
             aux (retries_num + 1) location acc for_n;
     in
-    aux 0 (-1) a for_n
+    aux 0 (-1) a n
 
   external set : t -> message -> int * int = "caml_gammu_GSM_SetSMS"
 
