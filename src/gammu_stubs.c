@@ -201,7 +201,7 @@ value caml_gammu_GSM_SetDebugFileDescriptor(value vdi, value vchannel)
                                      GSM_Debug_Info_val(vdi));
   caml_gammu_raise_Error(error);
   CAMLreturn(Val_unit);
-}
+ }
 
 CAMLexport
 value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel)
@@ -250,10 +250,10 @@ value caml_gammu_INI_ReadFile(value vfilename, value vunicode)
 {
   CAMLparam2(vfilename, vunicode);
   INI_Section *cfg;
+  GSM_Error error;
 
-  caml_gammu_raise_Error(INI_ReadFile(String_val(vfilename),
-                                      Bool_val(vunicode),
-                                      &cfg));
+  error = INI_ReadFile(String_val(vfilename), Bool_val(vunicode), &cfg);
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(cfg));
 }
@@ -414,9 +414,15 @@ CAMLexport
 value caml_gammu_GSM_FindGammuRC_force(value vpath)
 {
   CAMLparam1(vpath);
+  char *path;
   INI_Section *res;
+  GSM_Error error;
 
-  caml_gammu_raise_Error(GSM_FindGammuRC(&res, String_val(vpath)));
+  path = String_val(vpath);
+  caml_enter_blocking_section();
+  error = GSM_FindGammuRC(&res, path);
+  caml_leave_blocking_section();
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(res));
 }
@@ -426,8 +432,12 @@ value caml_gammu_GSM_FindGammuRC(value vunit)
 {
   CAMLparam1(vunit);
   INI_Section *res;
+  GSM_Error error;
 
-  caml_gammu_raise_Error(GSM_FindGammuRC(&res, NULL));
+  caml_enter_blocking_section();
+  error = GSM_FindGammuRC(&res, NULL);
+  caml_leave_blocking_section();
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(res));
 }
@@ -438,6 +448,7 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   CAMLparam2(vcfg_info, vnum);
   GSM_Config cfg;
   INI_Section *cfg_info;
+  GSM_Error error;
 
   cfg_info = INI_SECTION_VAL(vcfg_info);
   /* Initialize those strings, because the first thing GSM_ReadConfig tries to
@@ -446,7 +457,8 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   cfg.Connection = strdup("");
   cfg.DebugFile = strdup("");
 
-  caml_gammu_raise_Error(GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum)));
+  error = GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum));
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_GSM_Config(&cfg));
 }
@@ -571,12 +583,16 @@ value caml_gammu_GSM_TerminateConnection(value s)
 {
   CAMLparam1(s);
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
+  GSM_Error error;
 
   /* Allow the GC to free the log function callback. And we don't unregister
    * the incomings callbacks since the user might re-init the connection
    * later (with the same callbacks). */
   UNREGISTER_SM_GLOBAL_ROOT(state_machine, log_function);
-  caml_gammu_raise_Error(GSM_TerminateConnection(state_machine->sm));
+  caml_enter_blocking_section();
+  error = GSM_TerminateConnection(state_machine->sm);
+  caml_leave_blocking_section();
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_unit);
 }
@@ -609,10 +625,16 @@ CAMLexport
 value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
 {
   CAMLparam2(s, vwait_for_reply);
-  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
+  GSM_StateMachine *sm;
+  gboolean wait_for_reply;
   int read_bytes;
 
-  read_bytes = GSM_ReadDevice(sm, Bool_val(vwait_for_reply));
+  sm = GSM_STATEMACHINE_VAL(s);
+  wait_for_reply = Bool_val(vwait_for_reply);
+
+  caml_enter_blocking_section();
+  read_bytes = GSM_ReadDevice(sm, wait_for_reply);
+  caml_leave_blocking_section();
   /* Bug in GSM_ReadDevice, the function already checks for connection, but
      one can't make the difference between a GSM not connected or 33 bytes
      read. This bug has been fixed in 1.28.92, it returns (-1) in that
@@ -635,14 +657,17 @@ CAMLexport
 value caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
 {
   CAMLparam2(s, vcode);
-  GSM_Error error;
+  GSM_StateMachine *sm;
   GSM_SecurityCode security_code;
+  GSM_Error error;
 
+  sm = GSM_STATEMACHINE_VAL(s),
   security_code.Type = GSM_SECURITYCODETYPE_VAL(vcode_type);
   CPY_TRIM_STRING_VAL(security_code.Code, vcode);
 
-  error = GSM_EnterSecurityCode(GSM_STATEMACHINE_VAL(s),
-                                security_code);
+  caml_enter_blocking_section();
+  error = GSM_EnterSecurityCode(sm, security_code);
+  caml_leave_blocking_section();
   caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_unit);
@@ -652,10 +677,15 @@ CAMLexport
 value caml_gammu_GSM_GetSecurityStatus(value s)
 {
   CAMLparam1(s);
-  GSM_Error error;
+  GSM_StateMachine *sm;
   GSM_SecurityCodeType status;
+  GSM_Error error;
 
-  error = GSM_GetSecurityStatus(GSM_STATEMACHINE_VAL(s), &status);
+  sm = GSM_STATEMACHINE_VAL(s);
+
+  caml_enter_blocking_section();
+  error = GSM_GetSecurityStatus(sm, &status);
+  caml_leave_blocking_section();
   caml_gammu_raise_Error(error);
 
   CAMLreturn(VAL_GSM_SECURITYCODETYPE(status));
@@ -782,12 +812,17 @@ value caml_gammu_GSM_GetFirmWare(value s)
 {
   CAMLparam1(s);
   CAMLlocal1(res);
-  GSM_Error error;
+  GSM_StateMachine *sm;
   char val[GSM_MAX_VERSION_LENGTH + 1];
   char date[GSM_MAX_VERSION_DATE_LENGTH + 1];
   double num;
+  GSM_Error error;
 
-  error = GSM_GetFirmware(GSM_STATEMACHINE_VAL(s), val, date, &num);
+  sm = GSM_STATEMACHINE_VAL(s);
+
+  caml_enter_blocking_section();
+  error = GSM_GetFirmware(sm, val, date, &num);
+  caml_leave_blocking_section();
   caml_gammu_raise_Error(error);
 
   res = caml_alloc(3, 0);
@@ -812,9 +847,10 @@ CAMLexport
 value caml_gammu_GSM_GetModelInfo(value s)
 {
   CAMLparam1(s);
-
-  GSM_PhoneModel *phone_model = GSM_GetModelInfo(GSM_STATEMACHINE_VAL(s));
-
+  GSM_PhoneModel *phone_model;
+  
+  phone_model = GSM_GetModelInfo(GSM_STATEMACHINE_VAL(s));
+  
   CAMLreturn(Val_GSM_PhoneModel(phone_model));
 }
 
@@ -1166,9 +1202,12 @@ value caml_gammu_GSM_GetSMS(value s, value vfolder, value vlocation)
 {
   CAMLparam3(s, vfolder, vlocation);
   CAMLlocal1(vsms);
+  GSM_StateMachine *sm;
   GSM_MultiSMSMessage sms;
+  GSM_Error error;
   int i;
 
+  sm = GSM_STATEMACHINE_VAL(s);
   /* Clear SMS structure */
   for (i = 0; i < GSM_MAX_MULTI_SMS; i++)
     GSM_SetDefaultSMSData(&sms.SMS[i]);
@@ -1178,7 +1217,10 @@ value caml_gammu_GSM_GetSMS(value s, value vfolder, value vlocation)
   /* TODO: Is that necessary ? */
   sms.Number = 0;
 
-  caml_gammu_raise_Error(GSM_GetSMS(GSM_STATEMACHINE_VAL(s), &sms));
+  caml_enter_blocking_section();
+  error = GSM_GetSMS(sm, &sms);
+  caml_leave_blocking_section();
+  caml_gammu_raise_Error(error);
 
   vsms = Val_GSM_MultiSMSMessage(&sms);
   CAMLreturn(vsms);
@@ -1189,9 +1231,14 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
                                 value vstart)
 {
   CAMLparam4(s, vlocation, vfolder, vstart);
+  GSM_StateMachine *sm;
+  gboolean start;
   GSM_MultiSMSMessage sms;
+  GSM_Error error;
   int i;
 
+  sm = GSM_STATEMACHINE_VAL(s);
+  start = Bool_val(vstart);
   /* Clear SMS structure */
   for (i = 0; i < GSM_MAX_MULTI_SMS; i++)
     GSM_SetDefaultSMSData(&sms.SMS[i]);
@@ -1201,9 +1248,10 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   /* TODO: Is that necessary ? */
   sms.Number = 0;
 
-  caml_gammu_raise_Error(GSM_GetNextSMS(GSM_STATEMACHINE_VAL(s),
-                                        &sms,
-                                        Bool_val(vstart)));
+  caml_enter_blocking_section();
+  error = GSM_GetNextSMS(sm, &sms, start);
+  caml_leave_blocking_section();
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
@@ -1247,12 +1295,17 @@ value caml_gammu_GSM_GetSMSFolders(value s)
 {
   CAMLparam1(s);
   CAMLlocal1(res);
+  GSM_StateMachine *sm;
   GSM_SMSFolders folders;
   GSM_Error error;
   int i;
 
+  sm = GSM_STATEMACHINE_VAL(s);
+
   /* Get the folders. */
-  error = GSM_GetSMSFolders(GSM_STATEMACHINE_VAL(s), &folders);
+  caml_enter_blocking_section();
+  error = GSM_GetSMSFolders(sm, &folders);
+  caml_leave_blocking_section();
   caml_gammu_raise_Error(error);
 
   /* Convert it to a an array of SMS.folder values. */
@@ -1284,10 +1337,15 @@ CAMLexport
 value caml_gammu_GSM_GetSMSStatus(value s)
 {
   CAMLparam1(s);
+  GSM_StateMachine *sm;
   GSM_SMSMemoryStatus status;
   GSM_Error error;
 
-  error = GSM_GetSMSStatus(GSM_STATEMACHINE_VAL(s), &status);
+  sm = GSM_STATEMACHINE_VAL(s);
+
+  caml_enter_blocking_section();
+  error = GSM_GetSMSStatus(sm, &status);
+  caml_leave_blocking_section();
   caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_GSM_SMSMemoryStatus(&status));
@@ -1297,13 +1355,17 @@ CAMLexport
 value caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
 {
   CAMLparam3(s, vlocation, vfolder);
+  GSM_StateMachine *sm;
   GSM_SMSMessage sms;
-  /* TODO: do we need a one time (w/ sms static) :
-     SetDefaultSMSData(sms); */
+  
+  sm = GSM_STATEMACHINE_VAL(s);
 
   sms.Location = Int_val(vlocation);
   sms.Folder = Int_val(vfolder);
-  GSM_DeleteSMS(GSM_STATEMACHINE_VAL(s), &sms);
+  
+  caml_enter_blocking_section();
+  GSM_DeleteSMS(sm, &sms);
+  caml_leave_blocking_section();
 
   CAMLreturn(Val_unit);
 }

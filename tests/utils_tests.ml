@@ -1,6 +1,8 @@
 open Printf
+
 module G = Gammu
-module SMS = G.SMS
+module SMS = Gammu.SMS
+module Info = Gammu.Info
 
 let string_of_sms_status =
   function
@@ -11,7 +13,6 @@ let string_of_sms_status =
 
 let print_multi_sms multi_sms =
   let sms = multi_sms.(0) in
-  print_string "=== SMS ===\n";
   printf "Folder: %d\n" sms.SMS.folder;
   (* TODO: rename location to message_number *)
   printf "Message_number: %d\n" sms.SMS.location;
@@ -35,22 +36,22 @@ let print_multi_sms multi_sms =
 
 let string_of_signal_quality signal =
   sprintf "Signal Strength = %d, %d%%, bit error rate = %d%%"
-    signal.G.Info.signal_strength
-    signal.G.Info.signal_percent
-    signal.G.Info.bit_error_rate
+    signal.Info.signal_strength
+    signal.Info.signal_percent
+    signal.Info.bit_error_rate
 
 let string_of_info_gprs = function
-  | G.Info.Detached -> "Detached"
-  | G.Info.Attached -> "Attached"
-  | G.Info.Unknown_gprs -> "Unknown"
+  | Info.Detached -> "Detached"
+  | Info.Attached -> "Attached"
+  | Info.Unknown_gprs -> "Unknown"
 
 let string_of_network_state = function
-  | G.Info.HomeNetwork -> "Home"
-  | G.Info.NoNetwork -> "No Network"
-  | G.Info.RoamingNetwork -> "Roaming"
-  | G.Info.RegistrationDenied -> "Registration Denied"
-  | G.Info.Unknown_network -> "Unknown status"
-  | G.Info.RequestingNetwork -> "Requesting"
+  | Info.HomeNetwork -> "Home"
+  | Info.NoNetwork -> "No Network"
+  | Info.RoamingNetwork -> "Roaming"
+  | Info.RegistrationDenied -> "Registration Denied"
+  | Info.Unknown_network -> "Unknown status"
+  | Info.RequestingNetwork -> "Requesting"
 
 let string_of_memory_type = function
   | G.ME -> "Internal memory of the mobile equipment"

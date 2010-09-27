@@ -23,6 +23,7 @@
 
 
 #include <caml/mlvalues.h>
+#include <caml/signals.h>
 
 #include <gammu.h>
 
@@ -296,22 +297,26 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network);
 
 static value Val_GSM_SignalQuality(GSM_SignalQuality *signal_quality);
 
-#define CAML_GAMMU_GSM_STR_GET_PROTOTYPE(name, buf_length)              \
-  CAMLexport                                                            \
+#define CAML_GAMMU_GSM_STR_GET_PROTOTYPE(name, buf_length)      \
+  CAMLexport                                                    \
   value caml_gammu_GSM_Get##name(value s)
-#define CAML_GAMMU_GSM_STR_GET(name, buf_length)                        \
-  CAML_GAMMU_GSM_STR_GET_PROTOTYPE(name, buf_length)                    \
-  {                                                                     \
-    CAMLparam1(s);                                                      \
-    GSM_Error error;                                                    \
-    char val[buf_length] = "";                                          \
-    error = GSM_Get##name(GSM_STATEMACHINE_VAL(s), val);                \
-    if (error != ERR_NOTSUPPORTED)                                      \
-      caml_gammu_raise_Error(error);                                    \
-    CAMLreturn(caml_copy_string(val));                                  \
+#define CAML_GAMMU_GSM_STR_GET(name, buf_length)         \
+  CAML_GAMMU_GSM_STR_GET_PROTOTYPE(name, buf_length)     \
+  {                                                      \
+    CAMLparam1(s);                                       \
+    GSM_StateMachine *sm;                                \
+    char val[buf_length] = "";                           \
+    GSM_Error error;                                     \
+    sm = GSM_STATEMACHINE_VAL(s);                        \
+    caml_enter_blocking_section();                       \
+    error = GSM_Get##name(sm, val);                      \
+    caml_leave_blocking_section();                       \
+    if (error != ERR_NOTSUPPORTED)                       \
+      caml_gammu_raise_Error(error);                     \
+    CAMLreturn(caml_copy_string(val));                   \
   }
 
-#define CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(name)                         \
+#define CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(name) \
   value caml_gammu_GSM_Get##name(value s)
 
 value caml_gammu_GSM_GetNetworkName(value vcode);
@@ -420,6 +425,7 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
 value caml_gammu_GSM_SetSMS(value s, value vsms);
 
 value caml_gammu_GSM_AddSMS(value s, value vsms);
+
 
 #define OUTBOX(outbox) (Val_int(outbox))
 
