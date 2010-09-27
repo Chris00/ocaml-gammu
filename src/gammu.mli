@@ -117,7 +117,7 @@ exception Error of error
 
 
 (************************************************************************)
-(** {2 Debugging handling} *)
+(** {2 Debugging settings} *)
 
 module Debug :
 sig
@@ -832,10 +832,9 @@ module SMS : sig
     | NokiaWAPBookmarkLong  (** Nokia WAP bookmark in 1 or 2 SMS *)
     | NokiaWAPSettingsLong  (** Nokia WAP settings in 2 SMS *)
     | NokiaMMSSettingsLong  (** Nokia MMS settings in 2 SMS *)
-    | NokiaVCARD10Long      (** Nokia VCARD 1.0 - only name and default
-                                number *)
-    | NokiaVCARD21Long      (** Nokia VCARD 2.1 - all numbers + text *)
-    | NokiaVCALENDAR10Long  (** Nokia VCALENDAR 1.0 - can be in few sms *)
+    | NokiaVCARD10Long      (** Nokia VCARD 1.0 (only name and default number) *)
+    | NokiaVCARD21Long      (** Nokia VCARD 2.1 (all numbers + text) *)
+    | NokiaVCALENDAR10Long  (** Nokia VCALENDAR 1.0 (can be in few sms) *)
     | NokiaVTODOLong
     | VCARD10Long
     | VCARD21Long
@@ -848,8 +847,7 @@ module SMS : sig
     | VoidSMS
     | EMSSound10            (** IMelody 1.0 *)
     | EMSSound12            (** IMelody 1.2 *)
-    | EMSSonyEricssonSound  (** IMelody without header
-                                - SonyEricsson extension *)
+    | EMSSonyEricssonSound (** IMelody without header, SonyEricsson extension *)
     | EMSSound10Long        (** IMelody 1.0 with UPI. *)
     | EMSSound12Long        (** IMelody 1.2 with UPI. *)
     | EMSSonyEricssonSoundLong (** IMelody without header with UPI. *)

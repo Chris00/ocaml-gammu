@@ -29,7 +29,7 @@
 #include <caml/fail.h>
 #include <caml/callback.h>
 #include <caml/custom.h>
-#include <caml/intext.h>
+#include <caml/signals.h>
 
 #include <gammu.h>
 
@@ -520,12 +520,16 @@ value caml_gammu_GSM_GetConfigNum(value s)
 }
 
 CAMLexport
-value caml_gammu_GSM_InitConnection(value s, value vreply_num)
+value caml_gammu_GSM_InitConnection(value vs, value vreply_num)
 {
-  CAMLparam2(s, vreply_num);
+  CAMLparam2(vs, vreply_num);
   GSM_Error error;
-
-  error = GSM_InitConnection(GSM_STATEMACHINE_VAL(s), Int_val(vreply_num));
+  GSM_StateMachine* s = GSM_STATEMACHINE_VAL(vs);
+  int ReplyNum = Int_val(vreply_num);
+  
+  caml_enter_blocking_section(); /* release global lock */
+  error = GSM_InitConnection(s, ReplyNum);
+  caml_leave_blocking_section(); /* acquire global lock */
   caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_unit);
@@ -550,11 +554,13 @@ value caml_gammu_GSM_InitConnection_Log(value s, value vreply_num,
   CAMLparam3(s, vreply_num, vlog_func);
   GSM_Error error;
   State_Machine *state_machine = STATE_MACHINE_VAL(s);
+  int ReplyNum = Int_val(vreply_num);
 
   REGISTER_SM_GLOBAL_ROOT(state_machine, log_function, vlog_func);
-  error = GSM_InitConnection_Log(state_machine->sm,
-                                 Int_val(vreply_num),
+  caml_enter_blocking_section(); /* release global lock */
+  error = GSM_InitConnection_Log(state_machine->sm, ReplyNum,
                                  log_function_callback, (void *) &vlog_func);
+  caml_leave_blocking_section(); /* acquire global lock */
   caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_unit);
