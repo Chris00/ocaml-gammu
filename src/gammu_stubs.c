@@ -251,8 +251,15 @@ value caml_gammu_INI_ReadFile(value vfilename, value vunicode)
   CAMLparam2(vfilename, vunicode);
   INI_Section *cfg;
   GSM_Error error;
+  char *filename;
+  gboolean Unicode = Bool_val(vunicode);
 
-  error = INI_ReadFile(String_val(vfilename), Bool_val(vunicode), &cfg);
+  filename = malloc(caml_string_length(vfilename));
+  strcpy(filename, String_val(vfilename));
+  caml_enter_blocking_section(); /* release global lock */
+  error = INI_ReadFile(filename, Unicode, &cfg);
+  caml_leave_blocking_section(); /* acquire global lock */
+  free(filename);
   caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(cfg));
