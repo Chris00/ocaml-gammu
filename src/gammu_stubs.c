@@ -757,6 +757,18 @@ value caml_gammu_GSM_GetCountryName(value vcode)
   CAMLreturn(CAML_COPY_USTRING(name));
 }
 
+
+#define CAML_GAMMU_GSM_TYPE_GET(name)                                   \
+  CAMLexport CAML_GAMMU_GSM_TYPE_GET_PROTOTYPE(name)                    \
+  {                                                                     \
+    CAMLparam1(s);                                                      \
+    GSM_##name res;                                                     \
+    GSM_Error error;                                                    \
+    error = GSM_Get##name(GSM_STATEMACHINE_VAL(s), &res);               \
+    caml_gammu_raise_Error(error);                                      \
+    CAMLreturn(Val_GSM_##name(&res));                                   \
+  }
+
 CAML_GAMMU_GSM_TYPE_GET(BatteryCharge)
 
 CAMLexport
@@ -1190,6 +1202,23 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   CAMLreturn(Val_GSM_MultiSMSMessage(&sms));
 }
 
+#define CAML_GAMMU_GSM_SETSMS(set)                              \
+  CAMLexport                                                    \
+  value caml_gammu_GSM_##set##SMS(value s, value vsms)          \
+  {                                                             \
+    CAMLparam2(s, vsms);                                        \
+    CAMLlocal1(res);                                            \
+    GSM_Error error;                                            \
+    GSM_SMSMessage sms;                                         \
+    GSM_SMSMessage_val(&sms, vsms);                             \
+    error = GSM_##set##SMS(GSM_STATEMACHINE_VAL(s), &sms);      \
+    caml_gammu_raise_Error(error);                              \
+    res = caml_alloc(2, 0);                                     \
+    Store_field(res, 0, Val_int(sms.Folder));                   \
+    Store_field(res, 1, Val_int(sms.Location));                 \
+    CAMLreturn(res);                                            \
+  }
+
 CAML_GAMMU_GSM_SETSMS(Set)
 
 CAML_GAMMU_GSM_SETSMS(Add)
@@ -1451,6 +1480,49 @@ static value Val_GSM_Call(GSM_Call *call)
 
 /************************************************************************/
 /* Events */
+
+#define CAML_GAMMU_GSM_SETINCOMING(name, type)                          \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_SetIncoming##name(value s, value venable)        \
+  {                                                                     \
+    CAMLparam2(s, venable);                                             \
+    GSM_Error error;                                                    \
+    DEBUG("entering");                                                  \
+    error = GSM_SetIncoming##name(GSM_STATEMACHINE_VAL(s),              \
+                                  Bool_val(venable));                   \
+    DEBUG("");                                                          \
+    caml_gammu_raise_Error(error);                                      \
+    DEBUG("leaving");                                                   \
+    CAMLreturn(Val_unit);                                               \
+  }                                                                     \
+  static void incoming_##name##_callback(GSM_StateMachine *sm,          \
+                                         type t,                        \
+                                         void *user_data)               \
+  {                                                                     \
+    CAMLparam0();                                                       \
+    CAMLlocal1(f);                                                      \
+    DEBUG("entering");                                                  \
+    DEBUG("f = *%ld", (long) user_data);                                \
+    f = *((value *) user_data);                                         \
+    caml_callback(f, Val_##type(&t));                                   \
+    DEBUG("leaving");                                                   \
+    CAMLreturn0;                                                        \
+  }                                                                     \
+  CAMLexport                                                            \
+  value caml_gammu_GSM_SetIncoming##name##Callback(value s, value vf)   \
+  {                                                                     \
+    CAMLparam2(s, vf);                                                  \
+    DEBUG("entering");                                                  \
+    State_Machine *state_machine = STATE_MACHINE_VAL(s);                \
+    void *user_data = (void *) &(state_machine->incoming_##name##_callback); \
+    DEBUG("*user_data = %ld", (long) user_data);                        \
+    REGISTER_SM_GLOBAL_ROOT(state_machine, incoming_##name##_callback, vf); \
+    GSM_SetIncoming##name##Callback(state_machine->sm,                  \
+                                    incoming_##name##_callback,         \
+                                    user_data);                         \
+    DEBUG("leaving");                                                   \
+    CAMLreturn(Val_unit);                                               \
+  }
 
 CAML_GAMMU_GSM_SETINCOMING(SMS, GSM_SMSMessage)
 
