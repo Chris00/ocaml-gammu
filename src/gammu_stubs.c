@@ -456,7 +456,8 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   GSM_Config cfg;
   INI_Section *cfg_info;
   GSM_Error error;
-
+  int num = Int_val(vnum);
+  
   cfg_info = INI_SECTION_VAL(vcfg_info);
   /* Initialize those strings, because the first thing GSM_ReadConfig tries to
      do is freeing them. */
@@ -464,7 +465,9 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   cfg.Connection = strdup("");
   cfg.DebugFile = strdup("");
 
-  error = GSM_ReadConfig(cfg_info, &cfg, Int_val(vnum));
+  caml_enter_blocking_section(); /* release global lock */
+  error = GSM_ReadConfig(cfg_info, &cfg, num);
+  caml_leave_blocking_section(); /* acquire global lock */
   caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_GSM_Config(&cfg));
