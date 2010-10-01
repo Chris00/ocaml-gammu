@@ -958,7 +958,7 @@ value caml_gammu_GSM_OSDateTime(value vdt, value vtimezone)
 /************************************************************************/
 /* Memory */
 
-/* Currently unused.
+/* Currently unused, needs updating w.r.t. the definitions.
 static value Val_GSM_SubMemoryEntry(GSM_SubMemoryEntry *sub_mem_entry)
 {
   CAMLparam0();

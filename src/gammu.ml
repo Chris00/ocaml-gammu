@@ -455,6 +455,8 @@ type memory_type =
   | SL (** Sent SMS logs *)
   | QD (** Quick dialing choices *)
 
+type binary_picture
+
 type memory_entry = {
   memory_type : memory_type; (** Used memory for phonebook entry. *)
   location : int; (** Used location for phonebook entry. *)
@@ -462,68 +464,63 @@ type memory_entry = {
 }
 and sub_memory_entry = {
   entry_type : entry_type; (** Type of entry. *)
-  date : DateTime.t;
-  number : int; (** Number of entry (if applicable, see {!entry_type}). *)
   voice_tag : int; (** Voice dialling tag. *)
   sms_list : int array;
   call_length : int;
   add_error : error; (** During adding SubEntry Gammu can return here info,
                          if it was done OK. *)
-  text : string; (** Text of entry
-                     (if applicable, see {!entry_type}). *)
-  (* picture : binary_picture (* NYI Picture data. *) *)
 }
 and entry_type =
-  | Number_General (** General number. (Text) *)
-  | Number_Mobile (** Mobile number. (Text) *)
-  | Number_Work (** Work number. (Text) *)
-  | Number_Fax (** Fax number. (Text) *)
-  | Number_Home (** Home number. (Text) *)
-  | Number_Pager (** Pager number. (Text) *)
-  | Number_Other (** Other number. (Text) *)
-  | Text_Note (** Note. (Text) *)
-  | Text_Postal (** Complete postal address. (Text) *)
-  | Text_Email (** Email. (Text) *)
-  | Text_Email2
-  | Text_URL (** URL (Text) *)
-  | Date (** Date and time of last call. (Date) *)
-  | Caller_Group (** Caller group. (Number) *)
-  | Text_Name (** Name (Text) *)
-  | Text_LastName (** Last name. (Text) *)
-  | Text_FirstName (** First name. (Text) *)
-  | Text_Company (** Company. (Text) *)
-  | Text_JobTitle (** Job title. (Text) *)
-  | Category (** Category. (Number, if -1 then text) *)
-  | Private (** Whether entry is private. (Number) *)
-  | Text_StreetAddress (** Street address. (Text) *)
-  | Text_City (** City. (Text) *)
-  | Text_State (** State. (Text) *)
-  | Text_Zip (** Zip code. (Text) *)
-  | Text_Country (** Country. (Text) *)
-  | Text_Custom1 (** Custom information 1. (Text) *)
-  | Text_Custom2 (** Custom information 2. (Text) *)
-  | Text_Custom3 (** Custom information 3. (Text) *)
-  | Text_Custom4 (** Custom information 4. (Text) *)
-  | RingtoneID (** Ringtone ID. (Number) *)
-  | PictureID (** Picture ID. (Number) *)
-  | Text_UserID (** User ID. (Text) *)
-  | CallLength (** Length of call (Number) *)
-  | Text_LUID (** LUID - Unique Identifier used for synchronisation (Text) *)
-  | LastModified (** Date of last modification (Date) *)
-  | Text_NickName (** Nick name (Text) *)
-  | Text_FormalName (** Formal name (Text) *)
-  | Text_WorkStreetAddress (** Work street address. (Text) *)
-  | Text_WorkCity (** Work city. (Text) *)
-  | Text_WorkState (** Work state. (Text) *)
-  | Text_WorkZip (** Work zip code. (Text) *)
-  | Text_WorkCountry (** Work country. (Text) *)
-  | Text_WorkPostal (** Complete work postal address. (Text) *)
-  | Text_PictureName (** Picture name (on phone filesystem). (Text) *)
-  | PushToTalkID (** Push-to-talk ID (Text) *)
-  | Number_Messaging (** Favorite messaging number. (Text) *)
-  | Photo (** Photo (Picture). *)
-  | Number_Mobile_Home (** Home mobile number. (Text) *)
-  | Number_Mobile_Work (** Work mobile number. (Text) *)
+| Number_General of string     (** General number. *)
+| Number_Mobile of string      (** Mobile number. *)
+| Number_Work of string        (** Work number. *)
+| Number_Fax of string         (** Fax number. *)
+| Number_Home of string        (** Home number. *)
+| Number_Pager of string       (** Pager number. *)
+| Number_Other of string       (** Other number. *)
+| Text_Note of string          (** Note. *)
+| Text_Postal of string        (** Complete postal address. *)
+| Text_Email of string         (** Email. *)
+| Text_Email2 of string
+| Text_URL of string           (** URL *)
+| Date of DateTime.t           (** Date and time of last call. *)
+| Caller_Group of int          (** Caller group. *)
+| Text_Name of string          (** Name. *)
+| Text_LastName of string      (** Last name. *)
+| Text_FirstName of string     (** First name. *)
+| Text_Company of string       (** Company. *)
+| Text_JobTitle of string      (** Job title. *)
+| Category of string option    (** Category. *)
+| Private of int               (** Whether entry is private. *)
+| Text_StreetAddress of string (** Street address. *)
+| Text_City of string          (** City. *)
+| Text_State of string         (** State. *)
+| Text_Zip of string           (** Zip code. *)
+| Text_Country of string       (** Country. *)
+| Text_Custom1 of string       (** Custom information 1. *)
+| Text_Custom2 of string       (** Custom information 2. *)
+| Text_Custom3 of string       (** Custom information 3. *)
+| Text_Custom4 of string       (** Custom information 4. *)
+| RingtoneID of int            (** Ringtone ID. *)
+| PictureID of int             (** Picture ID. *)
+| Text_UserID of string        (** User ID. *)
+| CallLength of int            (** Length of call. *)
+| Text_LUID of string (** LUID - Unique Identifier used for synchronisation. *)
+| LastModified of DateTime.t   (** Date of last modification. *)
+| Text_NickName of string      (** Nick name. *)
+| Text_FormalName of string    (** Formal name. *)
+| Text_WorkStreetAddress of string (** Work street address. *)
+| Text_WorkCity of string      (** Work city. *)
+| Text_WorkState of string     (** Work state. *)
+| Text_WorkZip of string       (** Work zip code. *)
+| Text_WorkCountry of string   (** Work country. *)
+| Text_WorkPostal of string    (** Complete work postal address. *)
+| Text_PictureName of string   (** Picture name (on phone filesystem). *)
+| PushToTalkID of string       (** Push-to-talk ID. *)
+| Number_Messaging of string   (** Favorite messaging number. *)
+| Photo of binary_picture      (** Photo. *)
+| Number_Mobile_Home of string (** Home mobile number. *)
+| Number_Mobile_Work of string (** Work mobile number. *)
 
 
 (************************************************************************)
@@ -682,7 +679,8 @@ struct
 
   external get_status : t -> memory_status = "caml_gammu_GSM_GetSMSStatus"
 
-  external set_incoming_sms : t -> bool -> unit = "caml_gammu_GSM_SetIncomingSMS"
+  external set_incoming_sms : t -> bool -> unit
+    = "caml_gammu_GSM_SetIncomingSMS"
 
   external _delete : t -> int -> int -> unit = "caml_gammu_GSM_DeleteSMS"
   let delete s ~folder ~message_number =
