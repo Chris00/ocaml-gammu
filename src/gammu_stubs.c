@@ -457,7 +457,7 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   INI_Section *cfg_info;
   GSM_Error error;
   int num = Int_val(vnum);
-  
+
   cfg_info = INI_SECTION_VAL(vcfg_info);
   /* Initialize those strings, because the first thing GSM_ReadConfig tries to
      do is freeing them. */
@@ -548,7 +548,7 @@ value caml_gammu_GSM_InitConnection(value vs, value vreply_num)
   GSM_Error error;
   GSM_StateMachine* s = GSM_STATEMACHINE_VAL(vs);
   int ReplyNum = Int_val(vreply_num);
-  
+
   caml_enter_blocking_section(); /* release global lock */
   error = GSM_InitConnection(s, ReplyNum);
   caml_leave_blocking_section(); /* acquire global lock */
@@ -858,9 +858,9 @@ value caml_gammu_GSM_GetModelInfo(value s)
 {
   CAMLparam1(s);
   GSM_PhoneModel *phone_model;
-  
+
   phone_model = GSM_GetModelInfo(GSM_STATEMACHINE_VAL(s));
-  
+
   CAMLreturn(Val_GSM_PhoneModel(phone_model));
 }
 
@@ -1284,8 +1284,19 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
   }
 
 CAML_GAMMU_GSM_SETSMS(Set)
-
 CAML_GAMMU_GSM_SETSMS(Add)
+
+CAMLexport
+value caml_gammu_GSM_SendSMS(value s, value vsms)
+{
+  CAMLparam2(s, vsms);
+  GSM_Error error;
+  GSM_SMSMessage sms;
+  GSM_SMSMessage_val(&sms, vsms);
+  error = GSM_SendSMS(GSM_STATEMACHINE_VAL(s), &sms);
+  caml_gammu_raise_Error(error);
+  CAMLreturn(Val_unit);
+}
 
 static value Val_GSM_OneSMSFolder(GSM_OneSMSFolder *folder)
 {
@@ -1296,7 +1307,6 @@ static value Val_GSM_OneSMSFolder(GSM_OneSMSFolder *folder)
   Store_field(res, 0, OUTBOX(folder->OutboxFolder));
   Store_field(res, 1, VAL_GSM_MEMORYTYPE(folder->Memory));
   Store_field(res, 2, CAML_COPY_USTRING(folder->Name));
-
   CAMLreturn(res);
 }
 
@@ -1367,12 +1377,12 @@ value caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
   CAMLparam3(s, vlocation, vfolder);
   GSM_StateMachine *sm;
   GSM_SMSMessage sms;
-  
+
   sm = GSM_STATEMACHINE_VAL(s);
 
   sms.Location = Int_val(vlocation);
   sms.Folder = Int_val(vfolder);
-  
+
   caml_enter_blocking_section();
   GSM_DeleteSMS(sm, &sms);
   caml_leave_blocking_section();

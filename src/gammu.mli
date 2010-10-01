@@ -621,6 +621,7 @@ type memory_entry = {
 (** SMS messages manipulation.  *)
 module SMS : sig
 
+  (** Status of SMS message. *)
   type state = Sent | Unsent | Read | Unread
 
   (** Types of UDH (User Data Header). *)
@@ -658,8 +659,8 @@ module SMS : sig
     all_parts : int;    (** Total number of parts. *)
   }
 
-  type format = Pager | Fax | Email | Text
   (** Format of SMS messages.  See GSM 03.40 section 9.2.3.9. *)
+  type format = Pager | Fax | Email | Text
 
   (* Representation of the whole GSM_SMSValidity struct (2 enums in libGammu).
      The relative validity period is in fact a char, other values than those
@@ -695,31 +696,31 @@ module SMS : sig
     | Eight_bit                  (** 8-bit.  *)
 
   type message = {
-    replace : char;       (** Message to be replaced. *)
-    reject_duplicates : bool; (** Whether to reject duplicates. *)
-    udh_header : udh_header;  (** UDH (User Data Header) *)
-    number : string;          (** Sender or recipient number. *)
+    replace : char;          (** Message to be replaced. *)
+    reject_duplicates : bool;(** Whether to reject duplicates. *)
+    udh_header : udh_header; (** UDH (User Data Header) *)
+    number : string;         (** Sender or recipient number. *)
     other_numbers : string array;
-    smsc : smsc;          (** SMS Center *)
-    memory : memory_type; (** For saved SMS: where exactly
-                              it's saved (SIM/phone). *)
-    location : int;       (** For saved SMS: location of SMS in memory. *)
-    folder : int;         (** For saved SMS: number of folder,
-                              where SMS is saved. *)
-    inbox_folder : bool;  (** For saved SMS: whether SMS is really in Inbox. *)
-    state : state;        (** Status (read/unread/...) of SMS message. *)
-    nokia_name : string;  (** Name in Nokia with SMS memory (6210/7110, etc.)
-                              Ignored in other. *)
-    text : string;        (** Text for SMS. *)
-    pdu : message_type;   (** Type of message. *)
-    coding : coding;      (** Type of coding. *)
-    date_time : DateTime.t; (** Date and time, when SMS was saved or sent. *)
-    smsc_time : DateTime.t; (** Date of SMSC response in DeliveryReport
-                                messages. *)
-    delivery_status : char; (** In delivery reports: status. *)
+    smsc : smsc;             (** SMS Center *)
+    memory : memory_type;    (** For saved SMS: where exactly
+                                 it's saved (SIM/phone). *)
+    location : int;          (** For saved SMS: location of SMS in memory. *)
+    folder : int;            (** For saved SMS: number of folder,
+                                  where SMS is saved. *)
+    inbox_folder : bool;   (** For saved SMS: whether SMS is really in Inbox. *)
+    state : state;           (** Status (read, unread,...) of SMS message. *)
+    nokia_name : string;     (** Name in Nokia with SMS memory (6210/7110, etc.)
+                                 Ignored in other. *)
+    text : string;           (** Text for SMS. *)
+    pdu : message_type;      (** Type of message. *)
+    coding : coding;         (** Type of coding. *)
+    date_time : DateTime.t;  (** Date and time, when SMS was saved or sent. *)
+    smsc_time : DateTime.t;  (** Date of SMSC response in DeliveryReport
+                                 messages. *)
+    delivery_status : char;  (** In delivery reports: status. *)
     reply_via_same_smsc : bool; (** Indicates whether "Reply via same
                                     center" is set. *)
-    sms_class : char;     (** SMS class (0 is flash SMS, 1 is normal one). *)
+    sms_class : char;        (** SMS class (0 is flash SMS, 1 is normal one). *)
     message_reference : char; (** Message reference. *)
   }
 
@@ -773,6 +774,9 @@ module SMS : sig
       the message was stored (folder may be transformed). The location
       fields of [sms] are ignored when adding SMS, put whatever you
       want there. *)
+
+  val send : t -> message -> unit
+  (** [send s sms] sends the [sms]. *)
 
   type folder = {
     box : folder_box;            (** Whether it is inbox or outbox. *)

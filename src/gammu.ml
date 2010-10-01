@@ -531,7 +531,7 @@ struct
 
   type state = Sent | Unsent | Read | Unread
 
-  (* udh_type would be more appropriate byt we want to be close to
+  (* udh_type would be more appropriate but we want to be close to
      libgammu choices. *)
   type udh =
   | No_udh
@@ -657,6 +657,8 @@ struct
   external set : t -> message -> int * int = "caml_gammu_GSM_SetSMS"
 
   external add : t -> message -> int * int = "caml_gammu_GSM_AddSMS"
+
+  external send : t -> message -> unit = "caml_gammu_SendSMS"
 
   type folder = {
     box : folder_box;
