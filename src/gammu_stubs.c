@@ -1291,9 +1291,12 @@ value caml_gammu_GSM_SendSMS(value s, value vsms)
 {
   CAMLparam2(s, vsms);
   GSM_Error error;
+  GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);
   GSM_SMSMessage sms;
   GSM_SMSMessage_val(&sms, vsms);
-  error = GSM_SendSMS(GSM_STATEMACHINE_VAL(s), &sms);
+  caml_enter_blocking_section(); /* release global lock */
+  error = GSM_SendSMS(sm, &sms);
+  caml_leave_blocking_section(); /* acquire global lock */
   caml_gammu_raise_Error(error);
   CAMLreturn(Val_unit);
 }
