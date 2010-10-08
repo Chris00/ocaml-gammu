@@ -426,6 +426,7 @@ value caml_gammu_GSM_SetSMS(value s, value vsms);
 
 value caml_gammu_GSM_AddSMS(value s, value vsms);
 
+value caml_gammu_GSM_SendSMS(value s, value vsms);
 
 #define OUTBOX(outbox) (Val_int(outbox))
 

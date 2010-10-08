@@ -658,7 +658,7 @@ struct
 
   external add : t -> message -> int * int = "caml_gammu_GSM_AddSMS"
 
-  external send : t -> message -> unit = "caml_gammu_SendSMS"
+  external send : t -> message -> unit = "caml_gammu_GSM_SendSMS"
 
   type folder = {
     box : folder_box;
