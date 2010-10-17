@@ -616,6 +616,42 @@ struct
 
   type multi_sms = message array
 
+  let default_received =
+    { replace = '\x00';
+      reject_duplicates = false;
+      udh_header =
+        { udh = No_udh; udh_text = ""; id8bit = 0;
+          id16bit = 0; part_number = 0; all_parts = 0 };
+      number = "";
+      other_numbers = [||];
+      smsc =
+        {smsc_location = 0; smsc_name = "";
+         smsc_number = ""; validity = Not_available;
+         format = Text; default_number = ""};
+      memory = SM;
+      location = 0;
+      folder = 1;
+      inbox_folder = true;
+      state = Unread;
+      nokia_name = "";
+      text = "";
+      pdu = Deliver;
+      coding = Default_No_Compression;
+      date_time =
+        { DateTime.timezone = 0; DateTime.second = 0;
+          DateTime.minute = 0; DateTime.hour = 0;
+          DateTime.day = 0; DateTime.month = 0;
+          DateTime.year = 0 };
+      smsc_time =
+        { DateTime.timezone = 0; DateTime.second = 0;
+          DateTime.minute = 0; DateTime.hour = 0;
+          DateTime.day = 0; DateTime.month = 0;
+          DateTime.year = 0 };
+      delivery_status = '\x00';
+      reply_via_same_smsc = false;
+      sms_class = '\x00';
+      message_reference = '\x00' }
+
   external get : t -> folder:int -> message_number:int -> multi_sms =
     "caml_gammu_GSM_GetSMS"
 

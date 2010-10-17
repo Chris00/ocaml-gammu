@@ -21,7 +21,6 @@
 #ifndef __GAMMU_STUBS_H__
 #define __GAMMU_STUBS_H__
 
-
 #include <caml/mlvalues.h>
 #include <caml/signals.h>
 
@@ -91,6 +90,17 @@ void caml_gammu_init();
   do {                                                          \
     EncodeUnicode(dst, String_val(v), (sizeof(dst) - 1) / 2);   \
     dst[sizeof(dst) - 1] = '\0';                                \
+  } while (0)
+
+char *dup_String_val(value v);
+
+#define CPY_STRING_VAL(dst, v)                  \
+  do {                                          \
+    if (!dst)                                   \
+      free(dst);                                \
+    dst = strdup(String_val(v));                \
+    if (!dst)                                   \
+      caml_raise_out_of_memory();               \
   } while (0)
 
 /* Decode unicode strings ((unsigned char *) in gammu) to (char *). */
@@ -397,7 +407,7 @@ static GSM_SMSValidity *GSM_SMSValidity_val(GSM_SMSValidity *validity,
 static value Val_GSM_SMSValidity(GSM_SMSValidity *validity);
 
 #define GSM_SMSFORMAT_VAL(v) (Int_val(v) + 1)
-#define VAL_GSM_SMSFORMAT(v) (Val_int(v) - 1)
+#define VAL_GSM_SMSFORMAT(v) Val_int(v - 1)
 
 static GSM_SMSC *GSM_SMSC_val(GSM_SMSC *smsc, value vsmsc);
 

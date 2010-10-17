@@ -729,6 +729,9 @@ module SMS : sig
   type multi_sms = message array
   (** Multiple SMS messages, used for Smart Messaging 3.0/EMS. *)
 
+  val default_received : message
+  (** Empty message with default values needed for saving a received SMS. *)
+
   val get : t -> folder:int -> message_number:int -> multi_sms
   (** Reads SMS message. *)
 
