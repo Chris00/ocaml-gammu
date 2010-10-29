@@ -33,18 +33,20 @@
 /* Check Gammu version. TODO: Check versions more precisely. */
 #if VERSION_NUM >= 12792
   /* OK*/
-#elif VERSION_NUM <= 12400
+#elif VERSION_NUM == 12400
+  /* OK */
+#elif VERSION_NUM == 12601
   /* OK */
 #else
-# warning "Your version of libGammu was totally not tested\n"   \
-    "If compilation fails, please report your version number\n" \
-    "and if possible attach the error log."
+# warning "Your version of libGammu was totally not tested. \
+If compilation fails, please report your version number \
+and if possible attach the error log."
 #endif
 
 /* Assume that gammu-types.h deals with glib correctly.
 // typedef int gboolean;
 But in some versions, it doesn't : */
-#if VERSION_NUM < 12792
+#if VERSION_NUM < 12601
 typedef int gboolean;
 #endif
 #ifndef FALSE
