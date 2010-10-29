@@ -625,7 +625,7 @@ struct
       number = "";
       other_numbers = [||];
       smsc =
-        {smsc_location = 0; smsc_name = "";
+        {smsc_location = 1; smsc_name = "";
          smsc_number = ""; validity = Not_available;
          format = Text; default_number = ""};
       memory = SM;
