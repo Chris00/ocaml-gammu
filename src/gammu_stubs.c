@@ -53,6 +53,17 @@ void caml_gammu_init(value vunit)
 /************************************************************************/
 /* Utils functions and macros. */
 
+char *dup_String_val(value v)
+{
+  char *ret;
+  
+  ret = strdup(String_val(v));
+  if (!ret)
+    caml_raise_out_of_memory();
+  
+  return ret;  
+}
+
 /* Currently unused.
 static value option_val(value voption, gboolean *some)
 {
@@ -254,8 +265,7 @@ value caml_gammu_INI_ReadFile(value vfilename, value vunicode)
   char *filename;
   gboolean Unicode = Bool_val(vunicode);
 
-  filename = malloc(caml_string_length(vfilename));
-  strcpy(filename, String_val(vfilename));
+  filename = dup_String_val(vfilename);
   caml_enter_blocking_section(); /* release global lock */
   error = INI_ReadFile(filename, Unicode, &cfg);
   caml_leave_blocking_section(); /* acquire global lock */
@@ -271,7 +281,7 @@ value caml_gammu_INI_GetValue(value vfile_info, value vsection, value vkey,
 {
   CAMLparam4(vfile_info, vsection, vkey, vunicode);
   CAMLlocal1(res);
-  unsigned char* val;
+  unsigned char *val;
   gboolean unicode = Bool_val(vunicode);
 
   val = INI_GetValue(INI_SECTION_VAL(vfile_info),
@@ -343,8 +353,8 @@ static void GSM_Config_val(GSM_Config *config, value vconfig)
 {
   CPY_TRIM_STRING_VAL(config->Model, Field(vconfig, 0));
   CPY_TRIM_STRING_VAL(config->DebugLevel, Field(vconfig, 1));
-  config->Device = String_val(Field(vconfig, 2));
-  config->Connection = String_val(Field(vconfig, 3));
+  CPY_STRING_VAL(config->Device, Field(vconfig, 2));
+  CPY_STRING_VAL(config->Connection, Field(vconfig, 3));
   #if VERSION_NUM >= 12792
   config->SyncTime = Bool_val(Field(vconfig, 4));
   config->LockDevice = Bool_val(Field(vconfig, 5));
@@ -356,7 +366,7 @@ static void GSM_Config_val(GSM_Config *config, value vconfig)
   config->LockDevice = yesno_bool(Bool_val(Field(vconfig, 5)));
   config->StartInfo = yesno_bool(Bool_val(Field(vconfig, 7)));
   #endif
-  config->DebugFile = String_val(Field(vconfig, 6));
+  CPY_STRING_VAL(config->DebugFile, Field(vconfig, 6));
   config->UseGlobalDebugFile = Bool_val(Field(vconfig, 8));
   CPY_TRIM_STRING_VAL(config->TextReminder, Field(vconfig, 9));
   CPY_TRIM_STRING_VAL(config->TextMeeting, Field(vconfig, 10));
@@ -425,10 +435,11 @@ value caml_gammu_GSM_FindGammuRC_force(value vpath)
   INI_Section *res;
   GSM_Error error;
 
-  path = String_val(vpath);
-  caml_enter_blocking_section();
+  path = dup_String_val(vpath);
+  caml_enter_blocking_section(); /* release global lock */
   error = GSM_FindGammuRC(&res, path);
-  caml_leave_blocking_section();
+  caml_leave_blocking_section(); /* acquire global lock */
+  free(path);
   caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_INI_Section(res));
@@ -1393,7 +1404,7 @@ value caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
   CAMLreturn(Val_unit);
 }
 
-/* Unused
+/* Unused and need update.
 static GSM_MultiPartSMSEntry GSM_MultiPartSMSEntry_val(value vmult_part_sms)
 {
   GSM_MultiPartSMSEntry mult_part_sms;

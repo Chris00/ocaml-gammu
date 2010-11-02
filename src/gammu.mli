@@ -315,8 +315,10 @@ module INI : sig
   val of_gammurc : ?path:string -> unit -> sections
   (** Finds and reads gammu configuration file.  The search order depends on
       platform.  On POSIX systems it looks for ~/.gammurc and then for
-      /etc/gammurc, on Windows for gammurc in Application data folder, then in
-      home and last fallback is in current directory.
+      /etc/gammurc and also follows freedesktop.org/XDG specifications and
+      reads ~/.config/gammu/config (in versions > 1.28.92 of libGammu), on
+      Windows for gammurc in Application data folder, then in home and last
+      fallback is in current directory.
 
       @param path force the use of a custom path instead of the autodetected
       one (default: autodetection is performed).
@@ -726,6 +728,9 @@ module SMS : sig
 
   type multi_sms = message array
   (** Multiple SMS messages, used for Smart Messaging 3.0/EMS. *)
+
+  val default_received : message
+  (** Empty message with default values needed for saving a received SMS. *)
 
   val get : t -> folder:int -> message_number:int -> multi_sms
   (** Reads SMS message. *)
