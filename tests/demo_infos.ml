@@ -47,12 +47,12 @@ let print_dyn_infos s =
     bat.Info.charge_voltage;
   printf "%s\n%!" (string_of_signal_quality (Info.signal_quality s));
   let network = Info.network_info s in
-  printf "Network %S, %S\n"
+  printf "Network state  %S, %S\n"
     (string_of_network_state network.Info.state) network.Info.name;
-  printf "CID %S, code %S, LAC %S\n"
-    network.Info.cid network.Info.code network.Info.lac;
-  printf "GPRS %S, packet CID %S, LAC %S, state %S\n%!"
-    (string_of_info_gprs network.Info.gprs)
+  printf "CID %S, code %S, LAC %S, GPRS %S\n"
+    network.Info.cid network.Info.code network.Info.lac
+    (string_of_info_gprs network.Info.gprs);
+  printf "packet: CID %S, LAC %S, state %S\n%!"
     network.Info.packet_cid
     network.Info.packet_lac
     (string_of_network_state network.Info.packet_state)
