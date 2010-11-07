@@ -1284,9 +1284,12 @@ value caml_gammu_GSM_GetNextSMS(value s, value vlocation, value vfolder,
     CAMLparam2(s, vsms);                                        \
     CAMLlocal1(res);                                            \
     GSM_Error error;                                            \
+    GSM_StateMachine *sm = GSM_STATEMACHINE_VAL(s);             \
     GSM_SMSMessage sms;                                         \
     GSM_SMSMessage_val(&sms, vsms);                             \
-    error = GSM_##set##SMS(GSM_STATEMACHINE_VAL(s), &sms);      \
+    caml_enter_blocking_section();                              \
+    error = GSM_##set##SMS(sm, &sms);                           \
+    caml_leave_blocking_section();                              \
     caml_gammu_raise_Error(error);                              \
     res = caml_alloc(2, 0);                                     \
     Store_field(res, 0, Val_int(sms.Folder));                   \
