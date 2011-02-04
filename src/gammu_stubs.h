@@ -98,8 +98,7 @@ char *dup_String_val(value v);
 
 #define CPY_STRING_VAL(dst, v)                  \
   do {                                          \
-    if (!dst)                                   \
-      free(dst);                                \
+    /* TODO: Possible memory leak here, check if we can free dst */ \
     dst = strdup(String_val(v));                \
     if (!dst)                                   \
       caml_raise_out_of_memory();               \

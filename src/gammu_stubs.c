@@ -408,12 +408,17 @@ value caml_gammu_GSM_AllocStateMachine(value vunit)
 {
   CAMLparam1(vunit);
   CAMLlocal2(res, vsm);
+  State_Machine *state_machine;
+  GSM_StateMachine *sm;
 
-  State_Machine *state_machine = malloc(sizeof(State_Machine));
-  GSM_StateMachine *sm = GSM_AllocStateMachine();
-
-  if (sm == NULL || state_machine == NULL)
+  state_machine = malloc(sizeof(State_Machine));
+  if(!state_machine)
     caml_raise_out_of_memory();
+  sm = GSM_AllocStateMachine();
+  if(!sm) {
+    free(state_machine);
+    caml_raise_out_of_memory();
+  }
 
   state_machine->sm = sm;
   state_machine->log_function = 0;
