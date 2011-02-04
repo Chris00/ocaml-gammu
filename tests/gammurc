@@ -15,5 +15,8 @@ logfile = gammu.log
 model = dummy
 connection = none
 device = dummy_phone
+# "device" is an alias for "port" only since 1.27.95.
+# Uncomment the following line if you're using a version prior to 1.27.95.
+# port = dummy_phone
 logformat = textall
 logfile = gammu.log

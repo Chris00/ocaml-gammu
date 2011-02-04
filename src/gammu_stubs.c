@@ -475,12 +475,15 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
 
   cfg_info = INI_SECTION_VAL(vcfg_info);
   /* Initialize those strings, because the first thing GSM_ReadConfig tries to
-     do is freeing them.
-     TODO: However if it doesn't need a null terminated string we could use
-     malloc(1) instead */
-  cfg.Device = strdup("");
-  cfg.Connection = strdup("");
-  cfg.DebugFile = strdup("");
+     do is freeing them. */
+  cfg.Device = malloc(1);
+  cfg.Connection = malloc(1);
+  cfg.DebugFile = malloc(1);
+#if VERSION_NUM < 12700
+  cfg.SyncTime = malloc(1);
+  cfg.LockDevice = malloc(1);
+  cfg.StartInfo = malloc(1);
+#endif
 
   caml_enter_blocking_section(); /* release global lock */
   error = GSM_ReadConfig(cfg_info, &cfg, num);
@@ -761,9 +764,11 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
   CAMLlocal1(res);
 
   res = caml_alloc(9, 0);
-#if VERSION_NUM < 12792
-  Store_field(res, 0, CAML_COPY_USTRING(network->CID));
-  Store_field(res, 3, CAML_COPY_USTRING(network->LAC));
+#if VERSION_NUM < 12793
+  /* Wrong type. Fixed in gammu commit e59c881b "These are regullar
+   * chars." included in 1.27.93. */
+  Store_field(res, 0, caml_copy_string((char *) network->CID));
+  Store_field(res, 3, caml_copy_string((char *) network->LAC));
 #else
   Store_field(res, 0, caml_copy_string(network->CID));
   Store_field(res, 3, caml_copy_string(network->LAC));
