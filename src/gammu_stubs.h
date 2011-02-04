@@ -64,10 +64,10 @@ typedef int gboolean;
 #ifdef CAML_GAMMU_DEBUG
 # define LOCATION_STR "DEBUG: %s:%d In function '%s':\n"
 # define LOCATION_ARGS __FILE__, __LINE__, __func__
-# define DEBUG(fmt, ...)                                                \
-  do {                                                                  \
+# define DEBUG(fmt, ...)                                                    \
+  do {                                                                      \
     fprintf(stderr, LOCATION_STR fmt "\n", LOCATION_ARGS, ## __VA_ARGS__ ); \
-    fflush(stderr);                                                     \
+    fflush(stderr);                                                         \
   } while (0)
 #else
 # define DEBUG(...)
@@ -147,6 +147,7 @@ typedef enum {
 static void caml_gammu_raise_Error(int err);
 
 value caml_gammu_GSM_ErrorString(value verr);
+
 
 /************************************************************************/
 /* Debugging handling */

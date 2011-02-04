@@ -56,12 +56,12 @@ void caml_gammu_init(value vunit)
 char *dup_String_val(value v)
 {
   char *ret;
-  
+
   ret = strdup(String_val(v));
   if (!ret)
     caml_raise_out_of_memory();
-  
-  return ret;  
+
+  return ret;
 }
 
 /* Currently unused.
@@ -100,8 +100,7 @@ static gboolean is_true(const char *str)
 
 static char *yesno_bool(gboolean b)
 {
-  if (b) return "yes";
-  return "no";
+  return (b) ? "yes" : "no";
 }
 #endif
 
@@ -109,7 +108,7 @@ static char *yesno_bool(gboolean b)
 /************************************************************************/
 /* Error handling */
 
-/* raise [Error] if the error code doesn't indicates no error. */
+/* raise [Error] if the error code doesn't indicate no error. */
 static void caml_gammu_raise_Error(int err)
 {
   static value *exn = NULL;
@@ -132,7 +131,7 @@ CAMLexport
 value caml_gammu_GSM_ErrorString(value verr)
 {
   CAMLparam1(verr);
-  const int err = GSM_ERROR_VAL(verr);
+  int err = GSM_ERROR_VAL(verr);
   const char *msg;
   switch (err) {
   case ERR_INI_KEY_NOT_FOUND:
@@ -355,17 +354,17 @@ static void GSM_Config_val(GSM_Config *config, value vconfig)
   CPY_TRIM_STRING_VAL(config->DebugLevel, Field(vconfig, 1));
   CPY_STRING_VAL(config->Device, Field(vconfig, 2));
   CPY_STRING_VAL(config->Connection, Field(vconfig, 3));
-  #if VERSION_NUM >= 12792
+#if VERSION_NUM >= 12792
   config->SyncTime = Bool_val(Field(vconfig, 4));
   config->LockDevice = Bool_val(Field(vconfig, 5));
   config->StartInfo = Bool_val(Field(vconfig, 7));
-  #else
+#else
   /* for VERSION_NUM <= 12400, those are strings.
      we don't know about versions between 12400 and 12792 */
   config->SyncTime = yesno_bool(Bool_val(Field(vconfig, 4)));
   config->LockDevice = yesno_bool(Bool_val(Field(vconfig, 5)));
   config->StartInfo = yesno_bool(Bool_val(Field(vconfig, 7)));
-  #endif
+#endif
   CPY_STRING_VAL(config->DebugFile, Field(vconfig, 6));
   config->UseGlobalDebugFile = Bool_val(Field(vconfig, 8));
   CPY_TRIM_STRING_VAL(config->TextReminder, Field(vconfig, 9));
@@ -476,7 +475,9 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
 
   cfg_info = INI_SECTION_VAL(vcfg_info);
   /* Initialize those strings, because the first thing GSM_ReadConfig tries to
-     do is freeing them. */
+     do is freeing them.
+     TODO: However if it doesn't need a null terminated string we could use
+     malloc(1) instead */
   cfg.Device = strdup("");
   cfg.Connection = strdup("");
   cfg.DebugFile = strdup("");
@@ -772,20 +773,20 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
   Store_field(res, 4, CAML_COPY_USTRING(network->NetworkName));
   /* Some fields weren't present yet in older versions, give them unknown
      values */
-  #if VERSION_NUM >= 12792
+#if VERSION_NUM >= 12792
   Store_field(res, 5, VAL_GSM_GPRS_STATE(network->GPRS));
-  #else
+#else
   Store_field(res, 5, Val_int(2) /* grps_state = Unknown */);
-  #endif
-  #if VERSION_NUM >= 12796
+#endif
+#if VERSION_NUM >= 12796
   Store_field(res, 6, caml_copy_string(network->PacketCID));
   Store_field(res, 7, VAL_GSM_NETWORKINFO_STATE(network->PacketState));
   Store_field(res, 8, caml_copy_string(network->PacketLAC));
-  #else
+#else
   Store_field(res, 6, caml_copy_string("Unknown"));
   Store_field(res, 7, Val_int(4) /* network_state = Unknown */);
   Store_field(res, 8, caml_copy_string("Unknown"));
-  #endif
+#endif
 
   CAMLreturn(res);
 }
@@ -1200,7 +1201,8 @@ static GSM_MultiSMSMessage *GSM_MultiSMSMessage_val(
   }
   for (i=0; i < length; i++) {
     GSM_SMSMessage_val(&(multi_sms->SMS[i]), Field(vmulti_sms, i));
-    DEBUG("multi_sms->SMS[%d].Number = %s", i, DecodeUnicodeConsole(multi_sms->SMS[i].Number));
+    DEBUG("multi_sms->SMS[%d].Number = %s", i,
+          DecodeUnicodeConsole(multi_sms->SMS[i].Number));
   }
   multi_sms->Number = length;
 
@@ -1216,9 +1218,8 @@ static value Val_GSM_MultiSMSMessage(GSM_MultiSMSMessage *multi_sms)
   int i;
 
   res = caml_alloc(length, 0);
-  for (i=0; i < length; i++) {
+  for (i=0; i < length; i++)
     Store_field(res, i, Val_GSM_SMSMessage(&(multi_sms->SMS[i])));
-  }
 
   CAMLreturn(res);
 }
