@@ -31,13 +31,18 @@
 #define BUFFER_LENGTH 255
 
 /* Check Gammu version. TODO: Check versions more precisely. */
-#if VERSION_NUM >= 12792
-  /* OK*/
-#elif VERSION_NUM == 12400
-  /* OK */
-#elif VERSION_NUM == 12601
-  /* OK */
-#else
+#ifndef VERSION_NUM
+# ifndef GAMMU_VERSION_NUM
+#   error "Can't probe Gammu version !"
+# endif
+# define VERSION_NUM GAMMU_VERSION_NUM
+#endif
+
+#if !( VERSION_NUM == 12400                     \
+       || VERSION_NUM == 12601                  \
+       || VERSION_NUM == 12792                  \
+       || VERSION_NUM == 12800                  \
+       || VERSION_NUM == 12900 )
 # warning "Your version of libGammu was totally not tested. \
 If compilation fails, please report your version number \
 and if possible attach the error log."
