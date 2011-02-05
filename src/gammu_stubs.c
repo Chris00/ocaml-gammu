@@ -1405,6 +1405,7 @@ value caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
   CAMLparam3(s, vlocation, vfolder);
   GSM_StateMachine *sm;
   GSM_SMSMessage sms;
+  GSM_Error error;
 
   sm = GSM_STATEMACHINE_VAL(s);
 
@@ -1412,8 +1413,9 @@ value caml_gammu_GSM_DeleteSMS(value s, value vlocation, value vfolder)
   sms.Folder = Int_val(vfolder);
 
   caml_enter_blocking_section();
-  GSM_DeleteSMS(sm, &sms);
+  error = GSM_DeleteSMS(sm, &sms);
   caml_leave_blocking_section();
+  caml_gammu_raise_Error(error);
 
   CAMLreturn(Val_unit);
 }
