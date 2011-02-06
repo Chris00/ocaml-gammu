@@ -740,11 +740,12 @@ module SMS : sig
   (** [fold s f a] fold SMS messages through the function [f] with [a] as
       initial value, iterating trough SMS' *and* folders).
 
-      This function uses the GSM_GetNext function from libGammu. This might be
-      faster for some phones than using {!Gammu.SMS.get} for each message.
+      This function uses the GSM_GetNextSMS function from
+      libGammu.  This might be faster for some phones than using
+      {!Gammu.SMS.get} for each message.
 
-      Please note that this command does not mark the messages as read in
-      phone. To do so, you have to call {!Gammu.SMS.get}.
+      Please note that this command may not mark the messages as read in
+      the phone.  To make sure it is, call {!Gammu.SMS.get}.
 
       @param folder specifies the folder from where to start folding SMS
       (default = 0, the first one).
