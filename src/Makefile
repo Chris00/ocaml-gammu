@@ -1,3 +1,5 @@
+include ../Makefile.conf
+
 OBJ = .o
 PKG_NAME = gammu
 STUBS_LIB = gammu_stubs
@@ -16,7 +18,7 @@ gammu.cma gammu.cmxa: gammu.cmo gammu.cmx $(STUBS_LIB)$(OBJ)
 	ocamlmklib -o $(basename $@) -oc $(STUBS_LIB) $^ -lGammu -lm
 
 $(STUBS_LIB)$(OBJ): $(STUBS_LIB).c
-	$(OCAMLC) -c $< -I /usr/include/gammu -cclib -lGammu -cclib -lm
+	$(OCAMLC) -c $< $(GAMMU_PATH) $(GAMMU_LIBS)
 
 
 .PHONY: install uninstall reinstall doc web
