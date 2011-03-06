@@ -42,7 +42,8 @@
        || VERSION_NUM == 12601                  \
        || VERSION_NUM == 12792                  \
        || VERSION_NUM == 12800                  \
-       || VERSION_NUM == 12900 )
+       || VERSION_NUM == 12900                  \
+       || VERSION_NUM == 12991)
 # warning "Your version of libGammu was totally not tested. \
 If compilation fails, please report your version number \
 and if possible attach the error log."
@@ -482,10 +483,18 @@ static value Val_GSM_Call(GSM_Call *call);
 /************************************************************************/
 /* Events */
 
+#if VERSION_NUM >= 12991
+#define TYPE_MODIFIER1 *
+#define TYPE_MODIFIER2
+#else
+#define TYPE_MODIFIER1
+#define TYPE_MODIFIER2 &
+#endif
+
 #define CAML_GAMMU_GSM_SETINCOMING_PROTOTYPES(name, type)               \
   value caml_gammu_GSM_SetIncoming##name(value s, value venable);       \
   static void incoming_##name##_callback(GSM_StateMachine *sm,          \
-                                         type t,                        \
+                                         type TYPE_MODIFIER1 t,         \
                                          void *user_data);              \
   value caml_gammu_GSM_SetIncoming##name##Callback(value s, value vf)
 

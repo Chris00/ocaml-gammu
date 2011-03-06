@@ -696,7 +696,11 @@ value caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
   CPY_TRIM_STRING_VAL(security_code.Code, vcode);
 
   caml_enter_blocking_section();
+#if VERSION_NUM >= 12991
+  error = GSM_EnterSecurityCode(sm, &security_code);
+#else
   error = GSM_EnterSecurityCode(sm, security_code);
+#endif
   caml_leave_blocking_section();
   caml_gammu_raise_Error(error);
 
@@ -1614,7 +1618,7 @@ static value Val_GSM_Call(GSM_Call *call)
     CAMLreturn(Val_unit);                                               \
   }                                                                     \
   static void incoming_##name##_callback(GSM_StateMachine *sm,          \
-                                         type t,                        \
+                                         type TYPE_MODIFIER1 t,         \
                                          void *user_data)               \
   {                                                                     \
     CAMLparam0();                                                       \
@@ -1622,7 +1626,7 @@ static value Val_GSM_Call(GSM_Call *call)
     DEBUG("entering");                                                  \
     DEBUG("f = *%ld", (long) user_data);                                \
     f = *((value *) user_data);                                         \
-    caml_callback(f, Val_##type(&t));                                   \
+    caml_callback(f, Val_##type(TYPE_MODIFIER2 t));                     \
     DEBUG("leaving");                                                   \
     CAMLreturn0;                                                        \
   }                                                                     \
