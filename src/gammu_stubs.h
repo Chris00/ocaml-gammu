@@ -31,19 +31,19 @@
 #define BUFFER_LENGTH 255
 
 /* Check Gammu version. TODO: Check versions more precisely. */
-#ifndef VERSION_NUM
-# ifndef GAMMU_VERSION_NUM
+#ifndef GAMMU_VERSION_NUM
+# ifndef VERSION_NUM
 #   error "Can't probe Gammu version !"
 # endif
-# define VERSION_NUM GAMMU_VERSION_NUM
+# define GAMMU_VERSION_NUM VERSION_NUM
 #endif
 
-#if !( VERSION_NUM == 12400                     \
-       || VERSION_NUM == 12601                  \
-       || VERSION_NUM == 12792                  \
-       || VERSION_NUM == 12800                  \
-       || VERSION_NUM == 12900                  \
-       || VERSION_NUM == 12991)
+#if !( GAMMU_VERSION_NUM == 12400                     \
+       || GAMMU_VERSION_NUM == 12601                  \
+       || GAMMU_VERSION_NUM == 12792                  \
+       || GAMMU_VERSION_NUM == 12800                  \
+       || GAMMU_VERSION_NUM == 12900                  \
+       || GAMMU_VERSION_NUM == 12991)
 # warning "Your version of libGammu was totally not tested. \
 If compilation fails, please report your version number \
 and if possible attach the error log."
@@ -52,7 +52,7 @@ and if possible attach the error log."
 /* Assume that gammu-types.h deals with glib correctly.
 // typedef int gboolean;
 But in some versions, it doesn't : */
-#if VERSION_NUM < 12601
+#if GAMMU_VERSION_NUM < 12601
 typedef int gboolean;
 #endif
 #ifndef FALSE
@@ -124,7 +124,7 @@ static value option_val(value voption, gboolean *some);
 #define VAL_NONE (Val_int(0))
 static value val_Some(value vsome);
 
-#if VERSION_NUM < 12792
+#if GAMMU_VERSION_NUM < 12792
 static gboolean is_true(const char *str);
 static char *yesno_bool(gboolean b);
 #endif
@@ -483,7 +483,7 @@ static value Val_GSM_Call(GSM_Call *call);
 /************************************************************************/
 /* Events */
 
-#if VERSION_NUM >= 12991
+#if GAMMU_VERSION_NUM >= 12991
 #define TYPE_MODIFIER1 *
 #define TYPE_MODIFIER2
 #else

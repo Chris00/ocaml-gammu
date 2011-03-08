@@ -89,7 +89,7 @@ static value val_Some(value vsome)
   CAMLreturn(res);
 }
 
-#if VERSION_NUM < 12792
+#if GAMMU_VERSION_NUM < 12792
 static gboolean is_true(const char *str)
 {
   if (strcasecmp(str, "true") == 0) return TRUE;
@@ -325,12 +325,12 @@ static value Val_GSM_Config(const GSM_Config *config)
   Store_field(res, 1, caml_copy_string(config->DebugLevel));
   Store_field(res, 2, caml_copy_string(config->Device));
   Store_field(res, 3, caml_copy_string(config->Connection));
-#if VERSION_NUM >= 12792
+#if GAMMU_VERSION_NUM >= 12792
   Store_field(res, 4, Val_bool(config->SyncTime));
   Store_field(res, 5, Val_bool(config->LockDevice));
   Store_field(res, 7, Val_bool(config->StartInfo));
 #else
-  /* for VERSION_NUM <= 12400, those are strings. */
+  /* for GAMMU_VERSION_NUM <= 12400, those are strings. */
   Store_field(res, 4, Val_bool(is_true(config->SyncTime)));
   Store_field(res, 5, Val_bool(is_true(config->LockDevice)));
   Store_field(res, 7, Val_bool(is_true(config->StartInfo)));
@@ -354,12 +354,12 @@ static void GSM_Config_val(GSM_Config *config, value vconfig)
   CPY_TRIM_STRING_VAL(config->DebugLevel, Field(vconfig, 1));
   CPY_STRING_VAL(config->Device, Field(vconfig, 2));
   CPY_STRING_VAL(config->Connection, Field(vconfig, 3));
-#if VERSION_NUM >= 12792
+#if GAMMU_VERSION_NUM >= 12792
   config->SyncTime = Bool_val(Field(vconfig, 4));
   config->LockDevice = Bool_val(Field(vconfig, 5));
   config->StartInfo = Bool_val(Field(vconfig, 7));
 #else
-  /* for VERSION_NUM <= 12400, those are strings.
+  /* for GAMMU_VERSION_NUM <= 12400, those are strings.
      we don't know about versions between 12400 and 12792 */
   config->SyncTime = yesno_bool(Bool_val(Field(vconfig, 4)));
   config->LockDevice = yesno_bool(Bool_val(Field(vconfig, 5)));
@@ -479,7 +479,7 @@ value caml_gammu_GSM_ReadConfig(value vcfg_info, value vnum)
   cfg.Device = malloc(1);
   cfg.Connection = malloc(1);
   cfg.DebugFile = malloc(1);
-#if VERSION_NUM < 12700
+#if GAMMU_VERSION_NUM < 12700
   cfg.SyncTime = malloc(1);
   cfg.LockDevice = malloc(1);
   cfg.StartInfo = malloc(1);
@@ -669,7 +669,7 @@ value caml_gammu_GSM_ReadDevice(value s, value vwait_for_reply)
      one can't make the difference between a GSM not connected or 33 bytes
      read. This bug has been fixed in 1.28.92, it returns (-1) in that
      case. */
-#if VERSION_NUM >= 12892
+#if GAMMU_VERSION_NUM >= 12892
   if (read_bytes == -1)
 #else
   if (!GSM_IsConnected(sm))
@@ -696,7 +696,7 @@ value caml_gammu_GSM_EnterSecurityCode(value s, value vcode_type, value vcode)
   CPY_TRIM_STRING_VAL(security_code.Code, vcode);
 
   caml_enter_blocking_section();
-#if VERSION_NUM >= 12991
+#if GAMMU_VERSION_NUM >= 12991
   error = GSM_EnterSecurityCode(sm, &security_code);
 #else
   error = GSM_EnterSecurityCode(sm, security_code);
@@ -768,7 +768,7 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
   CAMLlocal1(res);
 
   res = caml_alloc(9, 0);
-#if VERSION_NUM < 12793
+#if GAMMU_VERSION_NUM < 12793
   /* Wrong type. Fixed in gammu commit e59c881b "These are regullar
    * chars." included in 1.27.93. */
   Store_field(res, 0, caml_copy_string((char *) network->CID));
@@ -782,12 +782,12 @@ static value Val_GSM_NetworkInfo(GSM_NetworkInfo *network)
   Store_field(res, 4, CAML_COPY_USTRING(network->NetworkName));
   /* Some fields weren't present yet in older versions, give them unknown
      values */
-#if VERSION_NUM >= 12792
+#if GAMMU_VERSION_NUM >= 12792
   Store_field(res, 5, VAL_GSM_GPRS_STATE(network->GPRS));
 #else
   Store_field(res, 5, Val_int(2) /* grps_state = Unknown */);
 #endif
-#if VERSION_NUM >= 12796
+#if GAMMU_VERSION_NUM >= 12796
   Store_field(res, 6, caml_copy_string(network->PacketCID));
   Store_field(res, 7, VAL_GSM_NETWORKINFO_STATE(network->PacketState));
   Store_field(res, 8, caml_copy_string(network->PacketLAC));
