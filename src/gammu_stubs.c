@@ -230,7 +230,7 @@ value caml_gammu_GSM_SetDebugLevel(value vdi, value vlevel)
 
 static void caml_gammu_ini_section_finalize(value vini_section)
 {
-  DEBUG("Finalize INI Section.");
+  SHOUT_DBG("Finalize INI Section.");
   INI_Free(INI_SECTION_VAL(vini_section));
 }
 
@@ -646,7 +646,7 @@ value caml_gammu_GSM_GetUsedConnection(value s)
     caml_gammu_raise_Error(ERR_NOTCONNECTED);
 
   conn_type = GSM_GetUsedConnection(sm);
-  DEBUG("GSM_GetUsedConnection call made: conn_type = %i", (int) conn_type);
+  SHOUT_DBG("GSM_GetUsedConnection call made: conn_type = %i", (int) conn_type);
 
   CAMLreturn(VAL_GSM_CONNECTIONTYPE(conn_type));
 }
@@ -1201,21 +1201,21 @@ static GSM_MultiSMSMessage *GSM_MultiSMSMessage_val(
 {
   int length = Wosize_val(vmulti_sms);;
   int i;
-  DEBUG("Entering function.\nmulti_sms length = %d", length);
+  SHOUT_DBG("Entering function.\nmulti_sms length = %d", length);
 
   /* We truncate the array if it's too big. TODO: issue a warning ? */
   if (length > sizeof(multi_sms->SMS)) {
-    DEBUG("multi_sms too big, array truncated.");
+    SHOUT_DBG("multi_sms too big, array truncated.");
     length = sizeof(multi_sms->SMS);
   }
   for (i=0; i < length; i++) {
     GSM_SMSMessage_val(&(multi_sms->SMS[i]), Field(vmulti_sms, i));
-    DEBUG("multi_sms->SMS[%d].Number = %s", i,
+    SHOUT_DBG("multi_sms->SMS[%d].Number = %s", i,
           DecodeUnicodeConsole(multi_sms->SMS[i].Number));
   }
   multi_sms->Number = length;
 
-  DEBUG("Leaving function.");
+  SHOUT_DBG("Leaving function.");
   return multi_sms;
 }
 
@@ -1502,25 +1502,25 @@ value caml_gammu_GSM_DecodeMultiPartSMS(value vdi, value vsms,
 {
   CAMLparam3(vdi, vsms, vems);
   CAMLlocal1(vmulti_sms);
-  DEBUG("Entering function.");
+  SHOUT_DBG("Entering function.");
   GSM_MultiSMSMessage multi_sms;
   GSM_MultiPartSMSInfo info;
   GSM_Debug_Info *di = GSM_Debug_Info_val(vdi);
 
   GSM_MultiSMSMessage_val(vsms, &multi_sms);
 
-  DEBUG("multi_sms.SMS[0].UDH.Length = %d", multi_sms.SMS[0].UDH.Length);
+  SHOUT_DBG("multi_sms.SMS[0].UDH.Length = %d", multi_sms.SMS[0].UDH.Length);
   if (!GSM_DecodeMultiPartSMS(di, &info, &multi_sms, Bool_val(vems))) {
     GSM_FreeMultiPartSMSInfo(&info);
     caml_gammu_raise_Error(ERR_COULD_NOT_DECODE);
   }
-  DEBUG("Decoding multi part SMS succeed.");
+  SHOUT_DBG("Decoding multi part SMS succeed.");
   vmulti_sms = Val_GSM_MultiPartSMSInfo(&info);
 
-  DEBUG("Free GSM_MultiPartSMSInfo structure.");
+  SHOUT_DBG("Free GSM_MultiPartSMSInfo structure.");
   GSM_FreeMultiPartSMSInfo(&info);
 
-  DEBUG("Leaving function.");
+  SHOUT_DBG("Leaving function.");
   CAMLreturn(vmulti_sms);
 }
 
@@ -1609,12 +1609,12 @@ static value Val_GSM_Call(GSM_Call *call)
   {                                                                     \
     CAMLparam2(s, venable);                                             \
     GSM_Error error;                                                    \
-    DEBUG("entering");                                                  \
+    SHOUT_DBG("entering");                                                  \
     error = GSM_SetIncoming##name(GSM_STATEMACHINE_VAL(s),              \
                                   Bool_val(venable));                   \
-    DEBUG("");                                                          \
+    SHOUT_DBG("");                                                          \
     caml_gammu_raise_Error(error);                                      \
-    DEBUG("leaving");                                                   \
+    SHOUT_DBG("leaving");                                                   \
     CAMLreturn(Val_unit);                                               \
   }                                                                     \
   static void incoming_##name##_callback(GSM_StateMachine *sm,          \
@@ -1623,26 +1623,26 @@ static value Val_GSM_Call(GSM_Call *call)
   {                                                                     \
     CAMLparam0();                                                       \
     CAMLlocal1(f);                                                      \
-    DEBUG("entering");                                                  \
-    DEBUG("f = *%ld", (long) user_data);                                \
+    SHOUT_DBG("entering");                                                  \
+    SHOUT_DBG("f = *%ld", (long) user_data);                                \
     f = *((value *) user_data);                                         \
     caml_callback(f, Val_##type(TYPE_MODIFIER2 t));                     \
-    DEBUG("leaving");                                                   \
+    SHOUT_DBG("leaving");                                                   \
     CAMLreturn0;                                                        \
   }                                                                     \
   CAMLexport                                                            \
   value caml_gammu_GSM_SetIncoming##name##Callback(value s, value vf)   \
   {                                                                     \
     CAMLparam2(s, vf);                                                  \
-    DEBUG("entering");                                                  \
+    SHOUT_DBG("entering");                                                  \
     State_Machine *state_machine = STATE_MACHINE_VAL(s);                \
     void *user_data = (void *) &(state_machine->incoming_##name##_callback); \
-    DEBUG("*user_data = %ld", (long) user_data);                        \
+    SHOUT_DBG("*user_data = %ld", (long) user_data);                        \
     REGISTER_SM_GLOBAL_ROOT(state_machine, incoming_##name##_callback, vf); \
     GSM_SetIncoming##name##Callback(state_machine->sm,                  \
                                     incoming_##name##_callback,         \
                                     user_data);                         \
-    DEBUG("leaving");                                                   \
+    SHOUT_DBG("leaving");                                                   \
     CAMLreturn(Val_unit);                                               \
   }
 
