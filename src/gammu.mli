@@ -35,7 +35,7 @@
 type error =
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
-  | DEVICENOTEXIST      (** Device does not exits *)
+  | DEVICENOTEXIST      (** Device does not exist *)
   | DEVICEBUSY          (** Device is busy *)
   | DEVICENOPERMISSION  (** No permissions to open device *)
   | DEVICENODRIVER      (** No driver installed for a device *)
