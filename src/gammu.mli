@@ -230,11 +230,10 @@ val init_locales : ?path:string -> unit -> unit
 val make : unit -> t
 (** Make a new clean state machine. *)
 
-(* TODO: make the num parameter optional to mean "-1" *)
-val get_config : t -> int -> config
-(** [get_config s num] gets gammu configuration from state machine [s], where
-    [num] is the number of the section to read starting from zero, [-1] for
-    the currently used one. *)
+val get_config : ?num:int -> t -> config
+(** [get_config s ~num] gets gammu configuration from state machine [s],
+    where [num] is the number of the section to read, starting from
+    zero. If not specified, the currently used one is returned. *)
 
 val push_config : t -> config -> unit
 (** [push_config s cfg] push the configuration [cfg] on top of the
