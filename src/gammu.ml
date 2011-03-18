@@ -238,7 +238,8 @@ let init_locales ?path () = match path with
 
 external make : unit -> t = "caml_gammu_GSM_AllocStateMachine"
 
-external get_config : t -> int -> config = "caml_gammu_GSM_GetConfig"
+external _get_config : t -> int -> config = "caml_gammu_GSM_GetConfig"
+let get_config ?(num=(-1)) s = _get_config s num
 
 external push_config : t -> config -> unit = "caml_gammu_push_config"
 
