@@ -242,7 +242,7 @@ val push_config : t -> config -> unit
     Gammu tries each configuration, from the bottom to the top of the stack,
     in order to connect. *)
 
-val remove_config : t -> config
+val remove_config : t -> unit
 (** [remove_config s] remove the top configuration from the config stack of
     [s]. *)
 

@@ -243,7 +243,7 @@ let get_config ?(num=(-1)) s = _get_config s num
 
 external push_config : t -> config -> unit = "caml_gammu_push_config"
 
-external remove_config : t -> config = "caml_gammu_remove_config"
+external remove_config : t -> unit = "caml_gammu_remove_config"
 
 external length_config : t -> int = "caml_gammu_GSM_GetConfigNum"
 
