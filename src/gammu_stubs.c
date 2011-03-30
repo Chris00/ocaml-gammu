@@ -1194,7 +1194,11 @@ static value Val_GSM_SMSMessage(GSM_SMSMessage *sms)
   Store_field(res, 9, Val_bool(sms->InboxFolder));
   Store_field(res, 10, VAL_GSM_SMS_STATE(sms->State));
   Store_field(res, 11, CAML_COPY_USTRING(sms->Name));
-  Store_field(res, 12, CAML_COPY_USTRING(sms->Text));
+  /* FIXME: What to do when sms->Text == NULL ? */
+  if (sms->Coding == SMS_Coding_8bit)
+    Store_field(res, 12, caml_copy_string((char *) sms->Text));
+  else
+    Store_field(res, 12, CAML_COPY_USTRING(sms->Text));
   Store_field(res, 13, VAL_GSM_SMSMESSAGETYPE(sms->PDU));
   Store_field(res, 14, VAL_GSM_CODING_TYPE(sms->Coding));
   Store_field(res, 15, Val_GSM_DateTime(&(sms->DateTime)));

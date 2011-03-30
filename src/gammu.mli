@@ -707,12 +707,14 @@ module SMS : sig
                                  it's saved (SIM/phone). *)
     location : int;          (** For saved SMS: location of SMS in memory. *)
     folder : int;            (** For saved SMS: number of folder,
-                                  where SMS is saved. *)
+                                 where SMS is saved. *)
     inbox_folder : bool;   (** For saved SMS: whether SMS is really in Inbox. *)
     state : state;           (** Status (read, unread,...) of SMS message. *)
     nokia_name : string;     (** Name in Nokia with SMS memory (6210/7110, etc.)
                                  Ignored in other. *)
-    text : string;           (** Text for SMS. *)
+    text : string;           (** Text for SMS. May be encoded as plain
+                                 8bit ASCII or as UTF8 according to the
+                                 [coding] field. *)
     pdu : message_type;      (** Type of message. *)
     coding : coding;         (** Type of coding. *)
     date_time : DateTime.t;  (** Date and time, when SMS was saved or sent. *)
