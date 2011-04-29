@@ -285,11 +285,9 @@ type security_code_type =
   | SEC_Phone
   | SEC_Network
 
-external _enter_security_code : t -> security_code_type -> string -> unit =
+external enter_security_code : t ->
+  code_type:security_code_type -> code:string -> unit =
   "caml_gammu_GSM_EnterSecurityCode"
-
-let enter_security_code s ~code_type ~code =
-  _enter_security_code s code_type code
 
 external get_security_status : t -> security_code_type =
   "caml_gammu_GSM_GetSecurityStatus"
