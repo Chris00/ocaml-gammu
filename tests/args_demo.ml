@@ -30,6 +30,9 @@ let prepare_phone s =
     let code = read_line () in
     try
       Gammu.enter_security_code s ~code_type ~code;
+      printf "  Code entered.\n%!";
+      Unix.sleep 1; (* required, if one tries to access the card too fast,
+                       NOSIM is raised. *)
       (* Check if there's another security code to enter. *)
       unlock_phone s;
     with Gammu.Error Gammu.SECURITYERROR ->
