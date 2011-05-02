@@ -1,0 +1,62 @@
+#                                                               -*-conf-*-
+OASISFormat: 0.2
+Name:        gammu
+Version:     0.8
+Synopsis:    Cell phone and SIM card access.
+Description: Gammu is a binding to libGammu which allows to manage data in your
+    cell phone such as contacts, calendar or messages.
+Authors:     Christophe Troestler, Noémie Meunier, Pierre Hauweele
+License:     LGPL-3.0 with OCaml linking exception
+Plugins:     META (0.2), StdFiles (0.2)
+Homepage:    https://forge.ocamlcore.org/projects/ml-gammu/
+
+Library gammu
+  Path:         src/
+  BuildTools:   ocamlbuild
+  Modules:      Gammu
+  CSources:     gammu_stubs.c
+# The real decision for the flags is performed in myocamlbuild.ml:
+  CCOpt:	-Ipath/to/gammu
+  CClib:	-lm -lGammu
+
+Document API
+  Title:           API reference for Gammu
+  Type:            OCamlbuild (0.2)
+  InstallDir:      $docdir/api
+  BuildTools:      ocamldoc, ocamlbuild
+  XOCamlbuildPath: src/
+  XOCamlbuildLibraries: gammu
+
+
+# Small programs to demonstrate the use of the library.
+Executable demo_incoming
+  Path:           tests
+  MainIs:         demo_incoming.ml
+  BuildDepends:   gammu, unix
+  CompiledObject: best
+  BuildTools:     ocamlbuild
+  Install:        false
+
+Executable demo_infos
+  Path:           tests
+  MainIs:         demo_infos.ml
+  BuildDepends:   gammu, unix
+  CompiledObject: best
+  BuildTools:     ocamlbuild
+  Install:        false
+
+Executable demo_readall
+  Path:           tests
+  MainIs:         demo_readall.ml
+  BuildDepends:   gammu, unix
+  CompiledObject: best
+  BuildTools:     ocamlbuild
+  Install:        false
+
+Executable demo_readsms
+  Path:           tests
+  MainIs:         demo_readsms.ml
+  BuildDepends:   gammu, unix
+  CompiledObject: best
+  BuildTools:     ocamlbuild
+  Install:        false

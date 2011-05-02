@@ -1,6 +1,9 @@
-# Specifications for the Gammu module
-name="gammu"
-description="OCaml libGammu Interface"
-requires = ""
+# OASIS_START
+# DO NOT EDIT (digest: 07f14716109e84a69d05c62a5734e664)
+version = "0.8"
+description = "Cell phone and SIM card access."
 archive(byte) = "gammu.cma"
 archive(native) = "gammu.cmxa"
+exists_if = "gammu.cma"
+# OASIS_STOP
+

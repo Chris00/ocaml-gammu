@@ -1,4 +1,4 @@
-# .bzrignore							-*-conf-*-
+# .bzrignore							-*-conf-unix-*-
 *.annot
 *.cm[ioax]
 *.cmxa
@@ -8,3 +8,13 @@ RE:doc/.*\.(html|css)
 *.exe
 # Gammu log files
 *.log
+# OASIS & OCamlbuild
+_build
+AUTHORS.txt
+setup.ml
+setup.data
+src/API.odocl
+src/gammu.mllib
+src/libgammu.clib
+*.native
+*.byte
