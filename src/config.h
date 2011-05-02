@@ -1,1 +1,0 @@
-#define CAML_GAMMU_DEBUG

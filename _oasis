@@ -10,14 +10,19 @@ License:     LGPL-3.0 with OCaml linking exception
 Plugins:     META (0.2), StdFiles (0.2)
 Homepage:    https://forge.ocamlcore.org/projects/ml-gammu/
 
+Flag debugstub
+  Description: Compile with debugging flag turned on.
+  Default: false
+
 Library gammu
   Path:         src/
   BuildTools:   ocamlbuild
   Modules:      Gammu
   CSources:     gammu_stubs.c
-# The real decision for the flags is performed in myocamlbuild.ml:
-  CCOpt:	-Ipath/to/gammu
-  CClib:	-lm -lGammu
+# The real decision for CCOpt and CClib is performed in myocamlbuild.ml:
+  CClib:        specified_in_myocamlbuild.ml
+  if flag(debugstub)
+    CCOpt:	-DCAML_GAMMU_DEBUG
 
 Document API
   Title:           API reference for Gammu

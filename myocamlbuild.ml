@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 645c82cc1100b7642b49ae029c713f76) *)
+(* DO NOT EDIT (digest: 9073d883bdc3e37f98f12fd059de6a3e) *)
 module OASISGettext = struct
 # 21 "/tmp/buildd/oasis-0.2.0/src/oasis/OASISGettext.ml"
   
@@ -456,14 +456,18 @@ let package_default =
      flags =
        [
           (["oasis_library_gammu_ccopt"; "compile"],
-            [(OASISExpr.EBool true, S [A "-ccopt"; A "-Ipath/to/gammu"])]);
+            [
+               (OASISExpr.EBool true, S []);
+               (OASISExpr.EFlag "debugstub",
+                 S [A "-ccopt"; A "-DCAML_GAMMU_DEBUG"])
+            ]);
           (["oasis_library_gammu_cclib"; "link"],
             [
                (OASISExpr.EBool true,
-                 S [A "-cclib"; A "-lm"; A "-cclib"; A "-lGammu"])
+                 S [A "-cclib"; A "specified_in_myocamlbuild.ml"])
             ]);
           (["oasis_library_gammu_cclib"; "ocamlmklib"; "c"],
-            [(OASISExpr.EBool true, S [A "-lm"; A "-lGammu"])])
+            [(OASISExpr.EBool true, S [A "specified_in_myocamlbuild.ml"])])
        ];
      }
   ;;
@@ -496,14 +500,15 @@ let output_of cmd =
   split_on is_space s 0 0 (String.length s)
 
 (* Detect the right flags for the platform for which we compile. *)
-let ccopt, cclib =
+let ccopt, cclib, debugstub =
   match Sys.os_type with
   | "Unix" ->
     output_of "pkg-config --cflags gammu",
-    output_of "pkg-config --libs gammu"
+    output_of "pkg-config --libs gammu",
+    "-DCAML_GAMMU_DEBUG"
   | "Win32" ->
     (* TODO *)
-    [], []
+    [], [], "/DCAML_GAMMU_DEBUG"
   | os ->
     Printf.printf "Operating system %S not known" os;
     exit 1
@@ -518,7 +523,9 @@ let package =
     (["oasis_library_gammu_cclib"; "link"],
      [OASISExpr.EBool true, S cclib]);
     (["oasis_library_gammu_cclib"; "ocamlmklib"; "c"],
-     [OASISExpr.EBool true, S mklib])
+     [OASISExpr.EBool true, S mklib;
+      OASISExpr.EFlag "debugstub", S [A "-ccopt"; A debugstub]
+     ]);
   ] in
   { package_default with MyOCamlbuildBase.flags = flags }
 ;;
@@ -529,7 +536,7 @@ dispatch
     MyOCamlbuildBase.dispatch_default package;
     begin function
     | After_rules ->
-      let includes = ["gammu_stubs.h"; "io.h"; "config.h"] in
+      let includes = ["gammu_stubs.h"; "io.h"] in
       let includes = List.map (fun f -> "src" / f) includes in
       dep ["c"; "compile"] includes;
 

@@ -26,8 +26,6 @@
 
 #include <gammu.h>
 
-#include "config.h"
-
 #define BUFFER_LENGTH 255
 
 /* Check Gammu version. TODO: Check versions more precisely. */
