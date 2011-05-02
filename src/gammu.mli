@@ -23,8 +23,8 @@
     cell phone such as contacts, calendar or messages.
 
     NOTE: Strings used by libGammu often have a maximum allowed
-    length. Strings too long will be trimmed before being passed to libGammu
-    (caml Strings remain immutable).
+    length. Strings too long will be trimmed before being passed to
+    libGammu (caml strings given as arguments are not changed).
 
     NOTE: This library is not thread safe. *)
 
@@ -32,6 +32,7 @@
 (************************************************************************)
 (** {2 Error handling} *)
 
+(** Possible errors. *)
 type error =
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
