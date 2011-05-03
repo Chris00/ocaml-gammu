@@ -9,6 +9,7 @@ Authors:     Christophe Troestler, Noémie Meunier, Pierre Hauweele
 License:     LGPL-3.0 with OCaml linking exception
 Plugins:     META (0.2), StdFiles (0.2)
 Homepage:    https://forge.ocamlcore.org/projects/ml-gammu/
+PostConfCommand: ocaml config.ml
 
 Flag debugstub
   Description: Compile with debugging flag turned on.
@@ -19,10 +20,12 @@ Library gammu
   BuildTools:   ocamlbuild
   Modules:      Gammu
   CSources:     gammu_stubs.c
-# The real decision for CCOpt and CClib is performed in myocamlbuild.ml:
-  CClib:        specified_in_myocamlbuild.ml
+# The real decision for CCOpt and CClib is performed in config.ml.
   if flag(debugstub)
-    CCOpt:	-DCAML_GAMMU_DEBUG
+    if os_type(Win32)
+      CCOpt:	/DCAML_GAMMU_DEBUG
+    else
+      CCOpt:	-DCAML_GAMMU_DEBUG
 
 Document API
   Title:           API reference for Gammu

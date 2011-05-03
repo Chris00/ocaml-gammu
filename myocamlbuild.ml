@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 9073d883bdc3e37f98f12fd059de6a3e) *)
+(* DO NOT EDIT (digest: f6cd83830a67a1ead0542b2732883c22) *)
 module OASISGettext = struct
 # 21 "/tmp/buildd/oasis-0.2.0/src/oasis/OASISGettext.ml"
   
@@ -458,16 +458,15 @@ let package_default =
           (["oasis_library_gammu_ccopt"; "compile"],
             [
                (OASISExpr.EBool true, S []);
-               (OASISExpr.EFlag "debugstub",
+               (OASISExpr.EAnd
+                  (OASISExpr.EFlag "debugstub",
+                    OASISExpr.ETest ("os_type", "Win32")),
+                 S [A "-ccopt"; A "/DCAML_GAMMU_DEBUG"]);
+               (OASISExpr.EAnd
+                  (OASISExpr.EFlag "debugstub",
+                    OASISExpr.ENot (OASISExpr.ETest ("os_type", "Win32"))),
                  S [A "-ccopt"; A "-DCAML_GAMMU_DEBUG"])
-            ]);
-          (["oasis_library_gammu_cclib"; "link"],
-            [
-               (OASISExpr.EBool true,
-                 S [A "-cclib"; A "specified_in_myocamlbuild.ml"])
-            ]);
-          (["oasis_library_gammu_cclib"; "ocamlmklib"; "c"],
-            [(OASISExpr.EBool true, S [A "specified_in_myocamlbuild.ml"])])
+            ])
        ];
      }
   ;;
@@ -493,52 +492,30 @@ and skip is_delim s i i1 =
 
 let is_space c = c = ' ' || c = '\t' || c = '\r' || c = '\n'
 
-let output_of cmd =
-  let fh = Unix.open_process_in cmd in
-  let s = input_line fh in
-  ignore(Unix.close_process_in fh);
-  split_on is_space s 0 0 (String.length s)
+let split_on_spaces s = split_on is_space s 0 0 (String.length s)
 
-(* Detect the right flags for the platform for which we compile. *)
-let ccopt, cclib, debugstub =
-  match Sys.os_type with
-  | "Unix" ->
-    output_of "pkg-config --cflags gammu",
-    output_of "pkg-config --libs gammu",
-    "-DCAML_GAMMU_DEBUG"
-  | "Win32" ->
-    (* TODO *)
-    [], [], "/DCAML_GAMMU_DEBUG"
-  | os ->
-    Printf.printf "Operating system %S not known" os;
-    exit 1
-
-let package =
-  let ccopt = List.fold_right (fun o l -> A "-ccopt" :: A o :: l) ccopt []
-  and mklib = List.map (fun o -> A o) cclib
-  and cclib = List.fold_right (fun o l -> A "-cclib" :: A o :: l) cclib [] in
-  let flags = [
-    (["oasis_library_gammu_ccopt"; "compile"],
-     [OASISExpr.EBool true, S ccopt]);
-    (["oasis_library_gammu_cclib"; "link"],
-     [OASISExpr.EBool true, S cclib]);
-    (["oasis_library_gammu_cclib"; "ocamlmklib"; "c"],
-     [OASISExpr.EBool true, S mklib;
-      OASISExpr.EFlag "debugstub", S [A "-ccopt"; A debugstub]
-     ]);
-  ] in
-  { package_default with MyOCamlbuildBase.flags = flags }
+let cflags, cclib =
+  let env = BaseEnvLight.load () in (* setup.data *)
+  let cflags = split_on_spaces (BaseEnvLight.var_get "gammu_cflags" env) in
+  let cclib = split_on_spaces (BaseEnvLight.var_get "gammu_libs" env) in
+  cflags, cclib
 ;;
-
 
 dispatch
   (MyOCamlbuildBase.dispatch_combine [
-    MyOCamlbuildBase.dispatch_default package;
+    dispatch_default;
     begin function
     | After_rules ->
       let includes = ["gammu_stubs.h"; "io.h"] in
       let includes = List.map (fun f -> "src" / f) includes in
       dep ["c"; "compile"] includes;
+
+      flag ["pkg_config_gammu"; "compile"; "c"]
+        (S (List.fold_right (fun o l -> A "-ccopt" :: A o :: l) cflags []));
+      flag ["pkg_config_gammu"; "link"]
+        (S (List.fold_right (fun o l -> A "-cclib" :: A o :: l) cclib []));
+      flag ["ocamlmklib"; "c"]
+        (S (List.map (fun o -> A o) cclib));
 
     | _ -> ()
     end;

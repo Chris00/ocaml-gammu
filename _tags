@@ -1,14 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: ca3a17f7ee23968c9857429f3a1e4211)
+# DO NOT EDIT (digest: 72b348b764f859f753b7a8f23a4adf62)
 # Library gammu
 "src": include
 <src/*.ml{,i}>: oasis_library_gammu_ccopt
 "src/gammu_stubs.c": oasis_library_gammu_ccopt
-<src/gammu.{cma,cmxa}>: oasis_library_gammu_cclib
-"src/libgammu.lib": oasis_library_gammu_cclib
-"src/dllgammu.dll": oasis_library_gammu_cclib
-"src/libgammu.a": oasis_library_gammu_cclib
-"src/dllgammu.so": oasis_library_gammu_cclib
 <src/gammu.{cma,cmxa}>: use_libgammu
 # Executable demo_incoming
 <tests/demo_incoming.{native,byte}>: use_gammu
@@ -27,3 +22,5 @@
 # OASIS_STOP
 
 <**/*.ml>: annot
+<src/gammu_stubs.c>: pkg_config_gammu
+<src/gammu.{cma,cmxa}>: pkg_config_gammu
