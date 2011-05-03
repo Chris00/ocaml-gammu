@@ -1,24 +1,24 @@
 # OASIS_START
-# DO NOT EDIT (digest: 72b348b764f859f753b7a8f23a4adf62)
+# DO NOT EDIT (digest: bff15a9ae1168579de7a9b773bdfcf86)
 # Library gammu
 "src": include
 <src/*.ml{,i}>: oasis_library_gammu_ccopt
 "src/gammu_stubs.c": oasis_library_gammu_ccopt
 <src/gammu.{cma,cmxa}>: use_libgammu
-# Executable demo_incoming
-<tests/demo_incoming.{native,byte}>: use_gammu
-<tests/demo_incoming.{native,byte}>: pkg_unix
-# Executable demo_readall
-<tests/demo_readall.{native,byte}>: use_gammu
-<tests/demo_readall.{native,byte}>: pkg_unix
-# Executable demo_infos
-<tests/demo_infos.{native,byte}>: use_gammu
-<tests/demo_infos.{native,byte}>: pkg_unix
-# Executable demo_readsms
-<tests/demo_readsms.{native,byte}>: use_gammu
-<tests/demo_readsms.{native,byte}>: pkg_unix
-<tests/*.ml{,i}>: use_gammu
-<tests/*.ml{,i}>: pkg_unix
+# Executable readallsms
+<demo/readallsms.{native,byte}>: use_gammu
+<demo/readallsms.{native,byte}>: pkg_unix
+# Executable infos
+<demo/infos.{native,byte}>: use_gammu
+<demo/infos.{native,byte}>: pkg_unix
+# Executable read1sms
+<demo/read1sms.{native,byte}>: use_gammu
+<demo/read1sms.{native,byte}>: pkg_unix
+# Executable incoming_events
+<demo/incoming_events.{native,byte}>: use_gammu
+<demo/incoming_events.{native,byte}>: pkg_unix
+<demo/*.ml{,i}>: use_gammu
+<demo/*.ml{,i}>: pkg_unix
 # OASIS_STOP
 
 <**/*.ml>: annot

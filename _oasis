@@ -37,33 +37,33 @@ Document API
 
 
 # Small programs to demonstrate the use of the library.
-Executable demo_incoming
-  Path:           tests
-  MainIs:         demo_incoming.ml
+Executable incoming_events
+  Path:           demo
+  MainIs:         incoming_events.ml
   BuildDepends:   gammu, unix
   CompiledObject: best
   BuildTools:     ocamlbuild
   Install:        false
 
-Executable demo_infos
-  Path:           tests
-  MainIs:         demo_infos.ml
+Executable infos
+  Path:           demo
+  MainIs:         infos.ml
   BuildDepends:   gammu, unix
   CompiledObject: best
   BuildTools:     ocamlbuild
   Install:        false
 
-Executable demo_readall
-  Path:           tests
-  MainIs:         demo_readall.ml
+Executable readallsms
+  Path:           demo
+  MainIs:         readallsms.ml
   BuildDepends:   gammu, unix
   CompiledObject: best
   BuildTools:     ocamlbuild
   Install:        false
 
-Executable demo_readsms
-  Path:           tests
-  MainIs:         demo_readsms.ml
+Executable read1sms
+  Path:           demo
+  MainIs:         read1sms.ml
   BuildDepends:   gammu, unix
   CompiledObject: best
   BuildTools:     ocamlbuild
