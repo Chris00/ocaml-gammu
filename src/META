@@ -1,6 +1,6 @@
 # OASIS_START
-# DO NOT EDIT (digest: 07f14716109e84a69d05c62a5734e664)
-version = "0.8"
+# DO NOT EDIT (digest: 644fd5c48bd3836400859bcd38be7c13)
+version = "0.9"
 description = "Cell phone and SIM card access."
 archive(byte) = "gammu.cma"
 archive(native) = "gammu.cmxa"

@@ -4,11 +4,9 @@ PKG_TARBALL = $(PKGNAME)-$(PKGVERSION).tar.gz
 
 WEB = forge.ocamlcore.org:/home/groups/ml-gammu/htdocs/
 
-DISTFILES   = AUTHORS.txt INSTALL.txt README.txt _oasis \
-  _tags src/META Makefile setup.ml src/API.odocl \
-  src/gammu.mllib src/libgammu.clib \
-  $(wildcard src/*.ml) $(wildcard src/*.mli) \
-  $(wildcard tests/*.ml) tests/gammurc
+DISTFILES   = AUTHORS.txt INSTALL.txt README.txt COPYING.txt _oasis \
+  Makefile myocamlbuild.ml setup.ml config.ml _tags src/ \
+  $(wildcard demo/*.ml) demo/gammurc
 
 .PHONY: all byte native configure doc install uninstall reinstall upload-doc
 
@@ -31,7 +29,7 @@ upload-doc: doc
 .PHONY: dist tar
 dist tar: $(DISTFILES)
 	mkdir $(PKGNAME)-$(PKGVERSION)
-	cp -r $(DISTFILES) $(PKGNAME)-$(PKGVERSION)/
+	cp --parents -r $(DISTFILES) $(PKGNAME)-$(PKGVERSION)/
 	tar -zcvf $(PKG_TARBALL) $(PKGNAME)-$(PKGVERSION)
 	rm -rf $(PKGNAME)-$(PKGVERSION)
 
