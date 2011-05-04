@@ -1,7 +1,7 @@
 #                                                               -*-conf-*-
 OASISFormat: 0.2
 Name:        gammu
-Version:     0.8
+Version:     0.9
 Synopsis:    Cell phone and SIM card access.
 Description: Gammu is a binding to libGammu which allows to manage data in your
     cell phone such as contacts, calendar or messages.
