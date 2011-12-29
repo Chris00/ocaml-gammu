@@ -5,7 +5,7 @@ OCAMLINCLUDES = ../src
 #GAMMU_CMA = gammu.cma
 
 DEMO_LIBS = args_demo.ml utils_tests.ml
-TESTS     = $(wildcard test_*.ml demo_*.ml)
+TESTS     = incoming_events.ml infos.ml readallsms.ml read1sms.ml
 
 .PHONY: all byte native
 all: byte native

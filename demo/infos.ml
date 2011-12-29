@@ -17,45 +17,55 @@ let print_dyn_infos s =
         status.SMS.sim_unread status.SMS.sim_used status.SMS.sim_size;
       printf "(%d) %d/%d (Phone)\n"
         status.SMS.phone_unread status.SMS.phone_used status.SMS.phone_size;
-      printf "  #templates used: %d\n%!" status.SMS.templates_used;
+      printf "  #templates used: %d\n%!" status.SMS.templates_used
     with G.Error G.NOTSUPPORTED ->
-      printf "  Your phone doesn't support getting sms status.\n%!";
+      printf "  Your phone doesn't support getting sms status.\n%!"
   end;
-  let bat = Info.battery_charge s in
-  printf "%s\n%!"
-    (match bat.Info.charge_state with
-    | Info.BatteryPowered -> "Powered from battery."
-    | Info.BatteryConnected -> "Powered from AC, battery connected."
-    | Info.BatteryCharging -> "Powered from AC, battery is charging."
-    | Info.BatteryNotConnected -> "Powered from AC, no battery."
-    | Info.BatteryFull -> "Powered from AC, battery is fully charged."
-    | Info.PowerFault -> "Power failure.");
-  printf "Battery (%s): %imAh, %i%%, %imV, %i Celius\n%!"
-    (match bat.Info.battery_type with
-    | Info.Unknown_battery -> "Unknown"
-    | Info.NiMH -> "NiMH"
-    | Info.LiIon -> "LiIon"
-    | Info.LiPol -> "LiPol")
-    bat.Info.battery_capacity
-    bat.Info.battery_percent
-    bat.Info.battery_voltage
-    bat.Info.battery_temperature;
-  printf "Consumption: phone %imA (%i Celcius), charger %imA %imV\n"
-    bat.Info.phone_current
-    bat.Info.phone_temperature
-    bat.Info.charge_current
-    bat.Info.charge_voltage;
-  printf "%s\n%!" (string_of_signal_quality (Info.signal_quality s));
-  let network = Info.network_info s in
-  printf "Network state  %S, %S\n"
-    (string_of_network_state network.Info.state) network.Info.name;
-  printf "CID %S, code %S, LAC %S, GPRS %S\n"
-    network.Info.cid network.Info.code network.Info.lac
-    (string_of_info_gprs network.Info.gprs);
-  printf "packet: CID %S, LAC %S, state %S\n%!"
-    network.Info.packet_cid
-    network.Info.packet_lac
-    (string_of_network_state network.Info.packet_state)
+  begin
+    try
+      let bat = Info.battery_charge s in
+      printf "%s\n%!"
+        (match bat.Info.charge_state with
+        | Info.BatteryPowered -> "Powered from battery."
+        | Info.BatteryConnected -> "Powered from AC, battery connected."
+        | Info.BatteryCharging -> "Powered from AC, battery is charging."
+        | Info.BatteryNotConnected -> "Powered from AC, no battery."
+        | Info.BatteryFull -> "Powered from AC, battery is fully charged."
+        | Info.PowerFault -> "Power failure.");
+      printf "Battery (%s): %imAh, %i%%, %imV, %i Celius\n%!"
+        (match bat.Info.battery_type with
+        | Info.Unknown_battery -> "Unknown"
+        | Info.NiMH -> "NiMH"
+        | Info.LiIon -> "LiIon"
+        | Info.LiPol -> "LiPol")
+        bat.Info.battery_capacity
+        bat.Info.battery_percent
+        bat.Info.battery_voltage
+        bat.Info.battery_temperature;
+      printf "Consumption: phone %imA (%i Celcius), charger %imA %imV\n"
+        bat.Info.phone_current
+        bat.Info.phone_temperature
+        bat.Info.charge_current
+        bat.Info.charge_voltage;
+      printf "%s\n%!" (string_of_signal_quality (Info.signal_quality s))
+    with G.Error G.NOTSUPPORTED ->
+      printf "Your phone doesn't support getting battery status.\n%!"
+  end;
+  begin
+    try
+    let network = Info.network_info s in
+    printf "Network state %S, name %S\n"
+      (string_of_network_state network.Info.state) network.Info.name;
+    printf "CID %S, code %S, LAC %S, GPRS %S\n"
+      network.Info.cid network.Info.code network.Info.lac
+      (string_of_info_gprs network.Info.gprs);
+    printf "packet: CID %S, LAC %S, state %S\n%!"
+      network.Info.packet_cid
+      network.Info.packet_lac
+      (string_of_network_state network.Info.packet_state)
+    with G.Error G.NOTSUPPORTED ->
+      printf "Your phone doesn't support getting network status.\n%!"
+  end
 
 let () =
   try
