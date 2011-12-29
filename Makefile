@@ -10,16 +10,17 @@ DISTFILES   = AUTHORS.txt INSTALL.txt README.txt COPYING.txt _oasis \
 
 .PHONY: all byte native configure doc install uninstall reinstall upload-doc
 
-all byte native: configure
+all byte native setup.log: configure
 	ocaml setup.ml -build
 
-configure: setup.ml
+configure: setup.data
+setup.data: setup.ml
 	ocaml $< -configure
 
 setup.ml: _oasis
 	oasis setup
 
-doc install uninstall reinstall:
+doc install uninstall reinstall: setup.log
 	ocaml setup.ml -$@
 
 upload-doc: doc
@@ -43,6 +44,6 @@ clean::
 	ocaml setup.ml -clean
 	$(RM) $(PKG_TARBALL)
 
-distclean:
+distclean: clean
 	ocaml setup.ml -distclean
-	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl) setup.log
+	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl)
