@@ -354,10 +354,10 @@ type security_code_type =
 
 val enter_security_code :
   t -> code_type:security_code_type -> code:string -> unit
-(** Enters security code (PIN, PUK,...). *)
+(** Enter security code (PIN, PUK,...). *)
 
 val get_security_status : t -> security_code_type
-(** Queries whether some security code needs to be entered. *)
+(** Query whether some security code needs to be entered. *)
 
 
 (************************************************************************)

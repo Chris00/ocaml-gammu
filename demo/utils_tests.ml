@@ -13,10 +13,10 @@ let string_of_sms_status =
 
 let print_multi_sms multi_sms =
   let sms = multi_sms.(0) in
-  printf "Folder: %d\n" sms.SMS.folder;
+  printf "Folder: %d, " sms.SMS.folder;
   (* TODO: rename location to message_number *)
-  printf "Message_number: %d\n" sms.SMS.location;
-  printf "Is in inbox: %B\n" sms.SMS.inbox_folder;
+  printf "Message number: %d " sms.SMS.location;
+  printf "(%sin inbox)\n" (if sms.SMS.inbox_folder then "" else "not ");
   printf "Number: %s\n" sms.SMS.number;
   printf "Date and time: %s\n"
     (G.DateTime.os_date_time sms.SMS.date_time);
@@ -26,13 +26,22 @@ let print_multi_sms multi_sms =
   if sms.SMS.udh_header.SMS.udh = SMS.No_udh then
     (* There's no udh so text is raw in the sms message. *)
     printf "%s" sms.SMS.text
-  else begin
+  else (
+    SMS.(let hd = sms.udh_header in
+         match hd.udh with
+         | ConcatenatedMessages ->
+            printf "UDH: linked SMS (%i/%i), id: %i\n"
+                   hd.part_number hd.all_parts hd.id8bit
+         | ConcatenatedMessages16bit ->
+            printf "UDH: linked SMS (%i/%i), id 16 bits: %i\n"
+                   hd.part_number hd.all_parts hd.id16bit
+         | _  -> ());
     (* There's an udh so we have to decode the sms. *)
     let multi_info = SMS.decode_multipart multi_sms
     and print_info info = print_string info.SMS.buffer in
     Array.iter print_info multi_info.SMS.entries
-  end;
-  printf "\n%!"
+  );
+  printf "\n\n%!"
 
 let string_of_signal_quality signal =
   sprintf "Signal Strength = %d, %d%%, bit error rate = %d%%"
