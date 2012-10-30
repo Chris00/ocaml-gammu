@@ -597,7 +597,7 @@ struct
     other_numbers : string array;
     smsc : smsc;
     memory : memory_type;
-    location : int;
+    message_number : int;
     folder : int;
     inbox_folder : bool;
     state : state;
@@ -628,7 +628,7 @@ struct
          smsc_number = ""; validity = Not_available;
          format = Text; default_number = ""};
       memory = SM;
-      location = 0;
+      message_number = 0;
       folder = 1;
       inbox_folder = true;
       state = Unread;
@@ -672,8 +672,8 @@ struct
         in
         (* Not a tail recursive call but the number of SMS messages is
            assumed to be small: *)
-        fold_loop s multi_sms.(0).location folder (n - 1) ~retries 0 on_err
-          f (f acc multi_sms)
+        fold_loop s multi_sms.(0).message_number folder (n - 1)
+                  ~retries 0 on_err f (f acc multi_sms)
       with
       | Error EMPTY -> acc (* There's no next SMS message *)
       | Error (UNKNOWN | CORRUPTED as e) ->

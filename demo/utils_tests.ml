@@ -14,8 +14,7 @@ let string_of_sms_status =
 let print_multi_sms multi_sms =
   let sms = multi_sms.(0) in
   printf "Folder: %d, " sms.SMS.folder;
-  (* TODO: rename location to message_number *)
-  printf "Message number: %d " sms.SMS.location;
+  printf "Message number: %d " sms.SMS.message_number;
   printf "(%sin inbox)\n" (if sms.SMS.inbox_folder then "" else "not ");
   printf "Number: %s\n" sms.SMS.number;
   printf "Date and time: %s\n"

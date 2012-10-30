@@ -706,7 +706,7 @@ module SMS : sig
     smsc : smsc;             (** SMS Center *)
     memory : memory_type;    (** For saved SMS: where exactly
                                  it's saved (SIM/phone). *)
-    location : int;          (** For saved SMS: location of SMS in memory. *)
+    message_number : int;    (** For saved SMS: location of SMS in memory. *)
     folder : int;            (** For saved SMS: number of folder,
                                  where SMS is saved. *)
     inbox_folder : bool;   (** For saved SMS: whether SMS is really in Inbox. *)
