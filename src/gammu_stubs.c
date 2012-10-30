@@ -46,8 +46,8 @@ void caml_gammu_init(value vunit)
   /* Check for versions consistency between build time and runtime. */
   if (strcmp(GetGammuVersion(), GAMMU_VERSION)) {
     char msg[128];
-    if (snprintf(msg, 128, "Gammu: used version of Gammu (%s) does not" \
-                 "match the version of the Caml bindings (%s).",        \
+    if (snprintf(msg, 128, "Gammu: used version of Gammu (%s) does not " \
+                 "match the version of the Caml bindings (%s).",         \
                  GetGammuVersion(), GAMMU_VERSION) < 0)
       caml_failwith("Gammu: versions inconsistency.");
     else
