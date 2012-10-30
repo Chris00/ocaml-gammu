@@ -1,24 +1,4 @@
 # OASIS_START
-# DO NOT EDIT (digest: bff15a9ae1168579de7a9b773bdfcf86)
-# Library gammu
-"src": include
-<src/*.ml{,i}>: oasis_library_gammu_ccopt
-"src/gammu_stubs.c": oasis_library_gammu_ccopt
-<src/gammu.{cma,cmxa}>: use_libgammu
-# Executable readallsms
-<demo/readallsms.{native,byte}>: use_gammu
-<demo/readallsms.{native,byte}>: pkg_unix
-# Executable infos
-<demo/infos.{native,byte}>: use_gammu
-<demo/infos.{native,byte}>: pkg_unix
-# Executable read1sms
-<demo/read1sms.{native,byte}>: use_gammu
-<demo/read1sms.{native,byte}>: pkg_unix
-# Executable incoming_events
-<demo/incoming_events.{native,byte}>: use_gammu
-<demo/incoming_events.{native,byte}>: pkg_unix
-<demo/*.ml{,i}>: use_gammu
-<demo/*.ml{,i}>: pkg_unix
 # OASIS_STOP
 
 <**/*.ml>: annot

@@ -11,10 +11,11 @@ RE:doc/.*\.(html|css)
 # OASIS & OCamlbuild
 _build
 AUTHORS.txt
+README.txt
 setup.ml
 setup.data
 src/API.odocl
 src/gammu.mllib
-src/libgammu.clib
+*.clib
 *.native
 *.byte

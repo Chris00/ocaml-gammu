@@ -1,5 +1,5 @@
 #                                                               -*-conf-*-
-OASISFormat: 0.2
+OASISFormat: 0.3
 Name:        gammu
 Version:     0.9
 Synopsis:    Cell phone and SIM card access.
