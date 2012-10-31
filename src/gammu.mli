@@ -228,8 +228,14 @@ val init_locales : ?path:string -> unit -> unit
     @param path Path to gettext translation. If not set, compiled in
     default is used. *)
 
-val make : unit -> t
-(** Make a new clean state machine. *)
+val make : ?section: int -> unit -> t
+(** Make a new clean state machine.  It is automatically configured
+    using {!load_gammurc}.  If you want to configure it yourself, use
+    {!push_config} to supersede the configuration with the one of your
+    choice.
+
+    @param section section number of the gammurc file to read. See
+    {!Gammu.INI.config} for details. *)
 
 val get_config : ?num:int -> t -> config
 (** [get_config s ~num] gets gammu configuration from state machine [s],

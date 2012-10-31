@@ -236,7 +236,7 @@ let init_locales ?path () = match path with
   | None -> _init_default_locales ()
   | Some path -> _init_locales path
 
-external make : unit -> t = "caml_gammu_GSM_AllocStateMachine"
+external alloc_state_machine : unit -> t = "caml_gammu_GSM_AllocStateMachine"
 
 external _get_config : t -> int -> config = "caml_gammu_GSM_GetConfig"
 let get_config ?(num=(-1)) s = _get_config s num
@@ -251,6 +251,11 @@ let load_gammurc ?path ?(section=0) s =
   let ini = INI.of_gammurc ?path () in
   let cfg = INI.config ini section in
   push_config s cfg
+
+let make ?section () =
+  let s = alloc_state_machine() in
+  load_gammurc ?section s;
+  s
 
 external _connect : t -> int -> unit= "caml_gammu_GSM_InitConnection"
 external _connect_log : t -> int -> (string -> unit) -> unit
