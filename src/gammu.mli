@@ -503,6 +503,16 @@ sig
       negative integer if [d1] is before [d2], and a positive integer if [d1]
       is after [d2]. *)
 
+  (** The usual six comparison operators (to benefit from local open,
+      i.e. write [Gammu.DateTime.(d1 < d2)] instead of
+      [Gammu.DateTime.compare d1 d2 < 0]. *)
+  val ( = ) : t -> t -> bool
+  val ( <> ) : t -> t -> bool
+  val ( > ) : t -> t -> bool
+  val ( < ) : t -> t -> bool
+  val ( >= ) : t -> t -> bool
+  val ( <= ) : t -> t -> bool
+
   val check_date : t -> bool
   (** Checks whether date is valid. This does not check time, see [check_time]
       for this. *)
@@ -735,7 +745,7 @@ module SMS : sig
   (** Empty message with default values needed for saving a received SMS. *)
 
   val get : t -> folder:int -> message_number:int -> multi_sms
-  (** Reads SMS message. *)
+  (** Read a SMS message. *)
 
   val fold : t -> ?folder:int -> ?n:int -> ?retries:int ->
     ?on_err:(int -> error -> unit) -> ('a -> multi_sms -> 'a) -> 'a -> 'a
@@ -747,7 +757,7 @@ module SMS : sig
       {!Gammu.SMS.get} for each message.
 
       Please note that this command may not mark the messages as read in
-      the phone.  To make sure it is, call {!Gammu.SMS.get}.
+      the phone.  To make sure they are, call {!Gammu.SMS.get}.
 
       @param folder specifies the folder from where to start folding SMS
       (default = 0, the first one).
@@ -840,7 +850,7 @@ module SMS : sig
     | NokiaWAPBookmarkLong  (** Nokia WAP bookmark in 1 or 2 SMS *)
     | NokiaWAPSettingsLong  (** Nokia WAP settings in 2 SMS *)
     | NokiaMMSSettingsLong  (** Nokia MMS settings in 2 SMS *)
-    | NokiaVCARD10Long      (** Nokia VCARD 1.0 (only name and default number) *)
+    | NokiaVCARD10Long     (** Nokia VCARD 1.0 (only name and default number) *)
     | NokiaVCARD21Long      (** Nokia VCARD 2.1 (all numbers + text) *)
     | NokiaVCALENDAR10Long  (** Nokia VCALENDAR 1.0 (can be in few sms) *)
     | NokiaVTODOLong
@@ -913,9 +923,9 @@ module SMS : sig
 
   val decode_multipart : ?debug:Debug.info -> ?ems:bool ->
     multi_sms -> multipart_info
-  (** [decode_multipart sms] Decodes multi part SMS to "readable"
-      format. [sms] is modified, return a {!Gammu.SMS.multipart_info}
-      associated.
+  (** [decode_multipart sms] Decode the multi part SMS [sms] to
+      "readable" format.  [sms] is modified.  Return a
+      {!Gammu.SMS.multipart_info} associated.
 
       @param debug log according to debug settings from [di]. If not
       specified, use the one returned by {!Gammu.Debug.global}.

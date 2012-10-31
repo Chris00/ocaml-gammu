@@ -423,6 +423,13 @@ struct
     in
     compare (int_of_date d1) (int_of_date d2)
 
+  let ( = ) d1 d2 = compare d1 d2 = 0
+  let ( <> ) d1 d2 = compare d1 d2 <> 0
+  let ( < ) d1 d2 = compare d1 d2 < 0
+  let ( > ) d1 d2 = compare d1 d2 > 0
+  let ( <= ) d1 d2 = compare d1 d2 <= 0
+  let ( >= ) d1 d2 = compare d1 d2 >= 0
+
   external check_date : t -> bool = "caml_gammu_GSM_CheckDate"
 
   external check_time : t -> bool = "caml_gammu_GSM_CheckTime"
