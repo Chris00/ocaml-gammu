@@ -2,10 +2,6 @@
 *.annot
 *.cm[ioax]
 *.cmxa
-.depend.ocaml
-RE:doc/.*\.(html|css)
-*.com
-*.exe
 # Gammu log files
 *.log
 # OASIS & OCamlbuild
