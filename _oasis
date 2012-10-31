@@ -68,3 +68,11 @@ Executable read1sms
   CompiledObject: best
   BuildTools:     ocamlbuild
   Install:        false
+
+Executable sms_to_email
+  Path:           demo
+  MainIs:         sms_to_email.ml
+  BuildDepends:   gammu, unix
+  CompiledObject: best
+  BuildTools:     ocamlbuild
+  Install:        false

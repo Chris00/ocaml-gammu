@@ -671,8 +671,8 @@ module SMS : sig
   type udh_header = {
     udh : udh;          (** UDH type. *)
     udh_text : string;  (** UDH text. *)
-    id8bit : int;       (** 8-bit ID, when required (-1 otherwise). *)
-    id16bit : int;      (** 16-bit ID, when required (-1 otherwise). *)
+    id8bit : int;       (** 8-bit ID, when required (<= 0 otherwise). *)
+    id16bit : int;      (** 16-bit ID, when required (<= 0 otherwise). *)
     part_number : int;  (** Number of current part. *)
     all_parts : int;    (** Total number of parts. *)
   }
