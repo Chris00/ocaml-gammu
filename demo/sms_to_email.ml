@@ -115,6 +115,8 @@ let read_all_sms s folder =
     Unix.sleep 1 in
   try
     let all_sms = G.SMS.fold s ~folder ~on_err (fun l m -> m :: l) [] in
+    (* Filter out SMS that are already read. *)
+    let all_sms = List.filter (fun s -> s.(0).SMS.state = SMS.Unread) all_sms in
     email_messages (link_sms all_sms)
   with
   | G.Error G.NOTSUPPORTED ->
