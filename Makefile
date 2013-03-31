@@ -36,11 +36,6 @@ dist tar: $(DISTFILES)
 	tar -zcvf $(PKG_TARBALL) $(PKGNAME)-$(PKGVERSION)
 	rm -rf $(PKGNAME)-$(PKGVERSION)
 
-
-.PHONY: svn
-svn:
-	bzr push svn+ssh://scm.ocamlcore.org/svnroot/ml-gammu/trunk
-
 .PHONY: clean distclean
 clean::
 	ocaml setup.ml -clean
