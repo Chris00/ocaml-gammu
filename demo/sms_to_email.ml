@@ -3,16 +3,23 @@
    [mailto] function) to change that. *)
 
 open Printf
+open Scanf
 module G = Gammu
 module SMS = G.SMS
 
 type config = { gammurc: string;
+                pin : string;  (* "" for none *)
                 folder : int;
                 email : string;
               }
 
+let config_file =
+  ref(try Filename.concat (Sys.getenv "HOME") ".config/sms"
+      with _ -> ".sms")
+
 (* Global config. variable (for ease of use). *)
 let config = ref { gammurc = "";
+                   pin = "";
                    folder = 0;
                    email = "" }
 
@@ -21,7 +28,21 @@ let spec = [
    "<file> Force gammurc file path (override autodetection).");
   ("--folder", Arg.Int(fun i -> config := { !config with folder = i }),
    sprintf "<number> folder to check for SMS (default: %i)" !config.folder);
+  ("--config", Arg.Set_string config_file,
+   sprintf "<file> file used for configuration (default: %s)" !config_file);
 ]
+
+let parse_config () =
+  try
+    let fh = Scanning.open_in !config_file in
+    while not(Scanning.end_of_input fh) do
+      try bscanf fh "pin = %S " (fun p -> config := { !config with pin = p})
+      with Scan_failure _ ->
+        bscanf fh "%_s@\n" (); (* skip line *)
+    done;
+    Scanning.close_in fh
+  with Sys_error _ -> ()
+
 
 (* Simple function to send an email. *)
 let mailto ?(date="") ~subject msg =
@@ -137,6 +158,7 @@ let () =
   let usage_msg = sprintf "Usage: %s [options] <to email>" Sys.argv.(0) in
   let anon s = config := { !config with email = s } in
   Arg.parse spec anon usage_msg;
+  parse_config ();
   if !config.email = "" then (Arg.usage spec usage_msg; exit 1);
   try
     let s = Gammu.make () in
