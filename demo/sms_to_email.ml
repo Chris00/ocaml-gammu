@@ -73,15 +73,19 @@ let check_sec_status_and_do s f =
   | Gammu.SEC_None -> f()
   | Gammu.SEC_SecurityCode -> email "Security code"
   | Gammu.SEC_Pin ->
-     Gammu.enter_security_code s Gammu.SEC_Pin !config.pin;
-     (match get_security_status s with
-      | Gammu.SEC_None -> ()
-      | _ ->
-         let msg = sprintf "sms_to_email entered the PIN %s (found in %s) but \
-                            the card does not acknowledge it.  Check the PIN \
-                            is correct or your card will be blocked."
-                           !config.pin !config_file in
-         mail_error ~subject:"WRONG PIN" msg)
+     if !config.pin = "" then email "PIN"
+     else (
+       Gammu.enter_security_code s Gammu.SEC_Pin !config.pin;
+       Unix.sleep 1;
+       match get_security_status s with
+       | Gammu.SEC_None -> ()
+       | _ ->
+          let msg = sprintf "sms_to_email entered the PIN %s (found in %s) but \
+                             the card does not acknowledge it.  Check the PIN \
+                             is correct or your card will be blocked."
+                            !config.pin !config_file in
+          mail_error ~subject:"WRONG PIN" msg
+     )
   | Gammu.SEC_Pin2 -> email "PIN2"
   | Gammu.SEC_Puk -> email "PUK"
   | Gammu.SEC_Puk2 -> email "PUK2"
