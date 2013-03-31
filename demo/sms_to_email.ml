@@ -60,18 +60,28 @@ let mailto ?(date="") ~subject msg =
 let mail_error ?(subject="ERROR") err =
   mailto ~subject:("SMS to email: " ^ subject) err
 
+let get_security_status s =
+  try Gammu.get_security_status s
+  with Gammu.Error Gammu.UNKNOWNRESPONSE -> Gammu.SEC_None
+
 let check_sec_status_and_do s f =
-  (* If PIN must be entered, send an email to the user. *)
+  (* If a security code must be entered, send an email to the user. *)
   let email pin =
     mail_error ~subject:pin
                (sprintf "The GSM card requires that you enter your %s." pin) in
-  let sec_status =
-    try Gammu.get_security_status s
-    with Gammu.Error Gammu.UNKNOWNRESPONSE -> Gammu.SEC_None in
-  match sec_status with
+  match get_security_status s with
   | Gammu.SEC_None -> f()
   | Gammu.SEC_SecurityCode -> email "Security code"
-  | Gammu.SEC_Pin -> email "PIN"
+  | Gammu.SEC_Pin ->
+     Gammu.enter_security_code s Gammu.SEC_Pin !config.pin;
+     (match get_security_status s with
+      | Gammu.SEC_None -> ()
+      | _ ->
+         let msg = sprintf "sms_to_email entered the PIN %s (found in %s) but \
+                            the card does not acknowledge it.  Check the PIN \
+                            is correct or your card will be blocked."
+                           !config.pin !config_file in
+         mail_error ~subject:"WRONG PIN" msg)
   | Gammu.SEC_Pin2 -> email "PIN2"
   | Gammu.SEC_Puk -> email "PUK"
   | Gammu.SEC_Puk2 -> email "PUK2"
