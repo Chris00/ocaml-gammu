@@ -6,15 +6,21 @@ open Printf
 module G = Gammu
 module SMS = G.SMS
 
-let email = ref ""
-let gammurc = ref ""
-let folder = ref 0
+type config = { gammurc: string;
+                folder : int;
+                email : string;
+              }
+
+(* Global config. variable (for ease of use). *)
+let config = ref { gammurc = "";
+                   folder = 0;
+                   email = "" }
 
 let spec = [
-  ("--gammurc", Arg.Set_string gammurc,
+  ("--gammurc", Arg.String(fun rc -> config := { !config with gammurc = rc}),
    "<file> Force gammurc file path (override autodetection).");
-  ("--folder", Arg.Set_int folder,
-   sprintf "<number> folder to check for SMS (default: %i)" !folder);
+  ("--folder", Arg.Int(fun i -> config := { !config with folder = i }),
+   sprintf "<number> folder to check for SMS (default: %i)" !config.folder);
 ]
 
 (* Simple function to send an email. *)
@@ -24,18 +30,20 @@ let mailto ?(date="") ~subject msg =
   output_string fh "\n";
   close_out fh;
   let mail = sprintf "mail -a \"From: SMS <SMS@localhost>\" \
-                      -s %S %S" subject !email in
+                      -s %S %S" subject !config.email in
   let mail = if date = "" then mail
              else sprintf "%s -a \"Date: %s\"" mail date in
   ignore(Sys.command (mail ^ " < " ^ msg_file));
   Sys.remove msg_file
 
-let mail_error err = mailto ~subject:"SMS to email: ERROR" err
+let mail_error ?(subject="ERROR") err =
+  mailto ~subject:("SMS to email: " ^ subject) err
 
 let check_sec_status_and_do s f =
   (* If PIN must be entered, send an email to the user. *)
   let email pin =
-    mail_error (sprintf "The GSM card requires that you enter your %s." pin) in
+    mail_error ~subject:pin
+               (sprintf "The GSM card requires that you enter your %s." pin) in
   let sec_status =
     try Gammu.get_security_status s
     with Gammu.Error Gammu.UNKNOWNRESPONSE -> Gammu.SEC_None in
@@ -127,12 +135,12 @@ let read_all_sms s folder =
 
 let () =
   let usage_msg = sprintf "Usage: %s [options] <to email>" Sys.argv.(0) in
-  let anon s = email := s in
+  let anon s = config := { !config with email = s } in
   Arg.parse spec anon usage_msg;
-  if !email = "" then (Arg.usage spec usage_msg; exit 1);
+  if !config.email = "" then (Arg.usage spec usage_msg; exit 1);
   try
     let s = Gammu.make () in
     Gammu.connect s;
-    check_sec_status_and_do s (fun () -> read_all_sms s !folder)
+    check_sec_status_and_do s (fun () -> read_all_sms s !config.folder)
   with Gammu.Error e -> printf "Error: %s\n" (Gammu.string_of_error e)
 
