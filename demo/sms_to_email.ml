@@ -76,7 +76,7 @@ let check_sec_status_and_do s f =
      if !config.pin = "" then email "PIN"
      else (
        Gammu.enter_security_code s Gammu.SEC_Pin !config.pin;
-       Unix.sleep 1;
+       Unix.sleep 2;
        match get_security_status s with
        | Gammu.SEC_None -> ()
        | _ ->
