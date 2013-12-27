@@ -4,7 +4,7 @@ PKG_TARBALL = $(PKGNAME)-$(PKGVERSION).tar.gz
 
 WEB = forge.ocamlcore.org:/home/groups/ml-gammu/htdocs/
 
-DISTFILES   = AUTHORS.txt INSTALL.txt README.txt COPYING.txt _oasis \
+DISTFILES   = AUTHORS.txt INSTALL.txt README.txt COPYING.txt _oasis _opam \
   Makefile myocamlbuild.ml setup.ml config.ml _tags src/ \
   $(wildcard demo/*.ml) demo/gammurc
 
