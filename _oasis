@@ -9,7 +9,7 @@ Authors:     Christophe Troestler, Noémie Meunier, Pierre Hauweele
 Maintainers: Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-3.0 with OCaml linking exception
 Plugins:     META (0.3), StdFiles (0.3)
-Homepage:    https://forge.ocamlcore.org/projects/ml-gammu/
+Homepage:    https://github.com/Chris00/ocaml-gammu
 PostConfCommand: ocaml config.ml
 
 Flag debugstub
@@ -77,3 +77,8 @@ Executable sms_to_email
   CompiledObject: best
   BuildTools:     ocamlbuild
   Install:        false
+
+SourceRepository master
+  Type:     git
+  Location: https://github.com/Chris00/ocaml-gammu.git
+  Browser:  https://github.com/Chris00/ocaml-gammu
