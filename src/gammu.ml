@@ -187,7 +187,6 @@ type connection_type =
 
 module INI =
 struct
-  type entry
   type section_node
   type sections = {
     head : section_node;
