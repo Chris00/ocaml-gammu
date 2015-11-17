@@ -47,7 +47,7 @@ void caml_gammu_init(value vunit)
   if (strcmp(GetGammuVersion(), GAMMU_VERSION)) {
     char msg[128];
     if (snprintf(msg, 128, "Gammu: used version of Gammu (%s) does not " \
-                 "match the version of the Caml bindings (%s).",         \
+                 "match the version of the OCaml bindings (%s).",         \
                  GetGammuVersion(), GAMMU_VERSION) < 0)
       caml_failwith("Gammu: versions inconsistency.");
     else

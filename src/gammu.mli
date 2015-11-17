@@ -20,13 +20,13 @@
 
 
 (** Interface to the gammu library (libGammu) to manage data in your
-    cell phone such as contacts, calendar or messages.
+    cell phone such as contacts, calendar and messages.
 
     NOTE: Strings used by libGammu often have a maximum allowed
     length. Strings too long will be trimmed before being passed to
-    libGammu (caml strings given as arguments are not changed).
+    libGammu (this library considers OCaml strings as immutable).
 
-    NOTE: This library is not thread safe. *)
+    NOTE: This library is {i not} thread safe. *)
 
 
 (************************************************************************)
@@ -98,13 +98,13 @@ type error =
   | BADFEATURE          (** Bad feature string. *)
   | DISABLED            (** Some functions not compiled in your OS *)
   | SPECIFYCHANNEL      (** Bluetooth configuration requires channel option. *)
-  | NOTRUNNING          (** Service is not runnig. *)
+  | NOTRUNNING          (** Service is not running. *)
   | NOSERVICE           (** Service setup is missing. *)
   | BUSY                (** Command failed. Try again. *)
   | COULDNT_CONNECT     (** Cannot connect to server. *)
   | COULDNT_RESOLVE     (** Cannot resolve host name. *)
   | GETTING_SMSC        (** Failed to get SMSC number from phone. *)
-  (* Errors specific to the Caml bindings (not present in Gammu): *)
+  (* Errors specific to the OCaml bindings (not present in Gammu): *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
   | INVALID_CONFIG_NUM  (** Invalid config number. *)
