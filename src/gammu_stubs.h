@@ -3,7 +3,7 @@
    Copyright (C) 2010
 
      Christophe Troestler <Christophe.Troestler@umons.ac.be>
-     Noémie Meunier <Noemie.Meunier@student.umons.ac.be>
+     NoÃ©mie Meunier <Noemie.Meunier@student.umons.ac.be>
      Pierre Hauweele <Pierre.Hauweele@student.umons.ac.be>
 
      WWW: http://math.umons.ac.be/an/software/
