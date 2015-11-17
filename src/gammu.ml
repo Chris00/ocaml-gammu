@@ -28,6 +28,7 @@ let () = c_init ()
 
 (* WARNING: Keep the order in sync with gammu-error.h *)
 type error =
+  (* ERR_NONE = 1, not useful here (not an error) *)
   | DEVICEOPENERROR     (** Error during opening device *)
   | DEVICELOCKED        (** Device locked *)
   | DEVICENOTEXIST      (** Device does not exits *)
@@ -36,6 +37,7 @@ type error =
   | DEVICENODRIVER      (** No driver installed for a device *)
   | DEVICENOTWORK       (** Device doesn't seem to be working *)
   | DEVICEDTRRTSERROR   (** Error during setting DTR/RTS in device *)
+  (* 10 (number from gammu-error.h) *)
   | DEVICECHANGESPEEDERROR (** Error during changing speed in device *)
   | DEVICEWRITEERROR    (** Error during writing device *)
   | DEVICEREADERROR     (** Error during reading device *)
@@ -46,6 +48,7 @@ type error =
   | UNKNOWNFRAME        (** Frame not handled by gammu *)
   | UNKNOWNCONNECTIONTYPESTRING (** Unknown connection type given by user *)
   | UNKNOWNMODELSTRING  (** Unknown model given by user *)
+  (* 20 *)
   | SOURCENOTAVAILABLE  (** Some functions not compiled in your OS *)
   | NOTSUPPORTED        (** Not supported by phone *)
   | EMPTY               (** Empty entry or transfer end. *)
@@ -56,6 +59,7 @@ type error =
   | UNKNOWN             (** Unknown response from phone *)
   | CANTOPENFILE        (** Error during opening file *)
   | MOREMEMORY          (** More memory required *)
+  (* 30 *)
   | PERMISSION          (** No permission *)
   | EMPTYSMSC           (** SMSC number is empty *)
   | INSIDEPHONEMENU     (** Inside phone menu - can't make something *)
@@ -67,6 +71,7 @@ type error =
   | CANCELED            (** Action was canceled by user *)
   | NEEDANOTHERANSWER   (** Inside Gammu: phone module need to send
                             another answer frame *)
+  (* 40 *)
   | OTHERCONNECTIONREQUIRED (** You need other connection for
                                 this operation. *)
   | WRONGCRC            (** Wrong CRC *)
@@ -78,6 +83,7 @@ type error =
   | SHOULDBEFOLDER      (** You have to give folder (not file) name *)
   | SHOULDBEFILE        (** You have to give file (not folder) name *)
   | NOSIM               (** Cannot access SIM card *)
+  (* 50 *)
   | GNAPPLETWRONG       (** Invalid gnapplet version *)
   | FOLDERPART          (** Only part of folders listed *)
   | FOLDERNOTEMPTY      (** Folder is not empty *)
@@ -88,6 +94,7 @@ type error =
   | WRITING_FILE        (** Could not write to a file (on local filesystem). *)
   | NONE_SECTION        (** No such section exists. *)
   | USING_DEFAULTS      (** Using default values. *)
+  (* 60 *)
   | CORRUPTED           (** Corrupted data returned by phone. *)
   | BADFEATURE          (** Bad feature string. *)
   | DISABLED            (** Some functions not compiled in your OS *)
@@ -98,6 +105,11 @@ type error =
   | COULDNT_CONNECT     (** Cannot connect to server. *)
   | COULDNT_RESOLVE     (** Cannot resolve host name. *)
   | GETTING_SMSC        (** Failed to get SMSC number from phone. *)
+  (* 70 *)
+  | ABORTED
+  | INSTALL_NOT_FOUND
+  | READ_ONLY
+  | NETWORK_ERROR
   (* Errors specific to the OCaml bindings (not present in Gammu): *)
   | INI_KEY_NOT_FOUND   (** Pair section/value not found in INI file. *)
   | COULD_NOT_DECODE    (** Decoding SMS Message failed. *)
@@ -108,7 +120,7 @@ external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
 exception Error of error
 
 let string_for_uncaught_Error = function
-  | DEVICEOPENERROR      -> "Gammu.Error(DEVICEOPENERROR)"
+  | DEVICEOPENERROR     -> "Gammu.Error(DEVICEOPENERROR)"
   | DEVICELOCKED        -> "Gammu.Error(DEVICELOCKED)"
   | DEVICENOTEXIST      -> "Gammu.Error(DEVICENOTEXIST)"
   | DEVICEBUSY          -> "Gammu.Error(DEVICEBUSY)"
@@ -176,6 +188,10 @@ let string_for_uncaught_Error = function
   | COULDNT_CONNECT     -> "Gammu.Error(COULDNT_CONNECT)"
   | COULDNT_RESOLVE     -> "Gammu.Error(COULDNT_RESOLVE)"
   | GETTING_SMSC        -> "Gammu.Error(GETTING_SMSC)"
+  | ABORTED             -> "Gammu.Error(ABORTED)"
+  | INSTALL_NOT_FOUND   -> "Gammu.Error(INSTALL_NOT_FOUND)"
+  | READ_ONLY           -> "Gammu.Error(READ_ONLY)"
+  | NETWORK_ERROR       -> "Gammu.Error(NETWORK_ERROR)"
   | INI_KEY_NOT_FOUND   -> "Gammu.Error(INI_KEY_NOT_FOUND)"
   | COULD_NOT_DECODE    -> "Gammu.Error(COULD_NOT_DECODE)"
   | INVALID_CONFIG_NUM  -> "Gammu.Error(INVALID_CONFIG_NUM)"

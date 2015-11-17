@@ -155,7 +155,12 @@ value caml_gammu_GSM_ErrorString(value verr)
     msg = "Invalid config number.";
     break;
   default:
-    msg = GSM_ErrorString(err);
+    if (err < ERR_LAST_VALUE)
+      msg = GSM_ErrorString(err);
+    else {
+      /* Error defined in a newer version of Gammu */
+      msg = "Error not defined in Gammu " GAMMU_VERSION;
+    }
   }
   assert(msg != NULL);
   CAMLreturn(caml_copy_string(msg));

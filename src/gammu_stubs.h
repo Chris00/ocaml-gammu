@@ -44,7 +44,8 @@
        || GAMMU_VERSION_NUM == 12991                  \
        || GAMMU_VERSION_NUM == 13100                  \
        || GAMMU_VERSION_NUM == 13190                  \
-       || GAMMU_VERSION_NUM == 13300)
+       || GAMMU_VERSION_NUM == 13300                  \
+       || GAMMU_VERSION_NUM == 13606)
 # warning "Your version of libGammu was totally not tested. \
 If compilation fails, please report your version number \
 and if possible attach the error log."
@@ -134,10 +135,16 @@ static char *yesno_bool(gboolean b);
 /************************************************************************/
 /* Error handling */
 
+#if ERR_LAST_VALUE > 75
+#error "New errors defined in gammu-error.h, gammu.ml must be updated"
+#endif
+
 /* Error codes added by our bindings implementation.
+   WARNING: must be in sync with the number of elements in the enumeration
+            in gammu.ml
    WARNING: add error messages to caml_gammu_GSM_ErrorString */
 typedef enum {
-  ERR_INI_KEY_NOT_FOUND = 70,
+  ERR_INI_KEY_NOT_FOUND = 75, /* number in gammu.ml */
   ERR_COULD_NOT_DECODE,
   ERR_INVALID_CONFIG_NUM
 } CAML_GAMMU_Error;
