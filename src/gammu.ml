@@ -107,7 +107,88 @@ external string_of_error : error -> string = "caml_gammu_GSM_ErrorString"
 
 exception Error of error
 
-let () = Callback.register_exception "Gammu.GSM_Error" (Error DEVICEOPENERROR)
+let string_for_uncaught_Error = function
+  | DEVICEOPENERROR      -> "Gammu.Error(DEVICEOPENERROR)"
+  | DEVICELOCKED        -> "Gammu.Error(DEVICELOCKED)"
+  | DEVICENOTEXIST      -> "Gammu.Error(DEVICENOTEXIST)"
+  | DEVICEBUSY          -> "Gammu.Error(DEVICEBUSY)"
+  | DEVICENOPERMISSION  -> "Gammu.Error(DEVICENOPERMISSION)"
+  | DEVICENODRIVER      -> "Gammu.Error(DEVICENODRIVER)"
+  | DEVICENOTWORK       -> "Gammu.Error(DEVICENOTWORK)"
+  | DEVICEDTRRTSERROR   -> "Gammu.Error(DEVICEDTRRTSERROR)"
+  | DEVICECHANGESPEEDERROR -> "Gammu.Error(DEVICECHANGESPEEDERROR)"
+  | DEVICEWRITEERROR    -> "Gammu.Error(DEVICEWRITEERROR)"
+  | DEVICEREADERROR     -> "Gammu.Error(DEVICEREADERROR)"
+  | DEVICEPARITYERROR   -> "Gammu.Error(DEVICEPARITYERROR)"
+  | TIMEOUT             -> "Gammu.Error(TIMEOUT)"
+  | FRAMENOTREQUESTED   -> "Gammu.Error(FRAMENOTREQUESTED)"
+  | UNKNOWNRESPONSE     -> "Gammu.Error(UNKNOWNRESPONSE)"
+  | UNKNOWNFRAME        -> "Gammu.Error(UNKNOWNFRAME)"
+  | UNKNOWNCONNECTIONTYPESTRING-> "Gammu.Error(UNKNOWNCONNECTIONTYPESTRING)"
+  | UNKNOWNMODELSTRING  -> "Gammu.Error(UNKNOWNMODELSTRING)"
+  | SOURCENOTAVAILABLE  -> "Gammu.Error(SOURCENOTAVAILABLE)"
+  | NOTSUPPORTED        -> "Gammu.Error(NOTSUPPORTED)"
+  | EMPTY               -> "Gammu.Error(EMPTY)"
+  | SECURITYERROR       -> "Gammu.Error(SECURITYERROR)"
+  | INVALIDLOCATION     -> "Gammu.Error(INVALIDLOCATION)"
+  | NOTIMPLEMENTED      -> "Gammu.Error(NOTIMPLEMENTED)"
+  | FULL                -> "Gammu.Error(FULL)"
+  | UNKNOWN             -> "Gammu.Error(UNKNOWN)"
+  | CANTOPENFILE        -> "Gammu.Error(CANTOPENFILE)"
+  | MOREMEMORY          -> "Gammu.Error(MOREMEMORY)"
+  | PERMISSION          -> "Gammu.Error(PERMISSION)"
+  | EMPTYSMSC           -> "Gammu.Error(EMPTYSMSC)"
+  | INSIDEPHONEMENU     -> "Gammu.Error(INSIDEPHONEMENU)"
+  | NOTCONNECTED        -> "Gammu.Error(NOTCONNECTED)"
+  | WORKINPROGRESS      -> "Gammu.Error(WORKINPROGRESS)"
+  | PHONEOFF            -> "Gammu.Error(PHONEOFF)"
+  | FILENOTSUPPORTED    -> "Gammu.Error(FILENOTSUPPORTED)"
+  | BUG                 -> "Gammu.Error(BUG)"
+  | CANCELED            -> "Gammu.Error(CANCELED)"
+  | NEEDANOTHERANSWER   -> "Gammu.Error()"
+  | OTHERCONNECTIONREQUIRED-> "Gammu.Error(NEEDANOTHERANSWER)"
+  | WRONGCRC            -> "Gammu.Error(WRONGCRC)"
+  | INVALIDDATETIME     -> "Gammu.Error(INVALIDDATETIME)"
+  | MEMORY              -> "Gammu.Error(MEMORY)"
+  | INVALIDDATA         -> "Gammu.Error(INVALIDDATA)"
+  | FILEALREADYEXIST    -> "Gammu.Error(FILEALREADYEXIST)"
+  | FILENOTEXIST        -> "Gammu.Error(FILENOTEXIST)"
+  | SHOULDBEFOLDER      -> "Gammu.Error(SHOULDBEFOLDER)"
+  | SHOULDBEFILE        -> "Gammu.Error(SHOULDBEFILE)"
+  | NOSIM               -> "Gammu.Error(NOSIM)"
+  | GNAPPLETWRONG       -> "Gammu.Error(GNAPPLETWRONG)"
+  | FOLDERPART          -> "Gammu.Error(FOLDERPART)"
+  | FOLDERNOTEMPTY      -> "Gammu.Error(FOLDERNOTEMPTY)"
+  | DATACONVERTED       -> "Gammu.Error(DATACONVERTED)"
+  | UNCONFIGURED        -> "Gammu.Error(UNCONFIGURED)"
+  | WRONGFOLDER         -> "Gammu.Error(WRONGFOLDER)"
+  | PHONE_INTERNAL      -> "Gammu.Error(PHONE_INTERNAL)"
+  | WRITING_FILE        -> "Gammu.Error(WRITING_FILE)"
+  | NONE_SECTION        -> "Gammu.Error(NONE_SECTION)"
+  | USING_DEFAULTS      -> "Gammu.Error(USING_DEFAULTS)"
+  | CORRUPTED           -> "Gammu.Error(CORRUPTED)"
+  | BADFEATURE          -> "Gammu.Error(BADFEATURE)"
+  | DISABLED            -> "Gammu.Error(DISABLED)"
+  | SPECIFYCHANNEL      -> "Gammu.Error(SPECIFYCHANNEL)"
+  | NOTRUNNING          -> "Gammu.Error(NOTRUNNING)"
+  | NOSERVICE           -> "Gammu.Error(NOSERVICE)"
+  | BUSY                -> "Gammu.Error(BUSY)"
+  | COULDNT_CONNECT     -> "Gammu.Error(COULDNT_CONNECT)"
+  | COULDNT_RESOLVE     -> "Gammu.Error(COULDNT_RESOLVE)"
+  | GETTING_SMSC        -> "Gammu.Error(GETTING_SMSC)"
+  | INI_KEY_NOT_FOUND   -> "Gammu.Error(INI_KEY_NOT_FOUND)"
+  | COULD_NOT_DECODE    -> "Gammu.Error(COULD_NOT_DECODE)"
+  | INVALID_CONFIG_NUM  -> "Gammu.Error(INVALID_CONFIG_NUM)"
+
+let () =
+  Callback.register_exception "Gammu.GSM_Error" (Error DEVICEOPENERROR);
+  (* Register a custom exception printer to have the error displayed
+     symbolically (not as an integer).
+     CANVAS: http://caml.inria.fr/mantis/view.php?id=5040 *)
+  let printer = function
+    | Error e -> Some(string_for_uncaught_Error e)
+    | _ -> None in
+  Printexc.register_printer printer
 
 
 (************************************************************************)
