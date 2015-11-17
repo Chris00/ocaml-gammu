@@ -946,12 +946,8 @@ end
 (** Call entries manipulation. *)
 module Call : sig
 
-  type call = {
-    status : status;       (** Call status. *)
-    call_id : int option;  (** Call ID, None when not available. *)
-    number : string;       (** Remote phone number. *)
-  } (** Call information. *)
-  and status =
+  (** Status of call. *)
+  type status =
     | Incoming    (** Somebody calls to us. *)
     | Outgoing    (** We call somewhere. *)
     | Started     (** Call started. *)
@@ -963,7 +959,13 @@ module Call : sig
     | Held        (** Call held. *)
     | Resumed     (** Call resumed. *)
     | Switched    (** We switch to call. *)
-  (** Status of call. *)
+
+  (** Call information. *)
+  type call = {
+    status : status;       (** Call status. *)
+    call_id : int option;  (** Call ID, None when not available. *)
+    number : string;       (** Remote phone number. *)
+  }
 
 end
 
