@@ -1,5 +1,5 @@
 (* Simple demo/test file that prints some informations and the first sms. *)
-open Printf
+
 open Args_demo
 open Utils_tests
 open Printf

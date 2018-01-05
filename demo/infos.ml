@@ -1,5 +1,5 @@
 (* Simple demo/test file that gathers some informations about the phone. *)
-open Printf
+
 open Args_demo
 open Utils_tests
 open Printf

@@ -1,8 +1,8 @@
 PKGVERSION = $(shell git describe --always --dirty)
 
 build:
-	jbuilder build @install #--dev
-	jbuilder build @demo #--dev
+	jbuilder build @install --dev
+	jbuilder build @demo --dev
 
 install uninstall:
 	jbuilder $@
