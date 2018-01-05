@@ -1,7 +1,0 @@
-# OASIS_START
-# OASIS_STOP
-
-true: annot, safe_string
-true: warn(A-4@8-29-33-40-41-42-44-45-48)
-<src/gammu_stubs.c>: pkg_config_gammu
-<src/gammu.{cma,cmxa}>: pkg_config_gammu

@@ -1,46 +1,22 @@
-PKGNAME	    = $(shell oasis query name)
-PKGVERSION  = $(shell oasis query version)
-PKG_TARBALL = $(PKGNAME)-$(PKGVERSION).tar.gz
+PKGVERSION = $(shell git describe --always --dirty)
 
-WEB = forge.ocamlcore.org:/home/groups/ml-gammu/htdocs/
+build:
+	jbuilder build @install #--dev
+	jbuilder build @demo #--dev
 
-DISTFILES   = AUTHORS.txt INSTALL.txt README.txt COPYING.txt _oasis _opam \
-  Makefile myocamlbuild.ml setup.ml config.ml _tags src/ \
-  $(wildcard demo/*.ml) demo/gammurc
+install uninstall:
+	jbuilder $@
 
-.PHONY: all byte native configure doc install uninstall reinstall upload-doc
+doc:
+	sed -e 's/%%VERSION%%/$(PKGVERSION)/' src/Root1D.mli \
+	  > _build/default/src/Root1D.mli
+	jbuilder build @doc
+	echo '.def { background: #f9f9de; }' >> _build/default/_doc/odoc.css
 
-all byte native setup.log: configure
-	ocaml setup.ml -build
+lint:
+	opam lint gammu.opam
 
-configure: setup.data
-setup.data: setup.ml
-	ocaml $< -configure
+clean:
+	jbuilder clean
 
-setup.ml: _oasis
-	oasis setup -setup-update dynamic
-
-doc install uninstall reinstall: setup.log
-	ocaml setup.ml -$@
-
-upload-doc: doc
-	scp -C -p -r _build/src/API.docdir/ $(WEB)
-
-# Make a tarball
-.PHONY: dist tar
-dist tar: $(DISTFILES)
-	mkdir $(PKGNAME)-$(PKGVERSION)
-	cp --parents -r $(DISTFILES) $(PKGNAME)-$(PKGVERSION)/
-#	Full setup.ml, independent of oasis
-	cd $(PKGNAME)-$(PKGVERSION) && oasis setup
-	tar -zcvf $(PKG_TARBALL) $(PKGNAME)-$(PKGVERSION)
-	rm -rf $(PKGNAME)-$(PKGVERSION)
-
-.PHONY: clean distclean
-clean::
-	ocaml setup.ml -clean
-	$(RM) $(PKG_TARBALL) setup.data
-
-distclean: clean
-	ocaml setup.ml -distclean
-	$(RM) $(wildcard *.ba[0-9] *.bak *~ *.odocl)
+.PHONY: build install uninstall doc lint clean

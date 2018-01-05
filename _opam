@@ -1,5 +1,0 @@
-depexts: [
-  [["ubuntu"]["libgammu-dev"]]
-  [["debian"]["libgammu-dev"]]
-  [["centos"]["gammu-devel"]]
-]

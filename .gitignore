@@ -1,17 +1,8 @@
-# .bzrignore							-*-conf-unix-*-
-*.annot
-*.cm[ioax]
-*.cmxa
+#								-*-conf-unix-*-
 # Gammu log files
 *.log
-# OASIS & OCamlbuild
+# jbuilder
 _build
-AUTHORS.txt
-README.txt
-setup.ml
-setup.data
-src/API.odocl
-src/gammu.mllib
-*.clib
-*.native
-*.byte
+.merlin
+*.install
+*.exe
