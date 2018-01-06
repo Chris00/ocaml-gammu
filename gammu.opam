@@ -23,7 +23,7 @@ depends: [
 depexts: [
   [["ubuntu"]["libgammu-dev" "pkg-config"]]
   [["debian"]["libgammu-dev" "pkg-config"]]
-  [["centos"]["gammu-devel"  "pkgconfig"]]
+  [["centos"]["epel-release" "gammu-devel"  "pkgconfig"]]
   [["osx" "homebrew"] ["gammu"]]
 ]
 available: [ ocaml-version >= "4.02.3" ]
