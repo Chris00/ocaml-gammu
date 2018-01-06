@@ -12,12 +12,14 @@ let configure t =
     | None -> None in
   let cflags = match Caml.Sys.getenv "OCAML_GAMMU_CFLAGS" with
     | alt_cflags -> split_ws alt_cflags
-    | exception Not_found -> match pkg with Some p -> p.P.cflags
-                                          | None -> [] in
+    | exception Not_found ->
+       match pkg with Some p -> p.P.cflags
+                    | None -> ["-I/usr/include/gammu"] in
   let libs = match Caml.Sys.getenv "OCAML_GAMMU_LIBS" with
     | alt_libs -> split_ws alt_libs
-    | exception Not_found -> match pkg with Some p -> p.P.libs
-                                          | None -> []  in
+    | exception Not_found ->
+       match pkg with Some p -> p.P.libs
+                    | None -> ["-lGammu"; "-lm"]  in
 
   (* Check for debug environment variable *)
   let debug = try ignore(Caml.Sys.getenv "OCAML_GAMMU_DEBUG"); true
