@@ -46,7 +46,8 @@
        || GAMMU_VERSION_NUM == 13190                  \
        || GAMMU_VERSION_NUM == 13300                  \
        || GAMMU_VERSION_NUM == 13606                  \
-       || GAMMU_VERSION_NUM == 13805)
+       || GAMMU_VERSION_NUM == 13805                  \
+       || GAMMU_VERSION_NUM == 13900)
 # warning "Your version of libGammu was totally not tested. \
 If compilation fails, please report your version number \
 and if possible attach the error log."
