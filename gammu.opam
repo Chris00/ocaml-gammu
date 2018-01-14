@@ -15,7 +15,6 @@ build: [
 ]
 build-test: [["jbuilder" "runtest" "-p" name "-j" jobs]]
 depends: [
-  "jbuilder" {build}
   "jbuilder"  {build & >="1.0+beta9"}
   "configurator" {build}
   "base-unix" {build & test}
