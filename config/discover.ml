@@ -5,25 +5,30 @@ open Stdio
    function should be added to Configurator. *)
 let split_ws str = String.(split str ~on:' ' |> List.filter ~f:((<>) ""))
 
-let cflags_default =
-  ["linux", ["-O3"; "-fPIC"; "-DPIC"; "-I/usr/include/gammu"];
-   "msvc",  [];
-   "win64", []]
-let libs_default =
-  ["linux", ["-lGammu"; "-lm"];
-   "msvc", [];
-   "win64", []]
+let error_sys sys =
+  Configurator.die "System %S currently not supported.  Please \
+                    contact the OCaml gammu developers." sys
 
+let cflags_default sys =
+  if String.(sys = "linux") then
+    ["-O3"; "-fPIC"; "-DPIC"; "-I/usr/include/gammu"]
+  else if String.(sys = "mingw64") then
+    ["-O3"; "-fPIC"; "-DPIC"; "-DHAVE_SSIZE_T"; "-IC:/Gammu/include/gammu"]
+  else if String.(sys = "msvc" || sys = "win64") then
+    ["/I"; "C:\\Gammu\\include\\gammu"]
+  else error_sys sys
 
-let choose t choices =
-  let sys = Configurator.ocaml_config_var_exn t "system"in
-  match List.Assoc.find choices sys ~equal:String.equal with
-  | Some v -> v
-  | None -> Configurator.die "System %S currently not supported.  Please \
-                              contact the OCaml gammu developers." sys
+let libs_default sys =
+  if String.(sys = "linux") then ["-lGammu"; "-lm"]
+  else if String.(sys = "msvc" || sys = "win64") then
+    ["C:\\Gammu\\lib\\Gammu.lib"]
+  else if String.(sys = "mingw64") then
+    ["C:\\Gammu\\lib\\Gammu.lib"; "-verbose"]
+  else error_sys sys
 
 let configure t =
   let module P = Configurator.Pkg_config in
+  let sys = Configurator.ocaml_config_var_exn t "system"in
   let pkg = match P.get t with
     | Some pkg_config -> P.query pkg_config ~package:"gammu"
     | None -> None in
@@ -31,12 +36,12 @@ let configure t =
     | alt_cflags -> split_ws alt_cflags
     | exception Not_found ->
        match pkg with Some p -> p.P.cflags
-                    | None -> choose t cflags_default in
+                    | None -> cflags_default sys in
   let libs = match Caml.Sys.getenv "OCAML_GAMMU_LIBS" with
     | alt_libs -> split_ws alt_libs
     | exception Not_found ->
        match pkg with Some p -> p.P.libs
-                    | None -> choose t libs_default in
+                    | None -> libs_default sys in
 
   (* Check for debug environment variable *)
   let debug = try ignore(Caml.Sys.getenv "OCAML_GAMMU_DEBUG"); true

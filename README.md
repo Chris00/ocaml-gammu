@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/Chris00/ocaml-gammu.svg?branch=master)](https://travis-ci.org/Chris00/ocaml-gammu)
+[![Build status](https://ci.appveyor.com/api/projects/status/vmdcb6rsllg0c1ec?svg=true)](https://ci.appveyor.com/project/Chris00/ocaml-gammu)
+
 Gammu
 =====
 
