@@ -8,8 +8,8 @@ install uninstall:
 	jbuilder $@
 
 doc:
-	sed -e 's/%%VERSION%%/$(PKGVERSION)/' src/Root1D.mli \
-	  > _build/default/src/Root1D.mli
+	sed -e 's/%%VERSION%%/$(PKGVERSION)/' src/gammu.mli \
+	  > _build/default/src/gammu.mli
 	jbuilder build @doc
 	echo '.def { background: #f9f9de; }' >> _build/default/_doc/odoc.css
 
