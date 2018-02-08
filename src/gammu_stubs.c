@@ -22,6 +22,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#if defined(__unix__) || defined(__CYGWIN__) \
+  || defined(__MINGW64__) || defined(__MINGW32__)
+#include <unistd.h>
+#endif
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
