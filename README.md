@@ -25,7 +25,7 @@ The easier way to install this library is to use [opam][]:
 
     opam install gammu
 
-If you prefer to compile by hand, issue `jbuilder build
+If you prefer to compile by hand, issue `dune build
 @install` in the directory in which you downloaded this code.
 
 To compile the library with debugging output turned on for the C

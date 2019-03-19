@@ -1,7 +1,7 @@
 #								-*-conf-unix-*-
 # Gammu log files
 *.log
-# jbuilder
+# dune
 _build
 .merlin
 *.install

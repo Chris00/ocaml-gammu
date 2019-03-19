@@ -1,60 +1,53 @@
-open Base
-open Stdio
-
-(* FIXME: This may be to rough on Windows.  A more subtle splitting
-   function should be added to Configurator. *)
-let split_ws str = String.(split str ~on:' ' |> List.filter ~f:((<>) ""))
+module C = Configurator.V1
 
 let error_sys sys =
-  Configurator.die "System %S currently not supported.  Please \
-                    contact the OCaml gammu developers." sys
+  C.die "System %S currently not supported.  Please \
+         contact the OCaml gammu developers." sys
 
 let cflags_default sys =
-  if String.(sys = "linux") then
+  if sys = "linux" then
     ["-O3"; "-fPIC"; "-DPIC"; "-I/usr/include/gammu"]
-  else if String.(sys = "mingw64") then
+  else if sys = "mingw64" then
     ["-O3"; "-fPIC"; "-DPIC"; "-DHAVE_SSIZE_T"; "-IC:/Gammu/include/gammu"]
-  else if String.(sys = "msvc" || sys = "win64") then
+  else if sys = "msvc" || sys = "win64" then
     ["/I"; "C:\\Gammu\\include\\gammu"]
   else error_sys sys
 
 let libs_default sys =
-  if String.(sys = "linux") then ["-lGammu"; "-lm"]
-  else if String.(sys = "msvc" || sys = "win64") then
+  if sys = "linux" then ["-lGammu"; "-lm"]
+  else if sys = "msvc" || sys = "win64" then
     ["C:\\Gammu\\lib\\Gammu.lib"]
-  else if String.(sys = "mingw64") then
+  else if sys = "mingw64" then
     ["C:\\Gammu\\lib\\Gammu.lib"; "-verbose"]
   else error_sys sys
 
 let configure t =
-  let module P = Configurator.Pkg_config in
-  let sys = Configurator.ocaml_config_var_exn t "system"in
+  let module P = C.Pkg_config in
+  let sys = C.ocaml_config_var_exn t "system"in
   let pkg = match P.get t with
     | Some pkg_config -> P.query pkg_config ~package:"gammu"
     | None -> None in
-  let cflags = match Caml.Sys.getenv "OCAML_GAMMU_CFLAGS" with
-    | alt_cflags -> split_ws alt_cflags
+  let cflags = match Sys.getenv "OCAML_GAMMU_CFLAGS" with
+    | alt_cflags -> C.Flags.extract_blank_separated_words alt_cflags
     | exception Not_found ->
        match pkg with Some p -> p.P.cflags
                     | None -> cflags_default sys in
-  let libs = match Caml.Sys.getenv "OCAML_GAMMU_LIBS" with
-    | alt_libs -> split_ws alt_libs
+  let libs = match Sys.getenv "OCAML_GAMMU_LIBS" with
+    | alt_libs -> C.Flags.extract_blank_separated_words alt_libs
     | exception Not_found ->
        match pkg with Some p -> p.P.libs
                     | None -> libs_default sys in
 
   (* Check for debug environment variable *)
-  let debug = try ignore(Caml.Sys.getenv "OCAML_GAMMU_DEBUG"); true
+  let debug = try ignore(Sys.getenv "OCAML_GAMMU_DEBUG"); true
               with _ -> false in
   let cflags =
     if debug then
-      (if Caml.Sys.win32 then "/DCAML_GAMMU_DEBUG"
+      (if Sys.win32 then "/DCAML_GAMMU_DEBUG"
        else "-DCAML_GAMMU_DEBUG") :: cflags
     else cflags in
-  let write_sexp file sexp =
-    Out_channel.write_all file ~data:(Sexp.to_string sexp) in
-  write_sexp "c_flags.sexp" (sexp_of_list sexp_of_string cflags);
-  write_sexp "c_library_flags.sexp" (sexp_of_list sexp_of_string libs)
+  C.Flags.write_sexp "c_flags.sexp" cflags;
+  C.Flags.write_sexp "c_library_flags.sexp" libs
 
 let () =
-  Configurator.main ~name:"discover" configure
+  C.main ~name:"discover" configure

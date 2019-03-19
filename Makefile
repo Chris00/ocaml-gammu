@@ -1,22 +1,20 @@
-PKGVERSION = $(shell git describe --always --dirty)
+PKGVERSION = $(shell git describe --always)
 
 build:
-	jbuilder build @install --dev
-	jbuilder build @demo --dev
+	dune build @install @demo
 
 install uninstall:
-	jbuilder $@
+	dune $@
 
 doc:
-	sed -e 's/%%VERSION%%/$(PKGVERSION)/' src/gammu.mli \
-	  > _build/default/src/gammu.mli
-	jbuilder build @doc
-	echo '.def { background: #f9f9de; }' >> _build/default/_doc/odoc.css
+	dune build @doc
+	sed -e 's/%%VERSION%%/$(PKGVERSION)/' --in-place \
+	  _build/default/_doc/_html/gammu/Gammu/index.html
 
 lint:
 	opam lint gammu.opam
 
 clean:
-	jbuilder clean
+	dune clean
 
 .PHONY: build install uninstall doc lint clean
