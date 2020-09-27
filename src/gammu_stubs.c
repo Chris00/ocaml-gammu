@@ -126,7 +126,7 @@ static char *yesno_bool(gboolean b)
 /* raise [Error] if the error code doesn't indicate no error. */
 static void caml_gammu_raise_Error(int err)
 {
-  static value *exn = NULL;
+  static const value *exn = NULL;
 
   switch (err) {
   case ERR_NONE:
